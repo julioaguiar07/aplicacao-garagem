@@ -3008,7 +3008,7 @@ with tab2:
                 col_status1, col_status2, col_status3 = st.columns(3)  # ← MUDAR PARA 3 COLUNAS
                 
                 with col_status1:
-                    status_options = ["Em estoque", "Vendido", "Reservado"]
+                    status_options = ["Em estoque", "Vendido", "Reservado", "Financiado"]
                     novo_status = st.selectbox(
                         "Status do Veículo", 
                         status_options, 
