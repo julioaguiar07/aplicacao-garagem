@@ -26,26 +26,39 @@ if 'autenticado' not in st.session_state:
     st.session_state.autenticado = False
 if 'usuario' not in st.session_state:
     st.session_state.usuario = None
+if 'ultimo_submit' not in st.session_state:  # ← ADICIONAR
+    st.session_state.ultimo_submit = 0
+if 'form_blocked' not in st.session_state:   # ← ADICIONAR
+    st.session_state.form_blocked = False
     
 # =============================================
 # FUNÇÃO PARA PREVENIR LOOP DE SUBMIT
 # =============================================
 
 def prevenir_loop_submit():
-    """Previne múltiplos submits rápidos que causam loop - VERSÃO CORRIGIDA"""
+    """Previne múltiplos submits rápidos que causam loop - VERSÃO DEFINITIVA"""
     if 'ultimo_submit' not in st.session_state:
         st.session_state.ultimo_submit = 0
     
     agora = time.time()
-    # Só permite submit a cada 2 segundos (reduzido)
-    if agora - st.session_state.ultimo_submit < 2:
-        tempo_restante = 2 - (agora - st.session_state.ultimo_submit)
+    # Só permite submit a cada 3 segundos
+    if agora - st.session_state.ultimo_submit < 3:
+        tempo_restante = 3 - (agora - st.session_state.ultimo_submit)
         st.warning(f"⏳ Aguarde {tempo_restante:.1f} segundos antes de enviar novamente...")
-        return False
+        st.stop()  # PARA a execução completamente
     
     st.session_state.ultimo_submit = agora
     return True
 
+# =============================================
+# FUNÇÃO PARA RESETAR FORMULÁRIOS
+# =============================================
+
+def resetar_formulario():
+    """Reseta o estado do formulário após submit bem-sucedido"""
+    st.session_state.ultimo_submit = 0
+    time.sleep(1)  # Pequena pausa para garantir o reset
+    
 # =============================================
 # FUNÇÃO AUXILIAR PARA DATAS - CORRIGE POSTGRESQL
 # =============================================
@@ -148,7 +161,7 @@ def seção_papel_timbrado():
     st.markdown("#### 🖋️ Gerador de Documentos com Papel Timbrado")
     
     # Formulário separado para entrada de texto
-    with st.form("papel_timbrado_form"):
+    with st.form("papel_timbrado_form", clear_on_submit=True):
         texto_documento = st.text_area("Texto do Documento", height=200, 
                                       placeholder="Digite o conteúdo do documento aqui...\nExemplo:\nCONTRATO DE VENDA\n\nEntre as partes:\nVendedor: Sua Loja\nComprador: João Silva\nVeículo: Honda Civic 2023\nValor: R$ 80.000,00")
         
@@ -156,8 +169,11 @@ def seção_papel_timbrado():
         
         submitted = st.form_submit_button("👁️ Gerar Documento")
     
-    # Botão de download FORA do formulário
+    # Processamento fora do formulário para evitar loop
     if submitted:
+        if not prevenir_loop_submit():
+            st.stop()
+            
         if texto_documento:
             nome_arquivo = f"{nome_documento}.png"
             arquivo_gerado = gerar_papel_timbrado(texto_documento, nome_arquivo)
@@ -173,8 +189,9 @@ def seção_papel_timbrado():
                         data=file,
                         file_name=nome_arquivo,
                         mime="image/png",
-                        key="download_timbrado"  # Key única
+                        key="download_timbrado"
                     )
+                resetar_formulario()
         else:
             st.error("❌ Digite algum texto para gerar o documento!")
             
@@ -743,6 +760,7 @@ class Database:
             engine.dispose()
     
     def add_veiculo(self, veiculo_data):
+        """Adiciona veículo com tratamento robusto de erros"""
         print(f"🔍 DEBUG add_veiculo - Iniciando cadastro...")
         print(f"📦 Dados recebidos: {veiculo_data}")
         
@@ -2618,7 +2636,7 @@ with tab2:
 
     with col_veic1:
         st.markdown("#### ➕ Novo Veículo")
-        with st.form("novo_veiculo_form"):
+        with st.form("novo_veiculo_form", clear_on_submit=True):  # ← CLEAR_ON_SUBMIT ADICIONADO
             modelo = st.text_input("Modelo*", placeholder="Civic Touring")
             marca = st.text_input("Marca*", placeholder="Honda")
             ano = st.number_input("Ano*", min_value=1990, max_value=2024, value=2023)
@@ -2651,9 +2669,9 @@ with tab2:
             submitted = st.form_submit_button("Cadastrar Veículo", use_container_width=True)
             if submitted:
                 if not prevenir_loop_submit():
-                    st.stop()  # ⬅️ Mantém esta linha
+                    st.stop()
                     
-                if modelo and marca and fornecedor:
+                if modelo and marca and fornecedor and preco_entrada > 0:
                     # Calcular preço de venda com margem
                     preco_venda_final = preco_entrada * (1 + margem_negociacao/100)
                     
@@ -2675,12 +2693,11 @@ with tab2:
                             db.salvar_foto_veiculo(veiculo_id, foto_veiculo.getvalue())
                         
                         st.success("✅ Veículo cadastrado com sucesso!")
-                        st.balloons()  # Efeito visual
+                        st.balloons()
                         
-                        # ✅✅✅ CORREÇÃO CRÍTICA: Usar st.rerun() CORRETAMENTE
-                        st.session_state.ultimo_submit = 0  # Reseta o controle de submit
-                        time.sleep(2)
-                        st.rerun()  # ⬅️ AGORA SIM, vai funcionar!
+                        # ✅✅✅ CORREÇÃO: NÃO USAR st.rerun() AQUI
+                        # Em vez disso, usamos clear_on_submit=True no form
+                        resetar_formulario()
                         
                     else:
                         st.error("❌ Erro ao cadastrar veículo. Verifique os logs.")
@@ -2772,10 +2789,10 @@ with tab2:
                             </div>
                         </div>
                         """, unsafe_allow_html=True)
-
-                # Adicionar novo gasto - COM FORM ÚNICO
+                
+                # Adicionar novo gasto - COM FORM CORRIGIDO
                 st.markdown("#### ➕ Adicionar Gasto")
-                with st.form(f"novo_gasto_form_{veiculo['id']}"):
+                with st.form(f"novo_gasto_form_{veiculo['id']}", clear_on_submit=True):
                     col_gasto1, col_gasto2, col_gasto3 = st.columns(3)
                     
                     with col_gasto1:
@@ -2783,9 +2800,9 @@ with tab2:
                             "Pneus", "Manutenção", "Documentação", "Combustível", 
                             "Peças", "Lavagem", "Pintura", "Seguro", "IPVA", "Outros"
                         ], key=f"tipo_{veiculo['id']}")
-
+                
                     arquivo_nota = st.file_uploader("Anexar Nota Fiscal", type=['pdf', 'jpg', 'jpeg', 'png'], key=f"arquivo_{veiculo['id']}")    
-
+                
                     with col_gasto2:
                         valor_gasto = st.number_input("Valor (R$)", min_value=0.0, value=0.0, key=f"valor_{veiculo['id']}")
                         
@@ -2796,6 +2813,9 @@ with tab2:
                     
                     submitted_gasto = st.form_submit_button("Adicionar Gasto", use_container_width=True)
                     if submitted_gasto:
+                        if not prevenir_loop_submit():
+                            st.stop()
+                            
                         if valor_gasto > 0:
                             gasto_data = {
                                 'veiculo_id': veiculo['id'],
@@ -2820,7 +2840,7 @@ with tab2:
                             
                             if success:
                                 st.success("✅ Gasto adicionado com sucesso!")
-                                st.rerun()
+                                resetar_formulario()
                         else:
                             st.error("❌ O valor do gasto deve ser maior que zero!")
 
@@ -2885,7 +2905,7 @@ with tab3:
         veiculos_estoque = [v for v in db.get_veiculos() if v['status'] == 'Em estoque']
         
         if veiculos_estoque:
-            with st.form("nova_venda_form"):
+            with st.form("nova_venda_form", clear_on_submit=True):
                 veiculo_options = [f"{v['id']} - {v['marca']} {v['modelo']} ({v['ano']})" for v in veiculos_estoque]
                 veiculo_selecionado = st.selectbox("Veículo*", veiculo_options)
                 
@@ -2913,17 +2933,14 @@ with tab3:
                     key=f"valor_venda_{veiculo_id}"
                 )
                 
-                # ⬇️⬇️ CÁLCULO DO LUCRO EM TEMPO REAL - VERSÃO CORRIGIDA ⬇️⬇️
+                # Cálculo do lucro em tempo real
                 if 'veiculo' in locals():
-                    # Calcular valores em tempo real
                     lucro_venda = valor_venda - custo_total
                     margem_lucro = (lucro_venda / custo_total * 100) if custo_total > 0 else 0
                     
-                    # Usar st.columns para organização
                     col_lucro1, col_lucro2 = st.columns(2)
                     
                     with col_lucro1:
-                        # Lucro em R$
                         if lucro_venda >= 0:
                             st.metric(
                                 "💰 Lucro Estimado", 
@@ -2940,7 +2957,6 @@ with tab3:
                             )
                     
                     with col_lucro2:
-                        # Margem em %
                         if margem_lucro >= 20:
                             st.metric(
                                 "📈 Margem de Lucro", 
@@ -2962,55 +2978,6 @@ with tab3:
                                 delta=f"{margem_lucro:.1f}%", 
                                 delta_color="inverse"
                             )
-                    
-                    # BARRA VISUAL DE RENTABILIDADE
-                    st.markdown("#### 📊 Análise de Rentabilidade")
-                    
-                    # Calcular porcentagem para a barra
-                    porcentagem_barra = min(max((valor_venda / (custo_total * 2)) * 100, 0), 100)
-                    
-                    # Cor da barra baseada no lucro
-                    if lucro_venda >= custo_total * 0.2:  # Lucro > 20%
-                        cor_barra = "#27AE60"
-                        texto_status = "✅ Excelente"
-                        emoji = "🚀"
-                    elif lucro_venda >= custo_total * 0.1:  # Lucro entre 10-20%
-                        cor_barra = "#F39C12" 
-                        texto_status = "⚠️ Bom"
-                        emoji = "📈"
-                    elif lucro_venda >= 0:  # Lucro entre 0-10%
-                        cor_barra = "#E74C3C"
-                        texto_status = "❌ Baixo"
-                        emoji = "📉"
-                    else:  # Prejuízo
-                        cor_barra = "#95A5A6"
-                        texto_status = "💀 Prejuízo"
-                        emoji = "🔻"
-                    
-                    # Barra de progresso visual
-                    st.markdown(f"""
-                    <div style="margin: 1rem 0;">
-                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
-                            <span>R$ 0</span>
-                            <span style="color: {cor_barra}; font-weight: bold;">
-                                {emoji} {texto_status}
-                            </span>
-                            <span>R$ {custo_total * 2:,.0f}</span>
-                        </div>
-                        <div style="background: rgba(255,255,255,0.1); border-radius: 10px; height: 20px; position: relative;">
-                            <div style="background: {cor_barra}; width: {porcentagem_barra}%; height: 100%; border-radius: 10px;"></div>
-                            <div style="position: absolute; left: 50%; top: 0; bottom: 0; width: 2px; background: rgba(255,255,255,0.3);"></div>
-                        </div>
-                        <div style="display: flex; justify-content: space-between; margin-top: 0.5rem; font-size: 0.8rem; color: #a0a0a0;">
-                            <span>Custo: R$ {custo_total:,.2f}</span>
-                            <span>Venda: R$ {valor_venda:,.2f}</span>
-                        </div>
-                        <div style="text-align: center; margin-top: 0.5rem; color: {cor_barra}; font-weight: bold;">
-                            Lucro: R$ {lucro_venda:,.2f} ({margem_lucro:.1f}%)
-                        </div>
-                    </div>
-                    """, unsafe_allow_html=True)
-                
                 
                 st.markdown("#### 👤 Dados do Comprador")
                 comprador_nome = st.text_input("Nome Completo*", placeholder="Maria Santos")
@@ -3019,6 +2986,9 @@ with tab3:
                 
                 submitted = st.form_submit_button("✅ Finalizar Venda", use_container_width=True)
                 if submitted:
+                    if not prevenir_loop_submit():
+                        st.stop()
+                        
                     if comprador_nome and comprador_cpf and valor_venda > 0:
                         venda_data = {
                             'veiculo_id': veiculo_id,
@@ -3042,7 +3012,7 @@ with tab3:
                             db.add_fluxo_caixa(fluxo_data)
                             
                             st.success("🎉 Venda registrada com sucesso!")
-                            st.rerun()
+                            resetar_formulario()
                     else:
                         st.error("❌ Preencha todos os campos obrigatórios!")
         else:
@@ -3109,7 +3079,7 @@ with tab4:
     
     with col_fin1:
         st.markdown("#### ➕ Novo Financiamento")
-        with st.form("novo_financiamento_form"):
+        with st.form("novo_financiamento_form", clear_on_submit=True):
             # Selecionar veículo
             veiculos_options = [f"{v['id']} - {v['marca']} {v['modelo']} ({v['ano']})" for v in db.get_veiculos() if v['status'] == 'Em estoque']
             veiculo_selecionado = st.selectbox("Veículo*", veiculos_options)
@@ -3125,6 +3095,9 @@ with tab4:
             
             submitted = st.form_submit_button("💾 Cadastrar Financiamento", use_container_width=True)
             if submitted:
+                if not prevenir_loop_submit():
+                    st.stop()
+                    
                 if veiculo_selecionado and valor_total > 0:
                     financiamento_data = {
                         'veiculo_id': int(veiculo_selecionado.split(" - ")[0]),
@@ -3141,7 +3114,7 @@ with tab4:
                         
                         # Atualizar status do veículo
                         db.update_veiculo_status(int(veiculo_selecionado.split(" - ")[0]), "Financiado")
-                        st.rerun()
+                        resetar_formulario()
                 else:
                     st.error("❌ Preencha todos os campos obrigatórios!")
     
@@ -3253,7 +3226,7 @@ with tab5:
     
     with col_doc1:
         st.markdown("#### 📤 Novo Documento")
-        with st.form("novo_documento_form"):
+        with st.form("novo_documento_form", clear_on_submit=True):
             veiculos_options = [f"{v['id']} - {v['marca']} {v['modelo']} ({v['ano']})" for v in db.get_veiculos()]
             veiculo_selecionado = st.selectbox("Veículo*", veiculos_options)
             
@@ -3268,6 +3241,9 @@ with tab5:
             
             submitted = st.form_submit_button("💾 Salvar Documento", use_container_width=True)
             if submitted:
+                if not prevenir_loop_submit():
+                    st.stop()
+                    
                 if veiculo_selecionado and nome_documento and arquivo:
                     documento_data = {
                         'veiculo_id': int(veiculo_selecionado.split(" - ")[0]),
@@ -3279,7 +3255,7 @@ with tab5:
                     success = db.add_documento(documento_data)
                     if success:
                         st.success("✅ Documento salvo com sucesso!")
-                        st.rerun()
+                        resetar_formulario()
                 else:
                     st.error("❌ Preencha todos os campos obrigatórios!")
     
@@ -3358,7 +3334,7 @@ with tab6:
     
     with col_fc1:
         st.markdown("#### ➕ Nova Movimentação")
-        with st.form("nova_movimentacao_form"):
+        with st.form("nova_movimentacao_form", clear_on_submit=True):
             tipo = st.selectbox("Tipo*", ["Entrada", "Saída"])
             
             if tipo == "Saída":
@@ -3381,6 +3357,9 @@ with tab6:
             
             submitted = st.form_submit_button("💾 Registrar Movimentação", use_container_width=True)
             if submitted:
+                if not prevenir_loop_submit():
+                    st.stop()
+                    
                 if descricao and valor > 0:
                     fluxo_data = {
                         'data': data_mov,
@@ -3406,7 +3385,7 @@ with tab6:
                             db.add_gasto(gasto_data)
                         
                         st.success("✅ Movimentação registrada com sucesso!")
-                        st.rerun()
+                        resetar_formulario()
                 else:
                     st.error("❌ Preencha todos os campos obrigatórios!")
         
@@ -3449,7 +3428,7 @@ with tab7:
     
     with col_ctt1:
         st.markdown("#### 👥 Novo Contato")
-        with st.form("novo_contato_form"):
+        with st.form("novo_contato_form", clear_on_submit=True):
             nome = st.text_input("Nome*", placeholder="João Silva")
             telefone = st.text_input("Telefone", placeholder="(11) 99999-9999")
             email = st.text_input("Email", placeholder="joao@email.com")
@@ -3460,6 +3439,9 @@ with tab7:
             
             submitted = st.form_submit_button("💾 Salvar Contato", use_container_width=True)
             if submitted:
+                if not prevenir_loop_submit():
+                    st.stop()
+                    
                 if nome:
                     contato_data = {
                         'nome': nome,
@@ -3473,7 +3455,7 @@ with tab7:
                     success = db.add_contato(contato_data)
                     if success:
                         st.success("✅ Contato salvo com sucesso!")
-                        st.rerun()
+                        resetar_formulario()
                 else:
                     st.error("❌ Nome é obrigatório!")
         
@@ -3541,7 +3523,7 @@ with tab8:
     st.markdown("---")
     st.markdown("#### 🔐 Alterar Minha Senha")
     
-    with st.form("alterar_senha_form"):
+    with st.form("alterar_senha_form", clear_on_submit=True):
         senha_atual = st.text_input("Senha Atual", type="password", 
                                    placeholder="Digite sua senha atual")
         nova_senha = st.text_input("Nova Senha", type="password",
@@ -3549,7 +3531,11 @@ with tab8:
         confirmar_senha = st.text_input("Confirmar Nova Senha", type="password",
                                        placeholder="Digite novamente a nova senha")
         
-        if st.form_submit_button("🔄 Alterar Senha", use_container_width=True):
+        submitted_senha = st.form_submit_button("🔄 Alterar Senha", use_container_width=True)
+        if submitted_senha:
+            if not prevenir_loop_submit():
+                st.stop()
+                
             if senha_atual and nova_senha and confirmar_senha:
                 # Verificar senha atual
                 usuario_temp = db.verificar_login(usuario['username'], senha_atual)
@@ -3567,6 +3553,7 @@ with tab8:
                             
                             st.success("✅ Senha alterada com sucesso!")
                             st.info("🔒 Sua senha foi atualizada com segurança")
+                            resetar_formulario()
                         else:
                             st.error("❌ A senha deve ter pelo menos 6 caracteres")
                     else:
