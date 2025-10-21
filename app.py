@@ -245,18 +245,23 @@ class Database:
             conn.close()
         
     def get_connection(self):
-        """Retorna conexão com PostgreSQL em produção, SQLite localmente"""
-        if os.getenv('DATABASE_URL'):
-            # Produção - PostgreSQL no Railway
+        """Conecta ao PostgreSQL usando DATABASE_URL"""
+        
+        database_url = os.getenv('DATABASE_URL')
+        
+        if database_url:
+            print("✅ Conectando ao PostgreSQL via DATABASE_URL")
             try:
-                database_url = os.getenv('DATABASE_URL')
                 conn = psycopg2.connect(database_url, sslmode='require')
+                print("✅ Conexão PostgreSQL bem-sucedida!")
                 return conn
             except Exception as e:
-                print(f"Erro PostgreSQL: {e}")
+                print(f"❌ Erro ao conectar ao PostgreSQL: {e}")
+                # Fallback para SQLite
+                print("🔄 Usando SQLite como fallback")
                 return sqlite3.connect(self.db_path)
         else:
-            # Desenvolvimento - SQLite local
+            print("❌ DATABASE_URL não encontrado. Usando SQLite")
             return sqlite3.connect(self.db_path)
     
     def init_db(self):
