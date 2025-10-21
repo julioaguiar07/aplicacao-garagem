@@ -80,7 +80,7 @@ def forcar_atualizacao_gastos():
 @st.cache_data(ttl=30)  # Cache de 30 segundos
 def get_veiculos_cache(_db, filtro_status=None):
     """Cache para veículos"""
-    return _db.(filtro_status)
+    return _db.get_veiculos(filtro_status)
 
 @st.cache_data(ttl=30)
 def get_gastos_cache(_db, veiculo_id=None):
@@ -96,6 +96,16 @@ def get_vendas_cache(_db):
 def get_fluxo_caixa_cache(_db, data_inicio=None, data_fim=None):
     """Cache para fluxo de caixa"""
     return _db.get_fluxo_caixa(data_inicio, data_fim)
+
+@st.cache_data(ttl=30)
+def get_financiamentos_cache(_db, veiculo_id=None):
+    """Cache para financiamentos"""
+    return _db.get_financiamentos(veiculo_id)
+
+@st.cache_data(ttl=30)
+def get_contatos_cache(_db):
+    """Cache para contatos"""
+    return _db.get_contatos()
     
 # =============================================
 # FUNÇÃO AUXILIAR PARA DATAS - CORRIGIDA PARA POSTGRESQL
