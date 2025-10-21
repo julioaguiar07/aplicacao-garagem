@@ -983,15 +983,15 @@ class Database:
     
     # Métodos para vendas
     def get_vendas(self):
-        """Busca vendas - CORRIGIDO PARA COLUNAS DUPLICADAS"""
+        """Busca vendas - CORRIGIDO PARA POSTGRESQL"""
         import sqlalchemy
         engine = sqlalchemy.create_engine(self.get_sqlalchemy_connection())
         
         try:
-            # ✅ CORREÇÃO: Query com aliases explícitos
+            # ✅ CORREÇÃO: Query com aliases explícitos e nomes consistentes
             query = '''
                 SELECT 
-                    v.id as venda_id,
+                    v.id,
                     v.veiculo_id,
                     v.comprador_nome,
                     v.comprador_cpf,
@@ -999,17 +999,16 @@ class Database:
                     v.valor_venda,
                     v.data_venda,
                     v.contrato_path,
-                    v.status as status_venda,
-                    vei.marca as veiculo_marca,
-                    vei.modelo as veiculo_modelo, 
-                    vei.ano as veiculo_ano, 
-                    vei.cor as veiculo_cor
+                    v.status,
+                    vei.marca,
+                    vei.modelo, 
+                    vei.ano, 
+                    vei.cor
                 FROM vendas v 
                 LEFT JOIN veiculos vei ON v.veiculo_id = vei.id 
                 ORDER BY v.data_venda DESC
             '''
             
-            # ✅ CORREÇÃO: Remover colunas duplicadas
             df = pd.read_sql(query, engine)
             df = df.loc[:, ~df.columns.duplicated()]
             
@@ -2208,8 +2207,9 @@ with tab1:
         periodo_analise = st.selectbox("📅 Período de Análise", 
                                      ["Últimos 30 dias", "Últimos 90 dias", "Últimos 6 meses", "Este ano", "Todo período"])
     with col_filtro2:
+        marcas_veiculos = list(set([v['marca'] for v in veiculos]))
         marca_filtro = st.selectbox("🚗 Filtrar por Marca", 
-                                  ["Todas"] + list(set([v['marca'] for v in veiculos])))
+                                  ["Todas"] + marcas_veiculos)
     
     # Calcular dados filtrados
     data_atual = datetime.datetime.now()
@@ -2242,14 +2242,24 @@ with tab1:
     vendas_filtradas = []
     for venda in vendas:
         data_venda = venda['data_venda']
-        if isinstance(data_venda, str):
-            data_venda = datetime.datetime.strptime(data_venda[:10], '%Y-%m-%d')
-        elif hasattr(data_venda, 'date'):
-            data_venda = data_venda.date()
-            data_venda = datetime.datetime.combine(data_venda, datetime.time())
         
-        if data_venda >= data_corte:
-            if marca_filtro == "Todas" or venda['marca'] == marca_filtro:
+        # ✅ CORREÇÃO: Processar data do PostgreSQL corretamente
+        if hasattr(data_venda, 'strftime'):
+            # Timestamp do PostgreSQL
+            data_venda_dt = data_venda
+        elif isinstance(data_venda, str):
+            # String do SQLite
+            data_venda_dt = datetime.datetime.strptime(data_venda[:10], '%Y-%m-%d')
+        elif hasattr(data_venda, 'date'):
+            # Date object
+            data_venda_dt = datetime.datetime.combine(data_venda, datetime.time())
+        else:
+            continue
+        
+        if data_venda_dt >= data_corte:
+            # ✅ CORREÇÃO: Usar .get() para evitar KeyError
+            venda_marca = venda.get('marca') or venda.get('veiculo_marca')
+            if marca_filtro == "Todas" or venda_marca == marca_filtro:
                 vendas_filtradas.append(venda)
 
     
