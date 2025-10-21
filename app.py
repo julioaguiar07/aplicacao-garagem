@@ -3328,7 +3328,7 @@ with tab4:
             """, unsafe_allow_html=True)
             
             if proxima_parcela:
-                vencimento = datetime.datetime.strptime(proxima_parcela['data_vencimento'], '%Y-%m-%d').date()
+                vencimento = processar_data_postgresql(proxima_parcela['data_vencimento'])
                 hoje = datetime.datetime.now().date()
                 dias_restantes = (vencimento - hoje).days
                 
