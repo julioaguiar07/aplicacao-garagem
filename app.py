@@ -245,24 +245,21 @@ class Database:
             conn.close()
         
     def get_connection(self):
-        """Conecta ao PostgreSQL usando DATABASE_URL"""
+        """Conecta ao banco de dados correto"""
         
         database_url = os.getenv('DATABASE_URL')
         
         if database_url:
-            print("✅ Conectando ao PostgreSQL via DATABASE_URL")
+            print("✅ Conectando ao PostgreSQL...")
             try:
                 conn = psycopg2.connect(database_url, sslmode='require')
-                print("✅ Conexão PostgreSQL bem-sucedida!")
+                print("✅ PostgreSQL conectado com sucesso!")
                 return conn
             except Exception as e:
-                print(f"❌ Erro ao conectar ao PostgreSQL: {e}")
-                # Fallback para SQLite
-                print("🔄 Usando SQLite como fallback")
-                return sqlite3.connect(self.db_path)
-        else:
-            print("❌ DATABASE_URL não encontrado. Usando SQLite")
-            return sqlite3.connect(self.db_path)
+                print(f"❌ Erro PostgreSQL: {e}")
+        
+        print("🔄 Usando SQLite...")
+        return sqlite3.connect(self.db_path)
     
     def init_db(self):
         conn = self.get_connection()
@@ -514,37 +511,50 @@ class Database:
         margem = veiculo_data.get('margem_negociacao', 30)
         preco_venda = veiculo_data['preco_entrada'] * (1 + margem/100)
         
-        if os.getenv('DATABASE_URL'):  # PostgreSQL
-            cursor.execute('''
-                INSERT INTO veiculos 
-                (modelo, ano, marca, cor, preco_entrada, preco_venda, fornecedor, km, placa, chassi, combustivel, cambio, portas, observacoes, margem_negociacao)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                RETURNING id
-            ''', (
-                veiculo_data['modelo'], veiculo_data['ano'], veiculo_data['marca'],
-                veiculo_data['cor'], veiculo_data['preco_entrada'], preco_venda,
-                veiculo_data['fornecedor'], veiculo_data['km'], veiculo_data['placa'],
-                veiculo_data['chassi'], veiculo_data['combustivel'], veiculo_data['cambio'],
-                veiculo_data['portas'], veiculo_data['observacoes'], margem  # ← ADICIONAR margem aqui
-            ))
-            veiculo_id = cursor.fetchone()[0]
-        else:  # SQLite
-            cursor.execute('''
-                INSERT INTO veiculos 
-                (modelo, ano, marca, cor, preco_entrada, preco_venda, fornecedor, km, placa, chassi, combustivel, cambio, portas, observacoes, margem_negociacao)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ''', (
-                veiculo_data['modelo'], veiculo_data['ano'], veiculo_data['marca'],
-                veiculo_data['cor'], veiculo_data['preco_entrada'], preco_venda,
-                veiculo_data['fornecedor'], veiculo_data['km'], veiculo_data['placa'],
-                veiculo_data['chassi'], veiculo_data['combustivel'], veiculo_data['cambio'],
-                veiculo_data['portas'], veiculo_data['observacoes'], margem  # ← ADICIONAR margem aqui
-            ))
-            veiculo_id = cursor.lastrowid
-        
-        conn.commit()
-        conn.close()
-        return veiculo_id
+        try:
+            # VERIFICAR qual banco estamos usando
+            usando_postgres = os.getenv('DATABASE_URL') is not None
+            
+            if usando_postgres:
+                # ✅ PostgreSQL - usar %s
+                cursor.execute('''
+                    INSERT INTO veiculos 
+                    (modelo, ano, marca, cor, preco_entrada, preco_venda, fornecedor, km, placa, chassi, combustivel, cambio, portas, observacoes, margem_negociacao)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    RETURNING id
+                ''', (
+                    veiculo_data['modelo'], veiculo_data['ano'], veiculo_data['marca'],
+                    veiculo_data['cor'], veiculo_data['preco_entrada'], preco_venda,
+                    veiculo_data['fornecedor'], veiculo_data['km'], veiculo_data['placa'],
+                    veiculo_data['chassi'], veiculo_data['combustivel'], veiculo_data['cambio'],
+                    veiculo_data['portas'], veiculo_data['observacoes'], margem
+                ))
+                veiculo_id = cursor.fetchone()[0]
+            else:
+                # ✅ SQLite - usar ?
+                cursor.execute('''
+                    INSERT INTO veiculos 
+                    (modelo, ano, marca, cor, preco_entrada, preco_venda, fornecedor, km, placa, chassi, combustivel, cambio, portas, observacoes, margem_negociacao)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ''', (
+                    veiculo_data['modelo'], veiculo_data['ano'], veiculo_data['marca'],
+                    veiculo_data['cor'], veiculo_data['preco_entrada'], preco_venda,
+                    veiculo_data['fornecedor'], veiculo_data['km'], veiculo_data['placa'],
+                    veiculo_data['chassi'], veiculo_data['combustivel'], veiculo_data['cambio'],
+                    veiculo_data['portas'], veiculo_data['observacoes'], margem
+                ))
+                veiculo_id = cursor.lastrowid
+            
+            conn.commit()
+            print(f"✅ Veículo cadastrado com ID: {veiculo_id}")
+            return veiculo_id
+            
+        except Exception as e:
+            print(f"❌ Erro ao cadastrar veículo: {e}")
+            conn.rollback()
+            return None
+        finally:
+            conn.close()
     
     def update_veiculo_status(self, veiculo_id, status):
         conn = self.get_connection()
