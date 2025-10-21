@@ -173,6 +173,9 @@ def login_seguro(username, password):
 # BANCO DE DADOS ADAPTADO - FUNCIONA LOCAL E NA NUVEM
 # =============================================
 
+# Importar funções de hash UMA VEZ no topo
+from auth import hash_password, verify_password
+
 class Database:
     def __init__(self):
         self.db_path = "canal_automotivo.db"
@@ -187,50 +190,17 @@ class Database:
                 conn = psycopg2.connect(database_url, sslmode='require')
                 return conn
             except Exception as e:
-                st.error(f"Erro ao conectar com PostgreSQL: {e}")
-                # Fallback para SQLite
+                print(f"Erro PostgreSQL: {e}")
                 return sqlite3.connect(self.db_path)
         else:
             # Desenvolvimento - SQLite local
             return sqlite3.connect(self.db_path)
     
-    def execute_query(self, query, params=None):
-        """Executa query adaptada para ambos os bancos"""
-        conn = self.get_connection()
-        cursor = conn.cursor()
-        
-        try:
-            if params:
-                cursor.execute(query, params)
-            else:
-                cursor.execute(query)
-            
-            # Para SELECT, retornar resultados
-            if query.strip().upper().startswith('SELECT'):
-                result = cursor.fetchall()
-                columns = [desc[0] for desc in cursor.description]
-                conn.close()
-                return result, columns
-            else:
-                # Para INSERT/UPDATE/DELETE
-                conn.commit()
-                last_id = cursor.lastrowid if hasattr(cursor, 'lastrowid') else None
-                conn.close()
-                return last_id
-                
-        except Exception as e:
-            conn.rollback()
-            conn.close()
-            raise e
-
     def init_db(self):
-        """Inicializa tabelas em ambos os bancos"""
         conn = self.get_connection()
         cursor = conn.cursor()
         
-        is_postgres = os.getenv('DATABASE_URL') is not None
-        
-        # Tabela de veículos
+        # Tabela de veículos (funciona em ambos)
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS veiculos (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -406,9 +376,7 @@ class Database:
             )
         ''')
 
-        # Inserir usuário admin padrão
-        from auth import hash_password
-        
+        # Inserir usuário admin se não existir
         cursor.execute('''
             INSERT OR IGNORE INTO usuarios (username, password_hash, nome, nivel_acesso)
             VALUES (?, ?, ?, ?)
