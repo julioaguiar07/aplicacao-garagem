@@ -265,190 +265,379 @@ class Database:
         conn = self.get_connection()
         cursor = conn.cursor()
         
-        # Tabela de veículos (funciona em ambos)
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS veiculos (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                modelo TEXT NOT NULL,
-                ano INTEGER NOT NULL,
-                marca TEXT NOT NULL,
-                cor TEXT NOT NULL,
-                preco_entrada REAL NOT NULL,
-                preco_venda REAL NOT NULL,
-                fornecedor TEXT NOT NULL,
-                km INTEGER,
-                placa TEXT,
-                chassi TEXT,
-                combustivel TEXT,
-                cambio TEXT,
-                portas INTEGER,
-                observacoes TEXT,
-                data_cadastro TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                status TEXT DEFAULT 'Em estoque'
-            )
-        ''')
-
+        # Verificar se estamos usando PostgreSQL
+        usando_postgres = os.getenv('DATABASE_URL') is not None
+        
+        print(f"🗄️  Criando tabelas para: {'PostgreSQL' if usando_postgres else 'SQLite'}")
+    
+        # Tabela de veículos
+        if usando_postgres:
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS veiculos (
+                    id SERIAL PRIMARY KEY,
+                    modelo TEXT NOT NULL,
+                    ano INTEGER NOT NULL,
+                    marca TEXT NOT NULL,
+                    cor TEXT NOT NULL,
+                    preco_entrada REAL NOT NULL,
+                    preco_venda REAL NOT NULL,
+                    fornecedor TEXT NOT NULL,
+                    km INTEGER,
+                    placa TEXT,
+                    chassi TEXT,
+                    combustivel TEXT,
+                    cambio TEXT,
+                    portas INTEGER,
+                    observacoes TEXT,
+                    data_cadastro TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    status TEXT DEFAULT 'Em estoque'
+                )
+            ''')
+        else:
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS veiculos (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    modelo TEXT NOT NULL,
+                    ano INTEGER NOT NULL,
+                    marca TEXT NOT NULL,
+                    cor TEXT NOT NULL,
+                    preco_entrada REAL NOT NULL,
+                    preco_venda REAL NOT NULL,
+                    fornecedor TEXT NOT NULL,
+                    km INTEGER,
+                    placa TEXT,
+                    chassi TEXT,
+                    combustivel TEXT,
+                    cambio TEXT,
+                    portas INTEGER,
+                    observacoes TEXT,
+                    data_cadastro TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    status TEXT DEFAULT 'Em estoque'
+                )
+            ''')
+    
         # Tabela de gastos
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS gastos (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                veiculo_id INTEGER NOT NULL,
-                tipo_gasto TEXT NOT NULL,
-                valor REAL NOT NULL,
-                data DATE NOT NULL,
-                descricao TEXT,
-                categoria TEXT,
-                data_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (veiculo_id) REFERENCES veiculos (id)
-            )
-        ''')
-
+        if usando_postgres:
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS gastos (
+                    id SERIAL PRIMARY KEY,
+                    veiculo_id INTEGER NOT NULL,
+                    tipo_gasto TEXT NOT NULL,
+                    valor REAL NOT NULL,
+                    data DATE NOT NULL,
+                    descricao TEXT,
+                    categoria TEXT,
+                    data_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (veiculo_id) REFERENCES veiculos (id)
+                )
+            ''')
+        else:
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS gastos (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    veiculo_id INTEGER NOT NULL,
+                    tipo_gasto TEXT NOT NULL,
+                    valor REAL NOT NULL,
+                    data DATE NOT NULL,
+                    descricao TEXT,
+                    categoria TEXT,
+                    data_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (veiculo_id) REFERENCES veiculos (id)
+                )
+            ''')
+    
         # Tabela de vendas
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS vendas (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                veiculo_id INTEGER NOT NULL,
-                comprador_nome TEXT NOT NULL,
-                comprador_cpf TEXT,
-                comprador_endereco TEXT,
-                valor_venda REAL NOT NULL,
-                data_venda TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                contrato_path TEXT,
-                status TEXT DEFAULT 'Concluída',
-                FOREIGN KEY (veiculo_id) REFERENCES veiculos (id)
-            )
-        ''')
-
+        if usando_postgres:
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS vendas (
+                    id SERIAL PRIMARY KEY,
+                    veiculo_id INTEGER NOT NULL,
+                    comprador_nome TEXT NOT NULL,
+                    comprador_cpf TEXT,
+                    comprador_endereco TEXT,
+                    valor_venda REAL NOT NULL,
+                    data_venda TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    contrato_path TEXT,
+                    status TEXT DEFAULT 'Concluída',
+                    FOREIGN KEY (veiculo_id) REFERENCES veiculos (id)
+                )
+            ''')
+        else:
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS vendas (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    veiculo_id INTEGER NOT NULL,
+                    comprador_nome TEXT NOT NULL,
+                    comprador_cpf TEXT,
+                    comprador_endereco TEXT,
+                    valor_venda REAL NOT NULL,
+                    data_venda TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    contrato_path TEXT,
+                    status TEXT DEFAULT 'Concluída',
+                    FOREIGN KEY (veiculo_id) REFERENCES veiculos (id)
+                )
+            ''')
+    
         # Tabela de documentos
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS documentos (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                veiculo_id INTEGER NOT NULL,
-                nome_documento TEXT NOT NULL,
-                tipo_documento TEXT NOT NULL,
-                arquivo BLOB,
-                data_upload TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                observacoes TEXT,
-                FOREIGN KEY (veiculo_id) REFERENCES veiculos (id)
-            )
-        ''')
-
+        if usando_postgres:
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS documentos (
+                    id SERIAL PRIMARY KEY,
+                    veiculo_id INTEGER NOT NULL,
+                    nome_documento TEXT NOT NULL,
+                    tipo_documento TEXT NOT NULL,
+                    arquivo BYTEA,
+                    data_upload TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    observacoes TEXT,
+                    FOREIGN KEY (veiculo_id) REFERENCES veiculos (id)
+                )
+            ''')
+        else:
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS documentos (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    veiculo_id INTEGER NOT NULL,
+                    nome_documento TEXT NOT NULL,
+                    tipo_documento TEXT NOT NULL,
+                    arquivo BLOB,
+                    data_upload TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    observacoes TEXT,
+                    FOREIGN KEY (veiculo_id) REFERENCES veiculos (id)
+                )
+            ''')
+    
         # Tabela de fluxo de caixa
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS fluxo_caixa (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                data DATE NOT NULL,
-                descricao TEXT NOT NULL,
-                tipo TEXT NOT NULL,
-                categoria TEXT,
-                valor REAL NOT NULL,
-                veiculo_id INTEGER,
-                status TEXT DEFAULT 'Pendente',
-                data_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (veiculo_id) REFERENCES veiculos (id)
-            )
-        ''')
-
+        if usando_postgres:
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS fluxo_caixa (
+                    id SERIAL PRIMARY KEY,
+                    data DATE NOT NULL,
+                    descricao TEXT NOT NULL,
+                    tipo TEXT NOT NULL,
+                    categoria TEXT,
+                    valor REAL NOT NULL,
+                    veiculo_id INTEGER,
+                    status TEXT DEFAULT 'Pendente',
+                    data_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (veiculo_id) REFERENCES veiculos (id)
+                )
+            ''')
+        else:
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS fluxo_caixa (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    data DATE NOT NULL,
+                    descricao TEXT NOT NULL,
+                    tipo TEXT NOT NULL,
+                    categoria TEXT,
+                    valor REAL NOT NULL,
+                    veiculo_id INTEGER,
+                    status TEXT DEFAULT 'Pendente',
+                    data_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (veiculo_id) REFERENCES veiculos (id)
+                )
+            ''')
+    
         # Tabela de contatos
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS contatos (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                nome TEXT NOT NULL,
-                telefone TEXT,
-                email TEXT,
-                tipo TEXT,
-                veiculo_interesse TEXT,
-                data_contato DATE,
-                status TEXT DEFAULT 'Novo',
-                observacoes TEXT,
-                data_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        ''')
-
+        if usando_postgres:
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS contatos (
+                    id SERIAL PRIMARY KEY,
+                    nome TEXT NOT NULL,
+                    telefone TEXT,
+                    email TEXT,
+                    tipo TEXT,
+                    veiculo_interesse TEXT,
+                    data_contato DATE,
+                    status TEXT DEFAULT 'Novo',
+                    observacoes TEXT,
+                    data_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            ''')
+        else:
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS contatos (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    nome TEXT NOT NULL,
+                    telefone TEXT,
+                    email TEXT,
+                    tipo TEXT,
+                    veiculo_interesse TEXT,
+                    data_contato DATE,
+                    status TEXT DEFAULT 'Novo',
+                    observacoes TEXT,
+                    data_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            ''')
+    
         # Tabela de usuários
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS usuarios (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                username TEXT UNIQUE NOT NULL,
-                password_hash TEXT NOT NULL,
-                nome TEXT NOT NULL,
-                email TEXT,
-                nivel_acesso TEXT DEFAULT 'usuario',
-                data_criacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        ''')
-
+        if usando_postgres:
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS usuarios (
+                    id SERIAL PRIMARY KEY,
+                    username TEXT UNIQUE NOT NULL,
+                    password_hash TEXT NOT NULL,
+                    nome TEXT NOT NULL,
+                    email TEXT,
+                    nivel_acesso TEXT DEFAULT 'usuario',
+                    data_criacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            ''')
+        else:
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS usuarios (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    username TEXT UNIQUE NOT NULL,
+                    password_hash TEXT NOT NULL,
+                    nome TEXT NOT NULL,
+                    email TEXT,
+                    nivel_acesso TEXT DEFAULT 'usuario',
+                    data_criacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            ''')
+    
         # Tabela de financiamentos
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS financiamentos (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                veiculo_id INTEGER NOT NULL,
-                tipo_financiamento TEXT NOT NULL,
-                valor_total REAL NOT NULL,
-                valor_entrada REAL,
-                num_parcelas INTEGER,
-                data_contrato DATE,
-                status TEXT DEFAULT 'Ativo',
-                observacoes TEXT,
-                data_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (veiculo_id) REFERENCES veiculos (id)
-            )
-        ''')
-
+        if usando_postgres:
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS financiamentos (
+                    id SERIAL PRIMARY KEY,
+                    veiculo_id INTEGER NOT NULL,
+                    tipo_financiamento TEXT NOT NULL,
+                    valor_total REAL NOT NULL,
+                    valor_entrada REAL,
+                    num_parcelas INTEGER,
+                    data_contrato DATE,
+                    status TEXT DEFAULT 'Ativo',
+                    observacoes TEXT,
+                    data_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (veiculo_id) REFERENCES veiculos (id)
+                )
+            ''')
+        else:
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS financiamentos (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    veiculo_id INTEGER NOT NULL,
+                    tipo_financiamento TEXT NOT NULL,
+                    valor_total REAL NOT NULL,
+                    valor_entrada REAL,
+                    num_parcelas INTEGER,
+                    data_contrato DATE,
+                    status TEXT DEFAULT 'Ativo',
+                    observacoes TEXT,
+                    data_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (veiculo_id) REFERENCES veiculos (id)
+                )
+            ''')
+    
         # Tabela de parcelas
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS parcelas (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                financiamento_id INTEGER NOT NULL,
-                numero_parcela INTEGER NOT NULL,
-                valor_parcela REAL NOT NULL,
-                data_vencimento DATE NOT NULL,
-                data_pagamento DATE,
-                status TEXT DEFAULT 'Pendente',
-                forma_pagamento TEXT,
-                observacoes TEXT,
-                arquivo_comprovante BLOB,
-                FOREIGN KEY (financiamento_id) REFERENCES financiamentos (id)
-            )
-        ''')
-
+        if usando_postgres:
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS parcelas (
+                    id SERIAL PRIMARY KEY,
+                    financiamento_id INTEGER NOT NULL,
+                    numero_parcela INTEGER NOT NULL,
+                    valor_parcela REAL NOT NULL,
+                    data_vencimento DATE NOT NULL,
+                    data_pagamento DATE,
+                    status TEXT DEFAULT 'Pendente',
+                    forma_pagamento TEXT,
+                    observacoes TEXT,
+                    arquivo_comprovante BYTEA,
+                    FOREIGN KEY (financiamento_id) REFERENCES financiamentos (id)
+                )
+            ''')
+        else:
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS parcelas (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    financiamento_id INTEGER NOT NULL,
+                    numero_parcela INTEGER NOT NULL,
+                    valor_parcela REAL NOT NULL,
+                    data_vencimento DATE NOT NULL,
+                    data_pagamento DATE,
+                    status TEXT DEFAULT 'Pendente',
+                    forma_pagamento TEXT,
+                    observacoes TEXT,
+                    arquivo_comprovante BLOB,
+                    FOREIGN KEY (financiamento_id) REFERENCES financiamentos (id)
+                )
+            ''')
+    
         # Tabela de documentos financeiros
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS documentos_financeiros (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                veiculo_id INTEGER,
-                financiamento_id INTEGER,
-                tipo_documento TEXT NOT NULL,
-                nome_arquivo TEXT NOT NULL,
-                arquivo BLOB NOT NULL,
-                data_upload TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                observacoes TEXT,
-                FOREIGN KEY (veiculo_id) REFERENCES veiculos (id),
-                FOREIGN KEY (financiamento_id) REFERENCES financiamentos (id)
-            )
-        ''')
-
+        if usando_postgres:
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS documentos_financeiros (
+                    id SERIAL PRIMARY KEY,
+                    veiculo_id INTEGER,
+                    financiamento_id INTEGER,
+                    tipo_documento TEXT NOT NULL,
+                    nome_arquivo TEXT NOT NULL,
+                    arquivo BYTEA NOT NULL,
+                    data_upload TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    observacoes TEXT,
+                    FOREIGN KEY (veiculo_id) REFERENCES veiculos (id),
+                    FOREIGN KEY (financiamento_id) REFERENCES financiamentos (id)
+                )
+            ''')
+        else:
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS documentos_financeiros (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    veiculo_id INTEGER,
+                    financiamento_id INTEGER,
+                    tipo_documento TEXT NOT NULL,
+                    nome_arquivo TEXT NOT NULL,
+                    arquivo BLOB NOT NULL,
+                    data_upload TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    observacoes TEXT,
+                    FOREIGN KEY (veiculo_id) REFERENCES veiculos (id),
+                    FOREIGN KEY (financiamento_id) REFERENCES financiamentos (id)
+                )
+            ''')
+    
         # Tabela de logs de acesso
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS logs_acesso (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                usuario_id INTEGER,
-                username TEXT,
-                data_acesso TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                ip_address TEXT,
-                sucesso BOOLEAN,
-                FOREIGN KEY (usuario_id) REFERENCES usuarios (id)
-            )
-        ''')
-
+        if usando_postgres:
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS logs_acesso (
+                    id SERIAL PRIMARY KEY,
+                    usuario_id INTEGER,
+                    username TEXT,
+                    data_acesso TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    ip_address TEXT,
+                    sucesso BOOLEAN,
+                    FOREIGN KEY (usuario_id) REFERENCES usuarios (id)
+                )
+            ''')
+        else:
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS logs_acesso (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    usuario_id INTEGER,
+                    username TEXT,
+                    data_acesso TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    ip_address TEXT,
+                    sucesso BOOLEAN,
+                    FOREIGN KEY (usuario_id) REFERENCES usuarios (id)
+                )
+            ''')
+    
         # Inserir usuário admin se não existir
-        cursor.execute('''
-            INSERT OR IGNORE INTO usuarios (username, password_hash, nome, nivel_acesso)
-            VALUES (?, ?, ?, ?)
-        ''', ('admin', hash_password('admin123'), 'Administrador', 'admin'))
-
+        if usando_postgres:
+            cursor.execute('''
+                INSERT INTO usuarios (username, password_hash, nome, nivel_acesso)
+                SELECT 'admin', %s, 'Administrador', 'admin'
+                WHERE NOT EXISTS (SELECT 1 FROM usuarios WHERE username = 'admin')
+            ''', (hash_password('admin123'),))
+        else:
+            cursor.execute('''
+                INSERT OR IGNORE INTO usuarios (username, password_hash, nome, nivel_acesso)
+                VALUES (?, ?, ?, ?)
+            ''', ('admin', hash_password('admin123'), 'Administrador', 'admin'))
+    
         conn.commit()
         conn.close()
+        print("✅ Todas as tabelas criadas/verificadas com sucesso!")
 
     # =============================================
     # MÉTODOS ORIGINAIS - ADAPTADOS PARA AMBOS OS BANCOS
