@@ -80,7 +80,7 @@ def forcar_atualizacao_gastos():
 @st.cache_data(ttl=30)  # Cache de 30 segundos
 def get_veiculos_cache(_db, filtro_status=None):
     """Cache para veículos"""
-    return _db.get_veiculos(filtro_status)
+    return _db.(filtro_status)
 
 @st.cache_data(ttl=30)
 def get_gastos_cache(_db, veiculo_id=None):
@@ -98,7 +98,7 @@ def get_fluxo_caixa_cache(_db, data_inicio=None, data_fim=None):
     return _db.get_fluxo_caixa(data_inicio, data_fim)
     
 # =============================================
-# FUNÇÃO AUXILIAR PARA DATAS - CORRIGE POSTGRESQL
+# FUNÇÃO AUXILIAR PARA DATAS - CORRIGIDA PARA POSTGRESQL
 # =============================================
 
 def formatar_data(data):
@@ -107,21 +107,52 @@ def formatar_data(data):
         return "Data inválida"
     
     try:
+        # ✅ CORREÇÃO PARA POSTGRESQL: Verificar se é Timestamp
         if hasattr(data, 'strftime'):
             # Timestamp do PostgreSQL
-            return data.strftime('%Y-%m-%d')
+            return data.strftime('%d/%m/%Y')
         elif isinstance(data, str):
             # String do SQLite
-            return data[:10] if len(data) >= 10 else data
+            if len(data) >= 10:
+                # Converter de YYYY-MM-DD para DD/MM/YYYY
+                return f"{data[8:10]}/{data[5:7]}/{data[0:4]}"
+            return data
         elif hasattr(data, 'date'):
             # Date object
-            return data.strftime('%Y-%m-%d')
+            return data.strftime('%d/%m/%Y')
         else:
             return str(data)
     except Exception as e:
-        print(f"⚠️ Erro ao formatar data {data}: {e}")
+        print(f"⚠️ Erro ao formatar data {data} ({type(data)}): {e}")
         return "Data inválida"
         
+  # =============================================
+# FUNÇÕES AUXILIARES PARA POSTGRESQL
+# =============================================
+
+def converter_data_postgresql(data):
+    """Converte data do PostgreSQL para formato legível"""
+    try:
+        if hasattr(data, 'strftime'):
+            return data.strftime('%Y-%m-%d')
+        elif isinstance(data, str):
+            return data[:10] if len(data) >= 10 else data
+        return str(data)
+    except:
+        return "Data inválida"
+
+def processar_timestamp_postgresql(timestamp):
+    """Processa timestamp do PostgreSQL para análise"""
+    try:
+        if hasattr(timestamp, 'date'):
+            return timestamp.date()
+        elif hasattr(timestamp, 'strftime'):
+            return timestamp
+        elif isinstance(timestamp, str):
+            return datetime.datetime.strptime(timestamp[:10], '%Y-%m-%d').date()
+        return timestamp
+    except:
+        return datetime.datetime.now().date()      
 # =============================================
 # CONFIGURAÇÃO DA PÁGINA - DEVE SER O PRIMEIRO COMANDO
 # =============================================
@@ -294,7 +325,7 @@ class Database:
         self.init_db()
         
     def atualizar_estrutura_banco(self):
-        """Atualiza a estrutura do banco se necessário"""
+        """Atualiza a estrutura do banco se necessário - CORRIGIDO PARA POSTGRESQL"""
         conn = self.get_connection()
         cursor = conn.cursor()
         
@@ -306,10 +337,10 @@ class Database:
                     FROM information_schema.columns 
                     WHERE table_name = 'veiculos' AND column_name = 'margem_negociacao'
                 """)
+                colunas = [col[0] for col in cursor.fetchall()]
             else:  # SQLite
                 cursor.execute("PRAGMA table_info(veiculos)")
-            
-            colunas = [col[1] if os.getenv('DATABASE_URL') else col[1] for col in cursor.fetchall()]
+                colunas = [col[1] for col in cursor.fetchall()]
             
             if 'margem_negociacao' not in colunas:
                 print("🔄 Adicionando coluna 'margem_negociacao'...")
@@ -322,8 +353,10 @@ class Database:
                 
         except Exception as e:
             print(f"❌ Erro ao atualizar estrutura: {e}")
+            conn.rollback()
         finally:
             conn.close()
+            
     def get_sqlalchemy_connection(self):
         """Retorna conexão SQLAlchemy para pandas"""
         database_url = os.getenv('DATABASE_URL')
@@ -773,22 +806,35 @@ class Database:
             conn.close()
         
     def get_veiculos(self, filtro_status=None):
-        """Busca veículos com SQLAlchemy"""
+        """Busca veículos - CORRIGIDO PARA COLUNAS DUPLICADAS"""
         import sqlalchemy
         engine = sqlalchemy.create_engine(self.get_sqlalchemy_connection())
         
         try:
-            # Construir query base
-            query = 'SELECT *, margem_negociacao FROM veiculos'
+            # ✅ CORREÇÃO: Query mais específica para evitar colunas duplicadas
+            query = '''
+                SELECT 
+                    v.id, v.modelo, v.ano, v.marca, v.cor, 
+                    v.preco_entrada, v.preco_venda, v.fornecedor, 
+                    v.km, v.placa, v.chassi, v.combustivel, 
+                    v.cambio, v.portas, v.observacoes, 
+                    v.data_cadastro, v.status,
+                    COALESCE(v.margem_negociacao, 30) as margem_negociacao
+                FROM veiculos v
+            '''
             
             # Aplicar filtro de status
             if filtro_status and filtro_status != 'Todos':
-                query += f" WHERE status = '{filtro_status}'"
+                query += f" WHERE v.status = '{filtro_status}'"
             
-            query += ' ORDER BY data_cadastro DESC'
+            query += ' ORDER BY v.data_cadastro DESC'
             
-            # ✅ CORREÇÃO: Usar SQLAlchemy
+            # ✅ CORREÇÃO: Usar pandas com nomes de colunas explícitos
             df = pd.read_sql(query, engine)
+            
+            # ✅ CORREÇÃO: Remover colunas duplicadas se existirem
+            df = df.loc[:, ~df.columns.duplicated()]
+            
             return df.to_dict('records')
             
         except Exception as e:
@@ -927,20 +973,36 @@ class Database:
     
     # Métodos para vendas
     def get_vendas(self):
-        """Busca vendas com SQLAlchemy"""
+        """Busca vendas - CORRIGIDO PARA COLUNAS DUPLICADAS"""
         import sqlalchemy
         engine = sqlalchemy.create_engine(self.get_sqlalchemy_connection())
         
         try:
+            # ✅ CORREÇÃO: Query com aliases explícitos
             query = '''
-                SELECT v.*, vei.marca, vei.modelo, vei.ano, vei.cor
+                SELECT 
+                    v.id as venda_id,
+                    v.veiculo_id,
+                    v.comprador_nome,
+                    v.comprador_cpf,
+                    v.comprador_endereco,
+                    v.valor_venda,
+                    v.data_venda,
+                    v.contrato_path,
+                    v.status as status_venda,
+                    vei.marca as veiculo_marca,
+                    vei.modelo as veiculo_modelo, 
+                    vei.ano as veiculo_ano, 
+                    vei.cor as veiculo_cor
                 FROM vendas v 
                 LEFT JOIN veiculos vei ON v.veiculo_id = vei.id 
                 ORDER BY v.data_venda DESC
             '''
             
-            # ✅ CORREÇÃO: Usar SQLAlchemy
+            # ✅ CORREÇÃO: Remover colunas duplicadas
             df = pd.read_sql(query, engine)
+            df = df.loc[:, ~df.columns.duplicated()]
+            
             return df.to_dict('records')
             
         except Exception as e:
@@ -2363,20 +2425,30 @@ with tab1:
     st.markdown("---")
     st.markdown("#### 📈 Tendências e Previsões")
     
-    # Análise de sazonalidade
+    # Análise de sazonalidade - CORRIGIDA PARA POSTGRESQL
     if vendas:
         vendas_por_mes = {}
         for venda in vendas:
-            # ✅ CORREÇÃO: Verificar se data_venda existe e é válida
             if venda.get('data_venda'):
                 try:
-                    data_venda = datetime.datetime.strptime(venda['data_venda'][:10], '%Y-%m-%d')
-                    mes_ano = data_venda.strftime("%Y-%m")
+                    # ✅ CORREÇÃO PARA POSTGRESQL: Processar Timestamp corretamente
+                    data_venda = venda['data_venda']
+                    
+                    # Se for Timestamp do PostgreSQL
+                    if hasattr(data_venda, 'strftime'):
+                        mes_ano = data_venda.strftime("%Y-%m")
+                    elif isinstance(data_venda, str):
+                        # Se for string, tentar converter
+                        data_venda = datetime.datetime.strptime(data_venda[:10], '%Y-%m-%d')
+                        mes_ano = data_venda.strftime("%Y-%m")
+                    else:
+                        continue
+                        
                     if mes_ano not in vendas_por_mes:
                         vendas_por_mes[mes_ano] = 0
                     vendas_por_mes[mes_ano] += venda['valor_venda']
-                except (ValueError, TypeError, IndexError) as e:
-                    print(f"⚠️ Erro ao processar data da venda: {e}")
+                except Exception as e:
+                    print(f"⚠️ Erro ao processar data da venda ({type(venda['data_venda'])}): {e}")
                     continue
     
         # Ordenar por data se houver dados
@@ -3165,15 +3237,14 @@ with tab3:
         
         if vendas:
             for venda in vendas[:10]:
-                # ✅ CORREÇÃO: Usar função auxiliar para data
+                # ✅ CORREÇÃO: Usar chaves corretas do PostgreSQL
                 data_venda_formatada = formatar_data(venda['data_venda'])
                 
-                # ✅ CORREÇÃO: Mostrar o VALOR REAL da venda
                 st.markdown(f"""
                 <div style="padding: 1rem; margin: 0.5rem 0; background: rgba(255,255,255,0.03); border-radius: 8px;">
                     <div style="display: flex; justify-content: between; align-items: start;">
                         <div style="flex: 1;">
-                            <strong>{venda['marca']} {venda['modelo']} ({venda['ano']})</strong>
+                            <strong>{venda['veiculo_marca']} {venda['veiculo_modelo']} ({venda['veiculo_ano']})</strong>
                             <div style="color: #a0a0a0; font-size: 0.9rem;">
                                 Comprador: {venda['comprador_nome']}
                             </div>
