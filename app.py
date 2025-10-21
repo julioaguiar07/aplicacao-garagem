@@ -2493,25 +2493,25 @@ with tab1:
                     
                     st.plotly_chart(fig, use_container_width=True)
             
-            with col_trend2:
-                # Análise de preços médios
-                precos_por_marca = {}
-                for veiculo in veiculos_filtrados:
-                    if veiculo['status'] == 'Vendido':
-                        # ✅ CORREÇÃO: Lidar com Timestamp do PostgreSQL
-                        data_cadastro = veiculo['data_cadastro']
-                        if isinstance(data_cadastro, str):
-                            data_cadastro = datetime.datetime.strptime(data_cadastro[:10], '%Y-%m-%d')
-                        elif hasattr(data_cadastro, 'date'):
-                            data_cadastro = data_cadastro.date()
-                            data_cadastro = datetime.datetime.combine(data_cadastro, datetime.time())
-                        
-                        venda_veiculo = next((v for v in vendas if v['veiculo_id'] == veiculo['id']), None)
-                        if venda_veiculo:
-                            marca = veiculo['marca']
-                            if marca not in precos_por_marca:
-                                precos_por_marca[marca] = []
-                            precos_por_marca[marca].append(venda_veiculo['valor_venda'])
+                with col_trend2:
+                    # Análise de preços médios
+                    precos_por_marca = {}
+                    for veiculo in veiculos_filtrados:
+                        if veiculo['status'] == 'Vendido':
+                            # ✅ CORREÇÃO: Lidar com Timestamp do PostgreSQL
+                            data_cadastro = veiculo['data_cadastro']
+                            if isinstance(data_cadastro, str):
+                                data_cadastro = datetime.datetime.strptime(data_cadastro[:10], '%Y-%m-%d')
+                            elif hasattr(data_cadastro, 'date'):
+                                data_cadastro = data_cadastro.date()
+                                data_cadastro = datetime.datetime.combine(data_cadastro, datetime.time())
+                            
+                            venda_veiculo = next((v for v in vendas if v['veiculo_id'] == veiculo['id']), None)
+                            if venda_veiculo:
+                                marca = veiculo['marca']
+                                if marca not in precos_por_marca:
+                                    precos_por_marca[marca] = []
+                                precos_por_marca[marca].append(venda_veiculo['valor_venda'])
                 
        
     # =============================================
