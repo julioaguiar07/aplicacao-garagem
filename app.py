@@ -1209,7 +1209,7 @@ class Database:
         finally:
             engine.dispose()
             
-     def get_parcelas(self, financiamento_id=None, status=None):
+    def get_parcelas(self, financiamento_id=None, status=None):
         """Busca parcelas com SQLAlchemy"""
         import sqlalchemy
         engine = sqlalchemy.create_engine(self.get_sqlalchemy_connection())
