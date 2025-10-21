@@ -853,6 +853,39 @@ class Database:
 # Instância global do banco
 db = Database()
 
+
+# DEBUG: Verificar usuários no banco
+def debug_usuarios():
+    conn = db.get_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute('SELECT * FROM usuarios')
+    usuarios = cursor.fetchall()
+    
+    print("🔍 DEBUG - USUÁRIOS NO BANCO:")
+    for usuario in usuarios:
+        print(f"ID: {usuario[0]}, Username: {usuario[1]}, Hash: {usuario[2][:30]}..., Nome: {usuario[3]}")
+    
+    conn.close()
+
+debug_usuarios()
+# Criar usuário de teste com senha simples
+def criar_usuario_teste():
+    conn = db.get_connection()
+    cursor = conn.cursor()
+    
+    # Senha simples "123" para teste
+    cursor.execute('''
+        INSERT OR IGNORE INTO usuarios (username, password_hash, nome, nivel_acesso)
+        VALUES (?, ?, ?, ?)
+    ''', ('teste', '123', 'Usuário Teste', 'usuario'))
+    
+    conn.commit()
+    conn.close()
+    print("✅ Usuário teste criado: teste / 123")
+
+criar_usuario_teste()
+
 def criar_usuario_admin_se_necessario():
     """Cria usuário admin se não existir no banco"""
     conn = db.get_connection()
