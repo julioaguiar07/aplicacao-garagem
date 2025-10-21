@@ -2058,33 +2058,6 @@ with tab2:
         <p style="color: #a0a0a0;">Cadastro completo e gestão do seu estoque</p>
     </div>
     """, unsafe_allow_html=True)
-
-
-    
-    st.markdown("---")
-    col_emerg1, col_emerg2 = st.columns(2)
-    with col_emerg1:
-        if st.button("🗑️ LIMPAR TODOS OS VEÍCULOS", type="secondary", use_container_width=True):
-            conn = db.get_connection()
-            cursor = conn.cursor()
-            cursor.execute('DELETE FROM veiculos')
-            conn.commit()
-            conn.close()
-            st.success("✅ Todos os veículos foram removidos!")
-            time.sleep(1)
-            st.rerun()
-    
-    with col_emerg2:
-        if st.button("🔍 VER QUANTOS VEÍCULOS EXISTEM", use_container_width=True):
-            conn = db.get_connection()
-            cursor = conn.cursor()
-            cursor.execute('SELECT COUNT(*) FROM veiculos')
-            total = cursor.fetchone()[0]
-            conn.close()
-            st.info(f"📊 Total de veículos no banco: {total}")
-
-
-
     
     with col_veic1:
         st.markdown("#### ➕ Novo Veículo")
