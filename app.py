@@ -2654,8 +2654,9 @@ with tab1:
                 valor_mes = sum(
                     p['valor_parcela'] for p in parcelas_pendentes 
                     if p['data_vencimento'] and processar_data_postgresql(p['data_vencimento']).month == mes_data.month and
-                    datetime.datetime.strptime(p['data_vencimento'], '%Y-%m-%d').date().year == mes_data.year
+                    processar_data_postgresql(p['data_vencimento']).year == mes_data.year
                 )
+
                 
                 meses_previsao.append(mes_nome)
                 valores_previsao.append(valor_mes)
