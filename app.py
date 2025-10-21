@@ -2448,9 +2448,92 @@ with tab3:
                 
                 # Calcular lucro em tempo real
                 if 'veiculo' in locals():
+                    # Calcular lucro e margem
                     lucro_venda = valor_venda - custo_total
-                    st.metric("💰 Lucro Estimado", f"R$ {lucro_venda:,.2f}", 
-                             delta=f"{lucro_venda/valor_venda*100:.1f}%" if valor_venda > 0 else "0%")
+                    margem_lucro = (lucro_venda / custo_total * 100) if custo_total > 0 else 0
+                    
+                    # Exibir métricas com cores dinâmicas
+                    col_lucro1, col_lucro2 = st.columns(2)
+                    
+                    with col_lucro1:
+                        # Lucro em R$
+                        if lucro_venda >= 0:
+                            st.metric(
+                                "💰 Lucro Estimado", 
+                                f"R$ {lucro_venda:,.2f}",
+                                delta=f"R$ {lucro_venda:,.2f}",
+                                delta_color="normal"
+                            )
+                        else:
+                            st.metric(
+                                "💰 Prejuízo Estimado", 
+                                f"R$ {abs(lucro_venda):,.2f}",
+                                delta=f"-R$ {abs(lucro_venda):,.2f}",
+                                delta_color="inverse"
+                            )
+                    
+                    with col_lucro2:
+                        # Margem em %
+                        if margem_lucro >= 20:
+                            st.metric(
+                                "📈 Margem de Lucro", 
+                                f"{margem_lucro:.1f}%",
+                                delta=f"{margem_lucro:.1f}%",
+                                delta_color="normal"
+                            )
+                        elif margem_lucro >= 10:
+                            st.metric(
+                                "📈 Margem de Lucro", 
+                                f"{margem_lucro:.1f}%",
+                                delta=f"{margem_lucro:.1f}%",
+                                delta_color="off"
+                            )
+                        else:
+                            st.metric(
+                                "📈 Margem de Lucro", 
+                                f"{margem_lucro:.1f}%",
+                                delta=f"{margem_lucro:.1f}%", 
+                                delta_color="inverse"
+                            )
+                    
+                    # Barra visual de lucro
+                    st.markdown("#### 📊 Análise de Rentabilidade")
+                    
+                    # Calcular porcentagem do lucro em relação ao custo
+                    porcentagem_lucro = min(max((lucro_venda / custo_total) * 100, -50), 100)  # Limitar entre -50% e 100%
+                    
+                    # Cor da barra baseada no lucro
+                    if lucro_venda >= custo_total * 0.2:  # Lucro > 20%
+                        cor_barra = "#27AE60"
+                        texto_status = "✅ Excelente"
+                    elif lucro_venda >= custo_total * 0.1:  # Lucro entre 10-20%
+                        cor_barra = "#F39C12" 
+                        texto_status = "⚠️ Bom"
+                    elif lucro_venda >= 0:  # Lucro entre 0-10%
+                        cor_barra = "#E74C3C"
+                        texto_status = "❌ Baixo"
+                    else:  # Prejuízo
+                        cor_barra = "#95A5A6"
+                        texto_status = "💀 Prejuízo"
+                    
+                    # Barra de progresso visual
+                    st.markdown(f"""
+                    <div style="margin: 1rem 0;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                            <span>R$ 0</span>
+                            <span style="color: {cor_barra}; font-weight: bold;">{texto_status}</span>
+                            <span>R$ {custo_total * 2:,.0f}</span>
+                        </div>
+                        <div style="background: rgba(255,255,255,0.1); border-radius: 10px; height: 20px; position: relative;">
+                            <div style="background: {cor_barra}; width: {max(0, (valor_venda / (custo_total * 2)) * 100)}%; height: 100%; border-radius: 10px;"></div>
+                            <div style="position: absolute; left: 50%; top: 0; bottom: 0; width: 2px; background: rgba(255,255,255,0.3);"></div>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-top: 0.5rem; font-size: 0.8rem; color: #a0a0a0;">
+                            <span>Custo: R$ {custo_total:,.2f}</span>
+                            <span>Venda: R$ {valor_venda:,.2f}</span>
+                        </div>
+                    </div>
+                    """, unsafe_allow_html=True)
                 
                 st.markdown("#### 👤 Dados do Comprador")
                 comprador_nome = st.text_input("Nome Completo*", placeholder="Maria Santos")
