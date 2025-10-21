@@ -3703,7 +3703,7 @@ with tab8:
     # NOVA SEÇÃO DO PAPEL TIMBRADO
     st.markdown("---")
     seção_papel_timbrado()
- 
+     
     st.markdown("---")
     st.markdown("#### 🔐 Alterar Minha Senha")
     
@@ -3746,6 +3746,53 @@ with tab8:
                     st.error("❌ Senha atual incorreta")
             else:
                 st.error("⚠️ Preencha todos os campos")
+    
+    # =============================================
+    # LIMPEZA COMPLETA DO BANCO DE DADOS
+    # =============================================
+    
+    st.markdown("---")
+    st.markdown("#### 🧹 Limpeza Completa do Banco")
+    
+    with st.expander("⚠️ ZERAR TODOS OS DADOS (PERIGO)", expanded=False):
+        st.warning("**ATENÇÃO:** Esta ação irá apagar TODOS os dados do sistema e não pode ser desfeita!")
+        
+        if st.text_input("Digite 'ZERAR TUDO' para confirmar:") == "ZERAR TUDO":
+            if st.button("🗑️ EXCLUIR TODOS OS DADOS", type="primary"):
+                conn = db.get_connection()
+                cursor = conn.cursor()
+                
+                try:
+                    # Ordem correta para evitar erro de chave estrangeira
+                    tabelas = [
+                        'parcelas', 'documentos_financeiros', 'financiamentos',
+                        'vendas', 'gastos', 'documentos', 'fluxo_caixa', 
+                        'contatos', 'logs_acesso', 'veiculos'
+                    ]
+                    
+                    for tabela in tabelas:
+                        if os.getenv('DATABASE_URL'):
+                            cursor.execute(f'DELETE FROM {tabela}')
+                        else:
+                            cursor.execute(f'DELETE FROM {tabela}')
+                    
+                    # Manter apenas o usuário admin
+                    if os.getenv('DATABASE_URL'):
+                        cursor.execute('DELETE FROM usuarios WHERE username != %s', ('admin',))
+                    else:
+                        cursor.execute('DELETE FROM usuarios WHERE username != ?', ('admin',))
+                    
+                    conn.commit()
+                    st.error("✅ TODOS os dados foram excluídos! O sistema foi resetado.")
+                    st.balloons()
+                    time.sleep(2)
+                    st.rerun()
+                    
+                except Exception as e:
+                    st.error(f"❌ Erro ao limpar banco: {e}")
+                    conn.rollback()
+                finally:
+                    conn.close()
 
 # =============================================
 # FOOTER PREMIUM
