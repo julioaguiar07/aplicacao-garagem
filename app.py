@@ -1121,64 +1121,117 @@ class Database:
 
     def get_financiamentos(self, veiculo_id=None):
         conn = self.get_connection()
-        query = '''
-            SELECT f.*, v.marca, v.modelo, v.ano, v.placa,
-                (SELECT COUNT(*) FROM parcelas p WHERE p.financiamento_id = f.id AND p.status = "Pendente") as parcelas_pendentes,
-                (SELECT SUM(p.valor_parcela) FROM parcelas p WHERE p.financiamento_id = f.id AND p.status = "Pendente") as total_pendente
-            FROM financiamentos f
-            LEFT JOIN veiculos v ON f.veiculo_id = v.id
-        '''
-        if veiculo_id:
-            query += f' WHERE f.veiculo_id = {veiculo_id}'
-        query += ' ORDER BY f.data_contrato DESC'
         
-        df = pd.read_sql(query, conn)
-        conn.close()
-        return df.to_dict('records')
+        # Verificar se estamos usando PostgreSQL
+        usando_postgres = os.getenv('DATABASE_URL') is not None
+        
+        try:
+            query = '''
+                SELECT f.*, v.marca, v.modelo, v.ano, v.placa,
+            '''
+            
+            if usando_postgres:
+                # ✅ PostgreSQL - usar aspas simples
+                query += '''
+                    (SELECT COUNT(*) FROM parcelas p WHERE p.financiamento_id = f.id AND p.status = 'Pendente') as parcelas_pendentes,
+                    (SELECT SUM(p.valor_parcela) FROM parcelas p WHERE p.financiamento_id = f.id AND p.status = 'Pendente') as total_pendente
+                '''
+            else:
+                # ✅ SQLite - usar aspas duplas
+                query += '''
+                    (SELECT COUNT(*) FROM parcelas p WHERE p.financiamento_id = f.id AND p.status = "Pendente") as parcelas_pendentes,
+                    (SELECT SUM(p.valor_parcela) FROM parcelas p WHERE p.financiamento_id = f.id AND p.status = "Pendente") as total_pendente
+                '''
+            
+            query += '''
+                FROM financiamentos f
+                LEFT JOIN veiculos v ON f.veiculo_id = v.id
+            '''
+            
+            if veiculo_id:
+                if usando_postgres:
+                    query += f' WHERE f.veiculo_id = {veiculo_id}'
+                else:
+                    query += f' WHERE f.veiculo_id = {veiculo_id}'
+            
+            query += ' ORDER BY f.data_contrato DESC'
+            
+            df = pd.read_sql(query, conn)
+            return df.to_dict('records')
+            
+        except Exception as e:
+            print(f"❌ Erro ao buscar financiamentos: {e}")
+            return []
+        finally:
+            conn.close()
 
     def get_parcelas(self, financiamento_id=None, status=None):
         conn = self.get_connection()
-        query = '''
-            SELECT p.*, f.tipo_financiamento, v.marca, v.modelo
-            FROM parcelas p
-            LEFT JOIN financiamentos f ON p.financiamento_id = f.id
-            LEFT JOIN veiculos v ON f.veiculo_id = v.id
-        '''
-        conditions = []
-        if financiamento_id:
-            conditions.append(f"p.financiamento_id = {financiamento_id}")
-        if status:
-            conditions.append(f"p.status = '{status}'")
         
-        if conditions:
-            query += " WHERE " + " AND ".join(conditions)
+        # Verificar se estamos usando PostgreSQL
+        usando_postgres = os.getenv('DATABASE_URL') is not None
         
-        query += ' ORDER BY p.data_vencimento ASC'
-        
-        df = pd.read_sql(query, conn)
-        conn.close()
-        return df.to_dict('records')
+        try:
+            query = '''
+                SELECT p.*, f.tipo_financiamento, v.marca, v.modelo
+                FROM parcelas p
+                LEFT JOIN financiamentos f ON p.financiamento_id = f.id
+                LEFT JOIN veiculos v ON f.veiculo_id = v.id
+            '''
+            
+            conditions = []
+            if financiamento_id:
+                conditions.append(f"p.financiamento_id = {financiamento_id}")
+            if status:
+                if usando_postgres:
+                    conditions.append(f"p.status = '{status}'")  # ✅ PostgreSQL - aspas simples
+                else:
+                    conditions.append(f'p.status = "{status}"')  # ✅ SQLite - aspas duplas
+            
+            if conditions:
+                query += " WHERE " + " AND ".join(conditions)
+            
+            query += ' ORDER BY p.data_vencimento ASC'
+            
+            df = pd.read_sql(query, conn)
+            return df.to_dict('records')
+            
+        except Exception as e:
+            print(f"❌ Erro ao buscar parcelas: {e}")
+            return []
+        finally:
+            conn.close()
 
     def update_parcela_status(self, parcela_id, status, data_pagamento=None, forma_pagamento=None):
         conn = self.get_connection()
         cursor = conn.cursor()
         
-        if os.getenv('DATABASE_URL'):
-            cursor.execute('''
-                UPDATE parcelas 
-                SET status = %s, data_pagamento = %s, forma_pagamento = %s
-                WHERE id = %s
-            ''', (status, data_pagamento, forma_pagamento, parcela_id))
-        else:
-            cursor.execute('''
-                UPDATE parcelas 
-                SET status = ?, data_pagamento = ?, forma_pagamento = ?
-                WHERE id = ?
-            ''', (status, data_pagamento, forma_pagamento, parcela_id))
-        
-        conn.commit()
-        conn.close()
-        return True
+        try:
+            # Verificar se estamos usando PostgreSQL
+            usando_postgres = os.getenv('DATABASE_URL') is not None
+            
+            if usando_postgres:
+                cursor.execute('''
+                    UPDATE parcelas 
+                    SET status = %s, data_pagamento = %s, forma_pagamento = %s
+                    WHERE id = %s
+                ''', (status, data_pagamento, forma_pagamento, parcela_id))
+            else:
+                cursor.execute('''
+                    UPDATE parcelas 
+                    SET status = ?, data_pagamento = ?, forma_pagamento = ?
+                    WHERE id = ?
+                ''', (status, data_pagamento, forma_pagamento, parcela_id))
+            
+            conn.commit()
+            return True
+            
+        except Exception as e:
+            print(f"❌ Erro ao atualizar parcela: {e}")
+            conn.rollback()
+            return False
+        finally:
+            conn.close()
 
     # Método para documentos financeiros
     def add_documento_financeiro(self, documento_data):
