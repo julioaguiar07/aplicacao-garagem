@@ -504,6 +504,9 @@ class Database:
         return df.to_dict('records')
     
     def add_veiculo(self, veiculo_data):
+        print(f"🔍 DEBUG add_veiculo - Iniciando cadastro...")
+        print(f"📦 Dados recebidos: {veiculo_data}")
+        
         conn = self.get_connection()
         cursor = conn.cursor()
         
@@ -511,12 +514,15 @@ class Database:
         margem = veiculo_data.get('margem_negociacao', 30)
         preco_venda = veiculo_data['preco_entrada'] * (1 + margem/100)
         
+        print(f"💰 Margem: {margem}% | Preço venda: R$ {preco_venda:,.2f}")
+        
         try:
             # VERIFICAR qual banco estamos usando
             usando_postgres = os.getenv('DATABASE_URL') is not None
+            print(f"🗄️  Banco: {'PostgreSQL' if usando_postgres else 'SQLite'}")
             
             if usando_postgres:
-                # ✅ PostgreSQL - usar %s
+                # ✅ PostgreSQL
                 cursor.execute('''
                     INSERT INTO veiculos 
                     (modelo, ano, marca, cor, preco_entrada, preco_venda, fornecedor, km, placa, chassi, combustivel, cambio, portas, observacoes, margem_negociacao)
@@ -530,8 +536,9 @@ class Database:
                     veiculo_data['portas'], veiculo_data['observacoes'], margem
                 ))
                 veiculo_id = cursor.fetchone()[0]
+                print(f"✅ PostgreSQL - Veículo cadastrado com ID: {veiculo_id}")
             else:
-                # ✅ SQLite - usar ?
+                # ✅ SQLite
                 cursor.execute('''
                     INSERT INTO veiculos 
                     (modelo, ano, marca, cor, preco_entrada, preco_venda, fornecedor, km, placa, chassi, combustivel, cambio, portas, observacoes, margem_negociacao)
@@ -544,13 +551,14 @@ class Database:
                     veiculo_data['portas'], veiculo_data['observacoes'], margem
                 ))
                 veiculo_id = cursor.lastrowid
+                print(f"✅ SQLite - Veículo cadastrado com ID: {veiculo_id}")
             
             conn.commit()
-            print(f"✅ Veículo cadastrado com ID: {veiculo_id}")
+            print("💾 Commit realizado com sucesso!")
             return veiculo_id
             
         except Exception as e:
-            print(f"❌ Erro ao cadastrar veículo: {e}")
+            print(f"❌ ERRO NO CADASTRO: {e}")
             conn.rollback()
             return None
         finally:
@@ -2227,21 +2235,26 @@ with tab2:
                     novo_veiculo = {
                         'modelo': modelo, 'ano': ano, 'marca': marca, 'cor': cor,
                         'preco_entrada': preco_entrada, 'preco_venda': preco_venda_final,
-                        'margem_negociacao': margem_negociacao,  # ← ESTA LINHA FALTANDO!
+                        'margem_negociacao': margem_negociacao,
                         'fornecedor': fornecedor, 'km': km, 'placa': placa,
                         'chassi': chassi, 'combustivel': combustivel, 'cambio': cambio,
                         'portas': portas, 'observacoes': observacoes
                     }
                     
+                    print("🔄 Tentando cadastrar veículo...")
                     veiculo_id = db.add_veiculo(novo_veiculo)
+                    
                     if veiculo_id:
                         # Salvar foto se foi enviada
                         if foto_veiculo is not None:
                             db.salvar_foto_veiculo(veiculo_id, foto_veiculo.getvalue())
                         
                         st.success("✅ Veículo cadastrado com sucesso!")
-                        time.sleep(1)
+                        st.balloons()  # Efeito visual
+                        time.sleep(2)
                         st.rerun()
+                    else:
+                        st.error("❌ Erro ao cadastrar veículo. Verifique os logs.")
                 else:
                     st.error("❌ Preencha todos os campos obrigatórios!")
     
