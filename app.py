@@ -15,7 +15,7 @@ import hmac
 import time
 from functools import wraps
 import psycopg2
-
+import time
 
 # =============================================
 # INICIALIZAÇÃO DE SESSION STATE
@@ -2040,8 +2040,16 @@ with tab2:
         <p style="color: #a0a0a0;">Cadastro completo e gestão do seu estoque</p>
     </div>
     """, unsafe_allow_html=True)
-    
-    col_veic1, col_veic2 = st.columns([1, 2])
+    # BOTÃO DE EMERGÊNCIA - REMOVER DEPOIS
+    if st.button("🚨 LIMPAR VEÍCULOS DE TESTE (EMERGÊNCIA)", type="secondary"):
+        conn = db.get_connection()
+        cursor = conn.cursor()
+        cursor.execute('DELETE FROM veiculos WHERE id > 0')
+        conn.commit()
+        conn.close()
+        st.success("✅ Todos os veículos foram removidos!")
+        st.rerun()
+        col_veic1, col_veic2 = st.columns([1, 2])
     
     with col_veic1:
         st.markdown("#### ➕ Novo Veículo")
@@ -2075,6 +2083,7 @@ with tab2:
             
             submitted = st.form_submit_button("Cadastrar Veículo", use_container_width=True)
             if submitted:
+                time.sleep(0.5)
                 if modelo and marca and fornecedor:
                     # Calcular preço de venda com margem
                     preco_venda_final = preco_entrada * (1 + margem_negociacao/100)
