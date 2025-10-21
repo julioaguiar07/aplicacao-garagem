@@ -2659,8 +2659,8 @@ with tab1:
             )
 
                 
-                meses_previsao.append(mes_nome)
-                valores_previsao.append(valor_mes)
+            meses_previsao.append(mes_nome)
+            valores_previsao.append(valor_mes)
             
             if any(valores_previsao):
                 fig = px.bar(
