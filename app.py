@@ -151,6 +151,38 @@ def seção_papel_timbrado():
                     )
         else:
             st.error("❌ Digite algum texto para gerar o documento!")
+            
+def atualizar_estrutura_banco(self):
+    """Atualiza a estrutura do banco se necessário"""
+    conn = self.get_connection()
+    cursor = conn.cursor()
+    
+    try:
+        # Verificar se a coluna margem_negociacao existe
+        if os.getenv('DATABASE_URL'):  # PostgreSQL
+            cursor.execute("""
+                SELECT column_name 
+                FROM information_schema.columns 
+                WHERE table_name = 'veiculos' AND column_name = 'margem_negociacao'
+            """)
+        else:  # SQLite
+            cursor.execute("PRAGMA table_info(veiculos)")
+        
+        colunas = [col[1] if os.getenv('DATABASE_URL') else col[1] for col in cursor.fetchall()]
+        
+        if 'margem_negociacao' not in colunas:
+            print("🔄 Adicionando coluna 'margem_negociacao'...")
+            if os.getenv('DATABASE_URL'):
+                cursor.execute('ALTER TABLE veiculos ADD COLUMN margem_negociacao REAL DEFAULT 30')
+            else:
+                cursor.execute('ALTER TABLE veiculos ADD COLUMN margem_negociacao REAL DEFAULT 30')
+            conn.commit()
+            print("✅ Coluna 'margem_negociacao' adicionada!")
+            
+    except Exception as e:
+        print(f"❌ Erro ao atualizar estrutura: {e}")
+    finally:
+        conn.close()
 # =============================================
 # SISTEMA DE SEGURANÇA
 # =============================================
@@ -466,6 +498,25 @@ class Database:
         conn.commit()
         conn.close()
         return veiculo_id
+
+    def salvar_foto_veiculo(self, veiculo_id, foto_bytes):
+        """Salva a foto do veículo no banco"""
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        
+        try:
+            if os.getenv('DATABASE_URL'):
+                cursor.execute('UPDATE veiculos SET foto = %s WHERE id = %s', (foto_bytes, veiculo_id))
+            else:
+                cursor.execute('UPDATE veiculos SET foto = ? WHERE id = ?', (foto_bytes, veiculo_id))
+            
+            conn.commit()
+            return True
+        except Exception as e:
+            print(f"Erro ao salvar foto: {e}")
+            return False
+        finally:
+            conn.close()
     
     def update_veiculo_status(self, veiculo_id, status):
         conn = self.get_connection()
@@ -879,9 +930,48 @@ class Database:
         conn.close()
         return True
 
+    def delete_veiculo(self, veiculo_id):
+        """Exclui um veículo e seus registros relacionados"""
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        
+        try:
+            # Primeiro verificar se o veículo existe e não foi vendido
+            if os.getenv('DATABASE_URL'):
+                cursor.execute('SELECT status FROM veiculos WHERE id = %s', (veiculo_id,))
+            else:
+                cursor.execute('SELECT status FROM veiculos WHERE id = ?', (veiculo_id,))
+            
+            resultado = cursor.fetchone()
+            if not resultado:
+                return False, "Veículo não encontrado"
+            
+            if resultado[0] == 'Vendido':
+                return False, "Não é possível excluir veículos vendidos"
+            
+            # Excluir registros relacionados
+            if os.getenv('DATABASE_URL'):
+                cursor.execute('DELETE FROM gastos WHERE veiculo_id = %s', (veiculo_id,))
+                cursor.execute('DELETE FROM documentos WHERE veiculo_id = %s', (veiculo_id,))
+                cursor.execute('DELETE FROM veiculos WHERE id = %s', (veiculo_id,))
+            else:
+                cursor.execute('DELETE FROM gastos WHERE veiculo_id = ?', (veiculo_id,))
+                cursor.execute('DELETE FROM documentos WHERE veiculo_id = ?', (veiculo_id,))
+                cursor.execute('DELETE FROM veiculos WHERE id = ?', (veiculo_id,))
+            
+            conn.commit()
+            return True, "Veículo excluído com sucesso"
+            
+        except Exception as e:
+            conn.rollback()
+            print(f"Erro ao excluir veículo: {e}")
+            return False, f"Erro ao excluir: {str(e)}"
+        finally:
+            conn.close()    
+
 # Instância global do banco
 db = Database()
-
+db.atualizar_estrutura_banco()  # ← ADICIONAR ESTA LINHA
 
 # =============================================
 # DEBUG - VERIFICAR O QUE ESTÁ ACONTECENDO
@@ -913,39 +1003,37 @@ def debug_database():
     
     conn.close()
 
-def criar_usuario_teste():
-    """Cria um usuário de teste com senha simples"""
-    print("🔄 Criando usuário de teste...")
+def criar_usuario_admin_seguro():
+    """Garante que existe um admin seguro"""
+    print("🔄 Verificando usuário admin...")
     
     conn = db.get_connection()
     cursor = conn.cursor()
     
     try:
-        # Primeiro verificar se já existe
-        cursor.execute("SELECT COUNT(*) FROM usuarios WHERE username = 'teste'")
-        existe = cursor.fetchone()[0]
+        cursor.execute("SELECT COUNT(*) FROM usuarios WHERE username = 'admin'")
+        admin_existe = cursor.fetchone()[0]
         
-        if existe == 0:
-            # Criar usuário teste com senha em texto puro temporariamente
+        if admin_existe == 0:
+            from auth import hash_password
             cursor.execute('''
                 INSERT INTO usuarios (username, password_hash, nome, nivel_acesso)
                 VALUES (?, ?, ?, ?)
-            ''', ('teste', '123', 'Usuário Teste', 'admin'))
-            
+            ''', ('admin', hash_password('Admin123!'), 'Administrador', 'admin'))
             conn.commit()
-            print("✅ Usuário teste criado: teste / 123")
+            print("✅ Admin criado: admin / Admin123!")
         else:
-            print("⚠️ Usuário teste já existe")
+            print("✅ Admin já existe")
             
     except Exception as e:
-        print(f"❌ Erro ao criar usuário teste: {e}")
+        print(f"❌ Erro ao verificar admin: {e}")
     
     conn.close()
 
 # Executar debug
 debug_database()
-criar_usuario_teste()
-debug_database()  # Verificar novamente após criação
+criar_usuario_admin_seguro()  # ← NOVA FUNÇÃO
+debug_database()
 
 def criar_usuario_admin_se_necessario():
     """Cria usuário admin se não existir no banco"""
@@ -2090,7 +2178,8 @@ with tab2:
             cambio = st.selectbox("Câmbio", ["Automático", "Manual", "CVT"])
             portas = st.selectbox("Portas", [2, 4, 5])
             observacoes = st.text_area("Observações")
-            
+            foto_veiculo = st.file_uploader("Foto do Veículo", type=['jpg', 'jpeg', 'png'], 
+                               help="Faça upload da foto principal do veículo")
             submitted = st.form_submit_button("Cadastrar Veículo", use_container_width=True)
             if submitted and prevenir_loop_submit():
                 if modelo and marca and fornecedor:
@@ -2100,13 +2189,17 @@ with tab2:
                     novo_veiculo = {
                         'modelo': modelo, 'ano': ano, 'marca': marca, 'cor': cor,
                         'preco_entrada': preco_entrada, 'preco_venda': preco_venda_final,
-                        'margem_negociacao': margem_negociacao,  # REMOVA esta linha
                         'fornecedor': fornecedor, 'km': km, 'placa': placa,
                         'chassi': chassi, 'combustivel': combustivel, 'cambio': cambio,
                         'portas': portas, 'observacoes': observacoes
                     }
-                    success = db.add_veiculo(novo_veiculo)
-                    if success:
+                    
+                    veiculo_id = db.add_veiculo(novo_veiculo)
+                    if veiculo_id:
+                        # Salvar foto se foi enviada
+                        if foto_veiculo is not None:
+                            db.salvar_foto_veiculo(veiculo_id, foto_veiculo.getvalue())
+                        
                         st.success("✅ Veículo cadastrado com sucesso!")
                         time.sleep(1)
                         st.rerun()
@@ -2250,7 +2343,8 @@ with tab2:
                 # Controles de status
                 st.markdown("---")
                 st.markdown("#### 🔄 Alterar Status")
-                col_status1, col_status2 = st.columns(2)
+                col_status1, col_status2, col_status3 = st.columns(3)  # ← MUDAR PARA 3 COLUNAS
+                
                 with col_status1:
                     status_options = ["Em estoque", "Vendido", "Reservado"]
                     novo_status = st.selectbox(
@@ -2259,6 +2353,7 @@ with tab2:
                         index=status_options.index(veiculo['status']),
                         key=f"status_select_{veiculo['id']}"
                     )
+                
                 with col_status2:
                     if st.button("Atualizar Status", key=f"status_btn_{veiculo['id']}", use_container_width=True):
                         if novo_status != veiculo['status']:
@@ -2266,8 +2361,29 @@ with tab2:
                             if success:
                                 st.success("✅ Status atualizado!")
                                 st.rerun()
-                        else:
-                            st.info("ℹ️ O status já está definido como selecionado.")
+                
+                # ⬇️⬇️ NOVA COLUNA PARA EXCLUIR ⬇️⬇️
+                with col_status3:
+                    if veiculo['status'] != 'Vendido':
+                        if st.button("🗑️ Excluir", key=f"delete_btn_{veiculo['id']}", use_container_width=True, type="secondary"):
+                            # Para confirmar a exclusão
+                            with st.container():
+                                st.warning("⚠️ Tem certeza que deseja excluir este veículo?")
+                                col_confirm1, col_confirm2 = st.columns(2)
+                                with col_confirm1:
+                                    if st.button("✅ Sim, excluir", key=f"confirm_yes_{veiculo['id']}", use_container_width=True):
+                                        sucesso, mensagem = db.delete_veiculo(veiculo['id'])
+                                        if sucesso:
+                                            st.success("✅ " + mensagem)
+                                            time.sleep(1)
+                                            st.rerun()
+                                        else:
+                                            st.error("❌ " + mensagem)
+                                with col_confirm2:
+                                    if st.button("❌ Cancelar", key=f"confirm_no_{veiculo['id']}", use_container_width=True):
+                                        st.rerun()
+                    else:
+                        st.info("📝 Vendido - não pode excluir")
 
 with tab3:
     # VENDAS
