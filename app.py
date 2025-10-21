@@ -42,16 +42,16 @@ if 'valor_venda_atual' not in st.session_state:
 # =============================================
 
 def prevenir_loop_submit():
-    """Previne múltiplos submits rápidos que causam loop - VERSÃO OTIMIZADA"""
+    """Previne múltiplos submits rápidos que causam loop - VERSÃO SUPER SEGURA"""
     if 'ultimo_submit' not in st.session_state:
         st.session_state.ultimo_submit = 0
     
     agora = time.time()
-    # Reduzido para 1 segundo para melhor experiência
-    if agora - st.session_state.ultimo_submit < 1:
-        tempo_restante = 1 - (agora - st.session_state.ultimo_submit)
-        st.warning(f"⏳ Aguarde {tempo_restante:.1f} segundos...")
-        st.stop()
+    # Aumentado para 3 segundos para maior segurança
+    if agora - st.session_state.ultimo_submit < 3:
+        tempo_restante = 3 - (agora - st.session_state.ultimo_submit)
+        st.warning(f"⏳ Aguarde {tempo_restante:.1f} segundos antes de enviar novamente...")
+        st.stop()  # PARA completamente
     
     st.session_state.ultimo_submit = agora
     return True
@@ -2830,82 +2830,78 @@ with tab2:
                 
                 # Adicionar novo gasto - COM FORM CORRIGIDO
                 st.markdown("#### ➕ Adicionar Gasto")
-                with st.form(f"novo_gasto_form_{veiculo['id']}", clear_on_submit=True):
-                    col_gasto1, col_gasto2, col_gasto3 = st.columns(3)
-                    
-                    with col_gasto1:
-                        tipo_gasto = st.selectbox("Tipo de Gasto", [
-                            "Pneus", "Manutenção", "Documentação", "Combustível", 
-                            "Peças", "Lavagem", "Pintura", "Seguro", "IPVA", "Outros"
-                        ], key=f"tipo_{veiculo['id']}")
                 
-                    with col_gasto2:
-                        valor_gasto = st.number_input("Valor (R$)", min_value=0.0, value=0.0, step=10.0, key=f"valor_{veiculo['id']}")
+                # ✅ CONTROLE DE ESTADO PARA GASTOS
+                gasto_form_key = f"gasto_form_{veiculo['id']}"
+                if f"{gasto_form_key}_submitted" not in st.session_state:
+                    st.session_state[f"{gasto_form_key}_submitted"] = False
+                
+                # Se o formulário foi submetido recentemente, mostrar apenas confirmação
+                if st.session_state[f"{gasto_form_key}_submitted"]:
+                    st.success("✅ Gasto adicionado com sucesso!")
+                    
+                    # Botão para adicionar outro gasto
+                    if st.button("➕ Adicionar Outro Gasto", key=f"add_another_{veiculo['id']}"):
+                        st.session_state[f"{gasto_form_key}_submitted"] = False
+                        st.rerun()
+                else:
+                    with st.form(f"novo_gasto_form_{veiculo['id']}", clear_on_submit=True):
+                        col_gasto1, col_gasto2, col_gasto3 = st.columns(3)
                         
-                    with col_gasto3:
-                        data_gasto = st.date_input("Data", value=datetime.datetime.now(), key=f"data_{veiculo['id']}")
-                    
-                    descricao_gasto = st.text_input("Descrição", placeholder="Descrição do gasto", key=f"desc_{veiculo['id']}")
-                    arquivo_nota = st.file_uploader("Anexar Nota Fiscal", type=['pdf', 'jpg', 'jpeg', 'png'], key=f"arquivo_{veiculo['id']}")
-                    
-                    submitted_gasto = st.form_submit_button("💾 Adicionar Gasto", use_container_width=True)
-                    
-                    if submitted_gasto:
-                        if not prevenir_loop_submit():
-                            st.stop()
+                        with col_gasto1:
+                            tipo_gasto = st.selectbox("Tipo de Gasto", [
+                                "Pneus", "Manutenção", "Documentação", "Combustível", 
+                                "Peças", "Lavagem", "Pintura", "Seguro", "IPVA", "Outros"
+                            ], key=f"tipo_{veiculo['id']}")
+                
+                        with col_gasto2:
+                            valor_gasto = st.number_input("Valor (R$)", min_value=0.0, value=0.0, step=10.0, key=f"valor_{veiculo['id']}")
                             
-                        if valor_gasto > 0:
-                            gasto_data = {
-                                'veiculo_id': veiculo['id'],
-                                'tipo_gasto': tipo_gasto,
-                                'valor': valor_gasto,
-                                'data': data_gasto,
-                                'descricao': descricao_gasto,
-                                'categoria': tipo_gasto
-                            }
-                            success = db.add_gasto(gasto_data)
-                            
-                            # Salvar arquivo se anexado
-                            if success and arquivo_nota is not None:
-                                documento_data = {
+                        with col_gasto3:
+                            data_gasto = st.date_input("Data", value=datetime.datetime.now(), key=f"data_{veiculo['id']}")
+                        
+                        descricao_gasto = st.text_input("Descrição", placeholder="Descrição do gasto", key=f"desc_{veiculo['id']}")
+                        arquivo_nota = st.file_uploader("Anexar Nota Fiscal", type=['pdf', 'jpg', 'jpeg', 'png'], key=f"arquivo_{veiculo['id']}")
+                        
+                        submitted_gasto = st.form_submit_button("💾 Adicionar Gasto", use_container_width=True)
+                        
+                        if submitted_gasto:
+                            if not prevenir_loop_submit():
+                                st.stop()
+                                
+                            if valor_gasto > 0:
+                                gasto_data = {
                                     'veiculo_id': veiculo['id'],
-                                    'tipo_documento': 'Nota Fiscal',
-                                    'nome_arquivo': arquivo_nota.name,
-                                    'arquivo': arquivo_nota.getvalue(),
-                                    'observacoes': f"Nota fiscal do gasto: {descricao_gasto}"
+                                    'tipo_gasto': tipo_gasto,
+                                    'valor': valor_gasto,
+                                    'data': data_gasto,
+                                    'descricao': descricao_gasto,
+                                    'categoria': tipo_gasto
                                 }
-                                db.add_documento_financeiro(documento_data)
-                            
-                            if success:
-                                st.success("✅ Gasto adicionado com sucesso!")
+                                success = db.add_gasto(gasto_data)
                                 
-                                # ✅ ATUALIZAÇÃO INSTANTÂNEA: Limpar cache e forçar refresh
-                                forcar_atualizacao_gastos()
+                                # Salvar arquivo se anexado
+                                if success and arquivo_nota is not None:
+                                    documento_data = {
+                                        'veiculo_id': veiculo['id'],
+                                        'tipo_documento': 'Nota Fiscal',
+                                        'nome_arquivo': arquivo_nota.name,
+                                        'arquivo': arquivo_nota.getvalue(),
+                                        'observacoes': f"Nota fiscal do gasto: {descricao_gasto}"
+                                    }
+                                    db.add_documento_financeiro(documento_data)
                                 
-                                # ✅ FEEDBACK VISUAL IMEDIATO
-                                st.markdown("🔄 **Atualizando dados...**")
-                                
-                                # ✅ ATUALIZAÇÃO DOS DADOS EM TEMPO REAL
-                                # Forçar recálculo imediato dos totais
-                                gastos_atualizados = db.get_gastos(veiculo['id'])
-                                total_gastos_atualizado = sum(g['valor'] for g in gastos_atualizados)
-                                
-                                # Mostrar resultado atualizado IMEDIATAMENTE
-                                st.markdown(f"""
-                                <div style="padding: 0.5rem; background: rgba(46, 204, 113, 0.2); border-radius: 6px; margin: 0.5rem 0;">
-                                    <strong>✅ Gastos atualizados!</strong><br>
-                                    <small>Total de gastos deste veículo: <strong>R$ {total_gastos_atualizado:,.2f}</strong></small>
-                                </div>
-                                """, unsafe_allow_html=True)
-                                
-                                resetar_formulario()
-                                
-                                # ✅ ATUALIZAÇÃO RÁPIDA: Usar st.rerun() de forma controlada
-                                time.sleep(1)  # Pequena pausa para mostrar o feedback
-                                st.rerun()
-                                
-                        else:
-                            st.error("❌ O valor do gasto deve ser maior que zero!")
+                                if success:
+                                    # ✅ CORREÇÃO: MARCAR COMO SUBMETIDO SEM st.rerun() IMEDIATO
+                                    st.session_state[f"{gasto_form_key}_submitted"] = True
+                                    forcar_atualizacao_gastos()
+                                    resetar_formulario()
+                                    
+                                    # ✅ ATUALIZAÇÃO SEGURA: Usar success message que persiste
+                                    st.success("✅ Gasto adicionado com sucesso! Os dados serão atualizados automaticamente.")
+                                    
+                            else:
+                                st.error("❌ O valor do gasto deve ser maior que zero!")
 
                 # Controles de status
                 st.markdown("---")
