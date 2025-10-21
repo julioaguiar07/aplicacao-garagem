@@ -672,18 +672,27 @@ class Database:
     
     # Métodos para usuários
     def verificar_login(self, username, password):
-        conn = self.get_connection()
-        cursor = conn.cursor()
+    conn = self.get_connection()
+    cursor = conn.cursor()
+    
+    print(f"🔐 MÉTODO verificar_login CHAMADO:")
+    print(f"   Username: '{username}'")
+    print(f"   Password: '{password}'")
+    
+    cursor.execute('SELECT * FROM usuarios WHERE username = ?', (username,))
+    usuario = cursor.fetchone()
+    conn.close()
+    
+    if usuario:
+        print(f"✅ Usuário encontrado no banco: {usuario[1]}")
+        print(f"🔑 Hash armazenado: {usuario[2]}")
         
-        if os.getenv('DATABASE_URL'):
-            cursor.execute('SELECT * FROM usuarios WHERE username = %s', (username,))
-        else:
-            cursor.execute('SELECT * FROM usuarios WHERE username = ?', (username,))
-            
-        usuario = cursor.fetchone()
-        conn.close()
+        # Verificar senha
+        from auth import verify_password
+        senha_correta = verify_password(usuario[2], password)
+        print(f"🔒 Senha correta: {senha_correta}")
         
-        if usuario and verify_password(usuario[2], password):
+        if senha_correta:
             return {
                 'id': usuario[0],
                 'username': usuario[1],
@@ -691,8 +700,10 @@ class Database:
                 'email': usuario[4],
                 'nivel_acesso': usuario[5]
             }
-        return None
-
+    else:
+        print("❌ Usuário NÃO encontrado no banco")
+    
+    return None
     # Métodos para financiamentos
     def add_financiamento(self, financiamento_data):
         conn = self.get_connection()
@@ -854,37 +865,69 @@ class Database:
 db = Database()
 
 
-# DEBUG: Verificar usuários no banco
-def debug_usuarios():
+# =============================================
+# DEBUG - VERIFICAR O QUE ESTÁ ACONTECENDO
+# =============================================
+
+def debug_database():
+    """Verifica o estado do banco e usuários"""
+    print("🔍 INICIANDO DEBUG DO BANCO...")
+    
     conn = db.get_connection()
     cursor = conn.cursor()
     
-    cursor.execute('SELECT * FROM usuarios')
-    usuarios = cursor.fetchall()
-    
-    print("🔍 DEBUG - USUÁRIOS NO BANCO:")
-    for usuario in usuarios:
-        print(f"ID: {usuario[0]}, Username: {usuario[1]}, Hash: {usuario[2][:30]}..., Nome: {usuario[3]}")
+    # Verificar se a tabela usuarios existe
+    try:
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='usuarios'")
+        tabela_existe = cursor.fetchone()
+        print(f"📊 Tabela 'usuarios' existe: {tabela_existe is not None}")
+        
+        # Verificar usuários na tabela
+        cursor.execute('SELECT * FROM usuarios')
+        usuarios = cursor.fetchall()
+        
+        print(f"👥 Usuários encontrados: {len(usuarios)}")
+        for usuario in usuarios:
+            print(f"   ID: {usuario[0]}, Username: '{usuario[1]}', Hash: '{usuario[2][:50]}...', Nome: '{usuario[3]}'")
+            
+    except Exception as e:
+        print(f"❌ Erro ao verificar tabela: {e}")
     
     conn.close()
 
-debug_usuarios()
-# Criar usuário de teste com senha simples
 def criar_usuario_teste():
+    """Cria um usuário de teste com senha simples"""
+    print("🔄 Criando usuário de teste...")
+    
     conn = db.get_connection()
     cursor = conn.cursor()
     
-    # Senha simples "123" para teste
-    cursor.execute('''
-        INSERT OR IGNORE INTO usuarios (username, password_hash, nome, nivel_acesso)
-        VALUES (?, ?, ?, ?)
-    ''', ('teste', '123', 'Usuário Teste', 'usuario'))
+    try:
+        # Primeiro verificar se já existe
+        cursor.execute("SELECT COUNT(*) FROM usuarios WHERE username = 'teste'")
+        existe = cursor.fetchone()[0]
+        
+        if existe == 0:
+            # Criar usuário teste com senha em texto puro temporariamente
+            cursor.execute('''
+                INSERT INTO usuarios (username, password_hash, nome, nivel_acesso)
+                VALUES (?, ?, ?, ?)
+            ''', ('teste', '123', 'Usuário Teste', 'admin'))
+            
+            conn.commit()
+            print("✅ Usuário teste criado: teste / 123")
+        else:
+            print("⚠️ Usuário teste já existe")
+            
+    except Exception as e:
+        print(f"❌ Erro ao criar usuário teste: {e}")
     
-    conn.commit()
     conn.close()
-    print("✅ Usuário teste criado: teste / 123")
 
+# Executar debug
+debug_database()
 criar_usuario_teste()
+debug_database()  # Verificar novamente após criação
 
 def criar_usuario_admin_se_necessario():
     """Cria usuário admin se não existir no banco"""
