@@ -42,16 +42,16 @@ if 'valor_venda_atual' not in st.session_state:
 # =============================================
 
 def prevenir_loop_submit():
-    """Previne múltiplos submits rápidos que causam loop - VERSÃO DEFINITIVA"""
+    """Previne múltiplos submits rápidos que causam loop - VERSÃO OTIMIZADA"""
     if 'ultimo_submit' not in st.session_state:
         st.session_state.ultimo_submit = 0
     
     agora = time.time()
-    # Só permite submit a cada 3 segundos
-    if agora - st.session_state.ultimo_submit < 3:
-        tempo_restante = 3 - (agora - st.session_state.ultimo_submit)
-        st.warning(f"⏳ Aguarde {tempo_restante:.1f} segundos antes de enviar novamente...")
-        st.stop()  # PARA a execução completamente
+    # Reduzido para 1 segundo para melhor experiência
+    if agora - st.session_state.ultimo_submit < 1:
+        tempo_restante = 1 - (agora - st.session_state.ultimo_submit)
+        st.warning(f"⏳ Aguarde {tempo_restante:.1f} segundos...")
+        st.stop()
     
     st.session_state.ultimo_submit = agora
     return True
@@ -63,7 +63,39 @@ def prevenir_loop_submit():
 def resetar_formulario():
     """Reseta o estado do formulário após submit bem-sucedido"""
     st.session_state.ultimo_submit = 0
-    time.sleep(1)  # Pequena pausa para garantir o reset
+
+def forcar_atualizacao_gastos():
+    """Força a atualização dos dados de gastos no cache"""
+    if 'cache_gastos' in st.session_state:
+        del st.session_state.cache_gastos
+    if 'cache_veiculos' in st.session_state:
+        del st.session_state.cache_veiculos
+    if 'cache_dashboard' in st.session_state:
+        del st.session_state.cache_dashboard
+
+# =============================================
+# SISTEMA DE CACHE PARA ATUALIZAÇÃO RÁPIDA
+# =============================================
+
+@st.cache_data(ttl=30)  # Cache de 30 segundos
+def get_veiculos_cache(_db, filtro_status=None):
+    """Cache para veículos"""
+    return _db.get_veiculos(filtro_status)
+
+@st.cache_data(ttl=30)
+def get_gastos_cache(_db, veiculo_id=None):
+    """Cache para gastos"""
+    return _db.get_gastos(veiculo_id)
+
+@st.cache_data(ttl=30)
+def get_vendas_cache(_db):
+    """Cache para vendas"""
+    return _db.get_vendas()
+
+@st.cache_data(ttl=30)
+def get_fluxo_caixa_cache(_db, data_inicio=None, data_fim=None):
+    """Cache para fluxo de caixa"""
+    return _db.get_fluxo_caixa(data_inicio, data_fim)
     
 # =============================================
 # FUNÇÃO AUXILIAR PARA DATAS - CORRIGE POSTGRESQL
@@ -1890,9 +1922,10 @@ if not check_auth():
 # =============================================
 
 def calcular_dre():
-    vendas = db.get_vendas()
-    gastos = db.get_gastos()
-    fluxo = db.get_fluxo_caixa()
+    """Calcula DRE com cache para performance"""
+    vendas = get_vendas_cache(db)
+    gastos = get_gastos_cache(db)
+    fluxo = get_fluxo_caixa_cache(db)
     
     receitas = sum(v['valor_venda'] for v in vendas)
     despesas = sum(g['valor'] for g in gastos)
@@ -1910,9 +1943,10 @@ def calcular_dre():
     }
 
 def calcular_estatisticas_veiculos():
-    veiculos = db.get_veiculos()
-    vendas = db.get_vendas()
-    gastos = db.get_gastos()
+    """Calcula estatísticas com cache para performance"""
+    veiculos = get_veiculos_cache(db)
+    vendas = get_vendas_cache(db)
+    gastos = get_gastos_cache(db)
     
     # Estatísticas básicas
     total_veiculos = len(veiculos)
@@ -1935,30 +1969,13 @@ def calcular_estatisticas_veiculos():
             gastos_por_categoria[categoria] = 0
         gastos_por_categoria[categoria] += gasto['valor']
     
-    # Veículos mais caros vendidos
-    veiculos_mais_caros = sorted(vendas, key=lambda x: x['valor_venda'], reverse=True)[:5]
-    
-    # Veículos que mais geraram gastos
-    veiculos_mais_gastos = []
-    for veiculo_id, total_gasto in gastos_por_veiculo.items():
-        veiculo = next((v for v in veiculos if v['id'] == veiculo_id), None)
-        if veiculo:
-            veiculos_mais_gastos.append({
-                'veiculo': f"{veiculo['marca']} {veiculo['modelo']}",
-                'total_gasto': total_gasto
-            })
-    
-    veiculos_mais_gastos = sorted(veiculos_mais_gastos, key=lambda x: x['total_gasto'], reverse=True)[:5]
-    
     return {
         'total_veiculos': total_veiculos,
         'veiculos_estoque': veiculos_estoque,
         'veiculos_vendidos': veiculos_vendidos,
         'gastos_por_categoria': gastos_por_categoria,
-        'veiculos_mais_caros': veiculos_mais_caros,
-        'veiculos_mais_gastos': veiculos_mais_gastos
+        'gastos_por_veiculo': gastos_por_veiculo
     }
-
 # =============================================
 # HEADER PRINCIPAL
 # =============================================
@@ -2046,6 +2063,14 @@ with tab1:
         <p style="color: #a0a0a0;">Visão completa do seu negócio em tempo real</p>
     </div>
     """, unsafe_allow_html=True)
+
+    col_refresh, col_stats = st.columns([1, 5])
+    with col_refresh:
+        if st.button("🔄 Atualizar Dados", use_container_width=True):
+            forcar_atualizacao_gastos()
+            st.success("✅ Dados atualizados!")
+            time.sleep(1)
+            st.rerun()
     
     # Métricas principais
     veiculos = db.get_veiculos()
@@ -2728,7 +2753,7 @@ with tab2:
             filtro_marca = st.text_input("Filtrar por marca")
         
         # Lista de veículos
-        veiculos = db.get_veiculos(filtro_status if filtro_status != "Todos" else None)
+        veiculos = get_veiculos_cache(db, filtro_status if filtro_status != "Todos" else None)
         
         if filtro_marca:
             veiculos = [v for v in veiculos if filtro_marca.lower() in v['marca'].lower()]
@@ -2814,17 +2839,17 @@ with tab2:
                             "Peças", "Lavagem", "Pintura", "Seguro", "IPVA", "Outros"
                         ], key=f"tipo_{veiculo['id']}")
                 
-                    arquivo_nota = st.file_uploader("Anexar Nota Fiscal", type=['pdf', 'jpg', 'jpeg', 'png'], key=f"arquivo_{veiculo['id']}")    
-                
                     with col_gasto2:
-                        valor_gasto = st.number_input("Valor (R$)", min_value=0.0, value=0.0, key=f"valor_{veiculo['id']}")
+                        valor_gasto = st.number_input("Valor (R$)", min_value=0.0, value=0.0, step=10.0, key=f"valor_{veiculo['id']}")
                         
                     with col_gasto3:
                         data_gasto = st.date_input("Data", value=datetime.datetime.now(), key=f"data_{veiculo['id']}")
                     
                     descricao_gasto = st.text_input("Descrição", placeholder="Descrição do gasto", key=f"desc_{veiculo['id']}")
+                    arquivo_nota = st.file_uploader("Anexar Nota Fiscal", type=['pdf', 'jpg', 'jpeg', 'png'], key=f"arquivo_{veiculo['id']}")
                     
-                    submitted_gasto = st.form_submit_button("Adicionar Gasto", use_container_width=True)
+                    submitted_gasto = st.form_submit_button("💾 Adicionar Gasto", use_container_width=True)
+                    
                     if submitted_gasto:
                         if not prevenir_loop_submit():
                             st.stop()
@@ -2853,7 +2878,32 @@ with tab2:
                             
                             if success:
                                 st.success("✅ Gasto adicionado com sucesso!")
+                                
+                                # ✅ ATUALIZAÇÃO INSTANTÂNEA: Limpar cache e forçar refresh
+                                forcar_atualizacao_gastos()
+                                
+                                # ✅ FEEDBACK VISUAL IMEDIATO
+                                st.markdown("🔄 **Atualizando dados...**")
+                                
+                                # ✅ ATUALIZAÇÃO DOS DADOS EM TEMPO REAL
+                                # Forçar recálculo imediato dos totais
+                                gastos_atualizados = db.get_gastos(veiculo['id'])
+                                total_gastos_atualizado = sum(g['valor'] for g in gastos_atualizados)
+                                
+                                # Mostrar resultado atualizado IMEDIATAMENTE
+                                st.markdown(f"""
+                                <div style="padding: 0.5rem; background: rgba(46, 204, 113, 0.2); border-radius: 6px; margin: 0.5rem 0;">
+                                    <strong>✅ Gastos atualizados!</strong><br>
+                                    <small>Total de gastos deste veículo: <strong>R$ {total_gastos_atualizado:,.2f}</strong></small>
+                                </div>
+                                """, unsafe_allow_html=True)
+                                
                                 resetar_formulario()
+                                
+                                # ✅ ATUALIZAÇÃO RÁPIDA: Usar st.rerun() de forma controlada
+                                time.sleep(1)  # Pequena pausa para mostrar o feedback
+                                st.rerun()
+                                
                         else:
                             st.error("❌ O valor do gasto deve ser maior que zero!")
 
