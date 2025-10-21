@@ -1,6 +1,9 @@
 import streamlit as st
 import hashlib
 from database import db
+import hashlib
+import secrets
+import hmac
 
 def check_auth():
     """Verifica se o usuário está autenticado"""
@@ -64,3 +67,29 @@ def logout():
     st.session_state.autenticado = False
     st.session_state.usuario = None
     st.rerun()
+
+
+def hash_password(password):
+    """Cria hash seguro da senha com salt"""
+    salt = secrets.token_hex(32)
+    password_hash = hashlib.pbkdf2_hmac(
+        'sha256', 
+        password.encode('utf-8'), 
+        salt.encode('utf-8'), 
+        100000
+    ).hex()
+    return f"{password_hash}:{salt}"
+
+def verify_password(stored_password, provided_password):
+    """Verifica se a senha está correta"""
+    try:
+        stored_hash, salt = stored_password.split(':')
+        computed_hash = hashlib.pbkdf2_hmac(
+            'sha256',
+            provided_password.encode('utf-8'),
+            salt.encode('utf-8'),
+            100000
+        ).hex()
+        return hmac.compare_digest(stored_hash, computed_hash)
+    except:
+        return False
