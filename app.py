@@ -853,7 +853,32 @@ class Database:
 # Instância global do banco
 db = Database()
 
+def criar_usuario_admin_se_necessario():
+    """Cria usuário admin se não existir no banco"""
+    conn = db.get_connection()
+    cursor = conn.cursor()
+    
+    # Verificar se existe algum usuário
+    cursor.execute('SELECT COUNT(*) FROM usuarios')
+    count = cursor.fetchone()[0]
+    
+    if count == 0:
+        # Banco vazio - criar usuário admin
+        print("⚠️  Banco vazio - criando usuário admin...")
+        from auth import hash_password
+        
+        cursor.execute('''
+            INSERT INTO usuarios (username, password_hash, nome, nivel_acesso)
+            VALUES (?, ?, ?, ?)
+        ''', ('admin', hash_password('admin123'), 'Administrador', 'admin'))
+        
+        conn.commit()
+        print("✅ Usuário admin criado com sucesso!")
+    
+    conn.close()
 
+# Executar na inicialização
+criar_usuario_admin_se_necessario()
 
 # =============================================
 # CSS COMPLETO - DESIGN PREMIUM
