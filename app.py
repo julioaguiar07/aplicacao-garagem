@@ -213,36 +213,36 @@ class Database:
         self.init_db()
         
     def atualizar_estrutura_banco(self):
-    """Atualiza a estrutura do banco se necessário"""
-    conn = self.get_connection()
-    cursor = conn.cursor()
-    
-    try:
-        # Verificar se a coluna margem_negociacao existe
-        if os.getenv('DATABASE_URL'):  # PostgreSQL
-            cursor.execute("""
-                SELECT column_name 
-                FROM information_schema.columns 
-                WHERE table_name = 'veiculos' AND column_name = 'margem_negociacao'
-            """)
-        else:  # SQLite
-            cursor.execute("PRAGMA table_info(veiculos)")
+        """Atualiza a estrutura do banco se necessário"""
+        conn = self.get_connection()
+        cursor = conn.cursor()
         
-        colunas = [col[1] if os.getenv('DATABASE_URL') else col[1] for col in cursor.fetchall()]
-        
-        if 'margem_negociacao' not in colunas:
-            print("🔄 Adicionando coluna 'margem_negociacao'...")
-            if os.getenv('DATABASE_URL'):
-                cursor.execute('ALTER TABLE veiculos ADD COLUMN margem_negociacao REAL DEFAULT 30')
-            else:
-                cursor.execute('ALTER TABLE veiculos ADD COLUMN margem_negociacao REAL DEFAULT 30')
-            conn.commit()
-            print("✅ Coluna 'margem_negociacao' adicionada!")
+        try:
+            # Verificar se a coluna margem_negociacao existe
+            if os.getenv('DATABASE_URL'):  # PostgreSQL
+                cursor.execute("""
+                    SELECT column_name 
+                    FROM information_schema.columns 
+                    WHERE table_name = 'veiculos' AND column_name = 'margem_negociacao'
+                """)
+            else:  # SQLite
+                cursor.execute("PRAGMA table_info(veiculos)")
             
-    except Exception as e:
-        print(f"❌ Erro ao atualizar estrutura: {e}")
-    finally:
-        conn.close()
+            colunas = [col[1] if os.getenv('DATABASE_URL') else col[1] for col in cursor.fetchall()]
+            
+            if 'margem_negociacao' not in colunas:
+                print("🔄 Adicionando coluna 'margem_negociacao'...")
+                if os.getenv('DATABASE_URL'):
+                    cursor.execute('ALTER TABLE veiculos ADD COLUMN margem_negociacao REAL DEFAULT 30')
+                else:
+                    cursor.execute('ALTER TABLE veiculos ADD COLUMN margem_negociacao REAL DEFAULT 30')
+                conn.commit()
+                print("✅ Coluna 'margem_negociacao' adicionada!")
+                
+        except Exception as e:
+            print(f"❌ Erro ao atualizar estrutura: {e}")
+        finally:
+            conn.close()
         
     def get_connection(self):
         """Retorna conexão com PostgreSQL em produção, SQLite localmente"""
@@ -452,44 +452,44 @@ class Database:
     # MÉTODOS ORIGINAIS - ADAPTADOS PARA AMBOS OS BANCOS
     # =============================================
     def salvar_foto_veiculo(self, veiculo_id, foto_bytes):
-    """Salva a foto do veículo no banco"""
-    conn = self.get_connection()
-    cursor = conn.cursor()
-    
-    try:
-        # Primeiro verificar se a coluna 'foto' existe
-        if os.getenv('DATABASE_URL'):
-            cursor.execute("""
-                SELECT column_name 
-                FROM information_schema.columns 
-                WHERE table_name = 'veiculos' AND column_name = 'foto'
-            """)
-        else:
-            cursor.execute("PRAGMA table_info(veiculos)")
+        """Salva a foto do veículo no banco"""
+        conn = self.get_connection()
+        cursor = conn.cursor()
         
-        colunas = [col[1] if os.getenv('DATABASE_URL') else col[1] for col in cursor.fetchall()]
-        
-        # Se a coluna não existir, adicionar
-        if 'foto' not in colunas:
+        try:
+            # Primeiro verificar se a coluna 'foto' existe
             if os.getenv('DATABASE_URL'):
-                cursor.execute('ALTER TABLE veiculos ADD COLUMN foto BYTEA')
+                cursor.execute("""
+                    SELECT column_name 
+                    FROM information_schema.columns 
+                    WHERE table_name = 'veiculos' AND column_name = 'foto'
+                """)
             else:
-                cursor.execute('ALTER TABLE veiculos ADD COLUMN foto BLOB')
+                cursor.execute("PRAGMA table_info(veiculos)")
+            
+            colunas = [col[1] if os.getenv('DATABASE_URL') else col[1] for col in cursor.fetchall()]
+            
+            # Se a coluna não existir, adicionar
+            if 'foto' not in colunas:
+                if os.getenv('DATABASE_URL'):
+                    cursor.execute('ALTER TABLE veiculos ADD COLUMN foto BYTEA')
+                else:
+                    cursor.execute('ALTER TABLE veiculos ADD COLUMN foto BLOB')
+                conn.commit()
+            
+            # Agora salvar a foto
+            if os.getenv('DATABASE_URL'):
+                cursor.execute('UPDATE veiculos SET foto = %s WHERE id = %s', (foto_bytes, veiculo_id))
+            else:
+                cursor.execute('UPDATE veiculos SET foto = ? WHERE id = ?', (foto_bytes, veiculo_id))
+            
             conn.commit()
-        
-        # Agora salvar a foto
-        if os.getenv('DATABASE_URL'):
-            cursor.execute('UPDATE veiculos SET foto = %s WHERE id = %s', (foto_bytes, veiculo_id))
-        else:
-            cursor.execute('UPDATE veiculos SET foto = ? WHERE id = ?', (foto_bytes, veiculo_id))
-        
-        conn.commit()
-        return True
-    except Exception as e:
-        print(f"Erro ao salvar foto: {e}")
-        return False
-    finally:
-        conn.close()
+            return True
+        except Exception as e:
+            print(f"Erro ao salvar foto: {e}")
+            return False
+        finally:
+            conn.close()
         
     def get_veiculos(self, filtro_status=None):
         conn = self.get_connection()
