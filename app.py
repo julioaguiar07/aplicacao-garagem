@@ -3184,19 +3184,26 @@ with tab3:
         
         if vendas:
             for venda in vendas[:10]:
-                # ✅ CORREÇÃO: Usar chaves corretas do PostgreSQL
-                data_venda_formatada = formatar_data(venda['data_venda'])
+                # ✅ CORREÇÃO: Usar chaves corretas
+                data_venda_formatada = formatar_data(venda.get('data_venda'))
+                
+                # ✅ CORREÇÃO: Usar .get() para evitar KeyError
+                marca = venda.get('marca', 'N/A')
+                modelo = venda.get('modelo', 'N/A')
+                ano = venda.get('ano', 'N/A')
+                comprador = venda.get('comprador_nome', 'N/A')
+                valor = venda.get('valor_venda', 0)
                 
                 st.markdown(f"""
                 <div style="padding: 1rem; margin: 0.5rem 0; background: rgba(255,255,255,0.03); border-radius: 8px;">
                     <div style="display: flex; justify-content: between; align-items: start;">
                         <div style="flex: 1;">
-                            <strong>{venda['veiculo_marca']} {venda['veiculo_modelo']} ({venda['veiculo_ano']})</strong>
+                            <strong>{marca} {modelo} ({ano})</strong>
                             <div style="color: #a0a0a0; font-size: 0.9rem;">
-                                Comprador: {venda['comprador_nome']}
+                                Comprador: {comprador}
                             </div>
                             <div style="margin-top: 0.5rem;">
-                                <span style="color: #27AE60; font-weight: bold;">R$ {venda['valor_venda']:,.2f}</span>
+                                <span style="color: #27AE60; font-weight: bold;">R$ {valor:,.2f}</span>
                                 <span style="margin-left: 1rem; color: #a0a0a0; font-size: 0.8rem;">
                                     {data_venda_formatada}
                                 </span>
