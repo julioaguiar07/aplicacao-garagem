@@ -2647,8 +2647,12 @@ with tab2:
             observacoes = st.text_area("Observações")
             foto_veiculo = st.file_uploader("Foto do Veículo", type=['jpg', 'jpeg', 'png'], 
                                help="Faça upload da foto principal do veículo")
+            
             submitted = st.form_submit_button("Cadastrar Veículo", use_container_width=True)
-            if submitted and prevenir_loop_submit():
+            if submitted:
+                if not prevenir_loop_submit():
+                    st.stop()  # ⬅️ IMPEDE EXECUÇÃO SE NÃO PASSAR NA VERIFICAÇÃO
+                    
                 if modelo and marca and fornecedor:
                     # Calcular preço de venda com margem
                     preco_venda_final = preco_entrada * (1 + margem_negociacao/100)
@@ -2672,8 +2676,12 @@ with tab2:
                         
                         st.success("✅ Veículo cadastrado com sucesso!")
                         st.balloons()  # Efeito visual
+                        
+                        # ✅ CORREÇÃO: Usar st.stop() em vez de st.rerun()
+                        st.info("🔄 Atualizando página...")
                         time.sleep(2)
-                        st.rerun()
+                        st.stop()  # ⬅️ PARA A EXECUÇÃO SEM LOOP
+                        
                     else:
                         st.error("❌ Erro ao cadastrar veículo. Verifique os logs.")
                 else:
