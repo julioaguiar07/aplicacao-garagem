@@ -2059,6 +2059,8 @@ with tab2:
     </div>
     """, unsafe_allow_html=True)
     
+    col_veic1, col_veic2 = st.columns([1, 2])
+
     with col_veic1:
         st.markdown("#### ➕ Novo Veículo")
         with st.form("novo_veiculo_form"):
