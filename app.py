@@ -16,6 +16,17 @@ import time
 from functools import wraps
 import psycopg2
 
+
+# =============================================
+# INICIALIZAÇÃO DE SESSION STATE
+# =============================================
+
+# Garante que as variáveis de sessão existam
+if 'autenticado' not in st.session_state:
+    st.session_state.autenticado = False
+if 'usuario' not in st.session_state:
+    st.session_state.usuario = None
+
 # =============================================
 # CONFIGURAÇÃO DA PÁGINA - DEVE SER O PRIMEIRO COMANDO
 # =============================================
@@ -989,6 +1000,7 @@ st.markdown("""
 # =============================================
 
 def check_auth():
+    # Inicializa sempre as variáveis de sessão
     if 'autenticado' not in st.session_state:
         st.session_state.autenticado = False
     if 'usuario' not in st.session_state:
