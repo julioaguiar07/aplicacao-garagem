@@ -2023,7 +2023,15 @@ with tab1:
     # Filtrar vendas
     vendas_filtradas = []
     for venda in vendas:
-        data_venda = datetime.datetime.strptime(venda['data_venda'][:10], '%Y-%m-%d')
+        # ✅ CORREÇÃO: Lidar com Timestamp do PostgreSQL
+        data_venda = venda['data_venda']
+        if isinstance(data_venda, str):
+            data_venda = datetime.datetime.strptime(data_venda[:10], '%Y-%m-%d')
+        elif hasattr(data_venda, 'date'):
+            data_venda = data_venda.date()
+            data_venda = datetime.datetime.combine(data_venda, datetime.time())
+        
+        mes_ano = data_venda.strftime("%Y-%m")
         if data_venda >= data_corte:
             if marca_filtro == "Todas" or venda['marca'] == marca_filtro:
                 vendas_filtradas.append(venda)
@@ -2031,7 +2039,39 @@ with tab1:
     # Filtrar veículos
     veiculos_filtrados = []
     for veiculo in veiculos:
-        data_cadastro = datetime.datetime.strptime(veiculo['data_cadastro'][:10], '%Y-%m-%d')
+        # Análise de tempo de estoque
+        tempos_estoque = []
+        modelos_tempo = {}
+        
+        for veiculo in veiculos_filtrados:
+            if veiculo['status'] == 'Vendido':
+                # ✅ CORREÇÃO: Lidar com Timestamp do PostgreSQL
+                data_cadastro = veiculo['data_cadastro']
+                if isinstance(data_cadastro, str):
+                    # Se for string (SQLite), converter
+                    data_cadastro = datetime.datetime.strptime(data_cadastro[:10], '%Y-%m-%d')
+                elif hasattr(data_cadastro, 'date'):
+                    # Se for Timestamp (PostgreSQL), extrair a data
+                    data_cadastro = data_cadastro.date()
+                    data_cadastro = datetime.datetime.combine(data_cadastro, datetime.time())
+                
+                venda_veiculo = next((v for v in vendas if v['veiculo_id'] == veiculo['id']), None)
+                if venda_veiculo:
+                    # ✅ CORREÇÃO: Lidar com data_venda também
+                    data_venda = venda_veiculo['data_venda']
+                    if isinstance(data_venda, str):
+                        data_venda = datetime.datetime.strptime(data_venda[:10], '%Y-%m-%d')
+                    elif hasattr(data_venda, 'date'):
+                        data_venda = data_venda.date()
+                        data_venda = datetime.datetime.combine(data_venda, datetime.time())
+                    
+                    tempo_estoque = (data_venda - data_cadastro).days
+                    tempos_estoque.append(tempo_estoque)
+                    
+                    modelo_key = f"{veiculo['marca']} {veiculo['modelo']}"
+                    if modelo_key not in modelos_tempo:
+                        modelos_tempo[modelo_key] = []
+                    modelos_tempo[modelo_key].append(tempo_estoque)
         if data_cadastro >= data_corte:
             if marca_filtro == "Todas" or veiculo['marca'] == marca_filtro:
                 veiculos_filtrados.append(veiculo)
@@ -2162,10 +2202,26 @@ with tab1:
         
         for veiculo in veiculos_filtrados:
             if veiculo['status'] == 'Vendido':
-                data_cadastro = datetime.datetime.strptime(veiculo['data_cadastro'][:10], '%Y-%m-%d')
+                # ✅ CORREÇÃO: Lidar com Timestamp do PostgreSQL
+                data_cadastro = veiculo['data_cadastro']
+                if isinstance(data_cadastro, str):
+                    # Se for string (SQLite), converter
+                    data_cadastro = datetime.datetime.strptime(data_cadastro[:10], '%Y-%m-%d')
+                elif hasattr(data_cadastro, 'date'):
+                    # Se for Timestamp (PostgreSQL), extrair a data
+                    data_cadastro = data_cadastro.date()
+                    data_cadastro = datetime.datetime.combine(data_cadastro, datetime.time())
+                
                 venda_veiculo = next((v for v in vendas if v['veiculo_id'] == veiculo['id']), None)
                 if venda_veiculo:
-                    data_venda = datetime.datetime.strptime(venda_veiculo['data_venda'][:10], '%Y-%m-%d')
+                    # ✅ CORREÇÃO: Lidar com data_venda também
+                    data_venda = venda_veiculo['data_venda']
+                    if isinstance(data_venda, str):
+                        data_venda = datetime.datetime.strptime(data_venda[:10], '%Y-%m-%d')
+                    elif hasattr(data_venda, 'date'):
+                        data_venda = data_venda.date()
+                        data_venda = datetime.datetime.combine(data_venda, datetime.time())
+                    
                     tempo_estoque = (data_venda - data_cadastro).days
                     tempos_estoque.append(tempo_estoque)
                     
@@ -2248,6 +2304,14 @@ with tab1:
                 precos_por_marca = {}
                 for veiculo in veiculos_filtrados:
                     if veiculo['status'] == 'Vendido':
+                        # ✅ CORREÇÃO: Lidar com Timestamp do PostgreSQL
+                        data_cadastro = veiculo['data_cadastro']
+                        if isinstance(data_cadastro, str):
+                            data_cadastro = datetime.datetime.strptime(data_cadastro[:10], '%Y-%m-%d')
+                        elif hasattr(data_cadastro, 'date'):
+                            data_cadastro = data_cadastro.date()
+                            data_cadastro = datetime.datetime.combine(data_cadastro, datetime.time())
+                        
                         venda_veiculo = next((v for v in vendas if v['veiculo_id'] == veiculo['id']), None)
                         if venda_veiculo:
                             marca = veiculo['marca']
