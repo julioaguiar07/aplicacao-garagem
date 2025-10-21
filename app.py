@@ -2756,7 +2756,7 @@ with tab1:
         st.metric("📦 Valor Total Financiado", f"R$ {total_financiado:,.2f}")
         st.metric("✅ Taxa de Recebimento", f"{taxa_recebimento:.1f}%")
         st.metric("⏰ Dias Médios de Atraso", 
-                 f"{sum((datetime.datetime.now().date() - datetime.datetime.strptime(p['data_vencimento'], '%Y-%m-%d').date()).days for p in parcelas_vencidas) / len(parcelas_vencidas) if parcelas_vencidas else 0:.1f}")
+                 f"{sum((datetime.datetime.now().date() - processar_data_postgresql(p['data_vencimento']).date()).days for p in parcelas_vencidas) / len(parcelas_vencidas) if parcelas_vencidas else 0:.1f}")
         st.metric("📋 Carteira Ativa", f"{len([f for f in financiamentos if f['status'] == 'Ativo'])} contratos")
         
         st.markdown("</div>", unsafe_allow_html=True)
@@ -3243,8 +3243,8 @@ with tab4:
     parcelas = db.get_parcelas()
     
     # Cálculos para métricas
-    parcelas_vencidas = [p for p in parcelas if p['status'] == 'Pendente' and p['data_vencimento'] and datetime.datetime.strptime(p['data_vencimento'], '%Y-%m-%d').date() < datetime.datetime.now().date()]
-    parcelas_mes = [p for p in parcelas if p['status'] == 'Pendente' and p['data_vencimento'] and datetime.datetime.strptime(p['data_vencimento'], '%Y-%m-%d').date().month == datetime.datetime.now().date().month]
+    parcelas_vencidas = [p for p in parcelas if p['status'] == 'Pendente' and p['data_vencimento'] and processar_data_postgresql(p['data_vencimento']) < datetime.datetime.now().date()]
+    parcelas_mes = [p for p in parcelas if p['status'] == 'Pendente' and p['data_vencimento'] and processar_data_postgresql(p['data_vencimento']).date().month == datetime.datetime.now().date().month]
     total_a_receber = sum(p['valor_parcela'] for p in parcelas if p['status'] == 'Pendente')
     
     col_met1, col_met2, col_met3, col_met4 = st.columns(4)
@@ -3375,7 +3375,7 @@ with tab4:
     
     with col_parc2:
         st.markdown("##### 📈 Próximas Parcelas (7 dias)")
-        parcelas_proximas = [p for p in parcelas if p['status'] == 'Pendente' and p['data_vencimento'] and 0 <= (datetime.datetime.strptime(p['data_vencimento'], '%Y-%m-%d').date() - datetime.datetime.now().date()).days <= 7]
+        parcelas_proximas = [p for p in parcelas if p['status'] == 'Pendente' and p['data_vencimento'] and 0 <= (processar_data_postgresql(p['data_vencimento']).date() - datetime.datetime.now().date()).days <= 7]
         
         for parcela in parcelas_proximas[:5]:
             dias_restantes = (datetime.datetime.strptime(parcela['data_vencimento'], '%Y-%m-%d').date() - datetime.datetime.now().date()).days
