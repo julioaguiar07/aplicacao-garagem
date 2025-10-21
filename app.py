@@ -2974,41 +2974,6 @@ with tab3:
                     </div>
                     """, unsafe_allow_html=True)
                 
-                st.markdown("#### 👤 Dados do Comprador")
-                comprador_nome = st.text_input("Nome Completo*", placeholder="Maria Santos")
-                comprador_cpf = st.text_input("CPF*", placeholder="123.456.789-00")
-                comprador_endereco = st.text_area("Endereço", placeholder="Rua Exemplo, 123 - Cidade/UF")
-                
-                # ⬇️⬇️ BOTÃO DE SUBMIT CORRETO ⬇️⬇️
-                submitted = st.form_submit_button("✅ Finalizar Venda", use_container_width=True)
-                
-                if submitted:
-                    if comprador_nome and comprador_cpf and valor_venda > 0:
-                        venda_data = {
-                            'veiculo_id': veiculo_id,
-                            'comprador_nome': comprador_nome,
-                            'comprador_cpf': comprador_cpf,
-                            'comprador_endereco': comprador_endereco,
-                            'valor_venda': valor_venda
-                        }
-                        success = db.add_venda(venda_data)
-                        if success:
-                            # Registrar no fluxo de caixa
-                            fluxo_data = {
-                                'data': datetime.datetime.now().date(),
-                                'descricao': f'Venda - {veiculo["marca"]} {veiculo["modelo"]}',
-                                'tipo': 'Entrada',
-                                'categoria': 'Vendas',
-                                'valor': valor_venda,
-                                'veiculo_id': veiculo_id,
-                                'status': 'Concluído'
-                            }
-                            db.add_fluxo_caixa(fluxo_data)
-                            
-                            st.success("🎉 Venda registrada com sucesso!")
-                            st.rerun()
-                    else:
-                        st.error("❌ Preencha todos os campos obrigatórios!")
                 
                 st.markdown("#### 👤 Dados do Comprador")
                 comprador_nome = st.text_input("Nome Completo*", placeholder="Maria Santos")
