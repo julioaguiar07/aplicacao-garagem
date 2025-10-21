@@ -672,38 +672,38 @@ class Database:
     
     # Métodos para usuários
     def verificar_login(self, username, password):
-    conn = self.get_connection()
-    cursor = conn.cursor()
-    
-    print(f"🔐 MÉTODO verificar_login CHAMADO:")
-    print(f"   Username: '{username}'")
-    print(f"   Password: '{password}'")
-    
-    cursor.execute('SELECT * FROM usuarios WHERE username = ?', (username,))
-    usuario = cursor.fetchone()
-    conn.close()
-    
-    if usuario:
-        print(f"✅ Usuário encontrado no banco: {usuario[1]}")
-        print(f"🔑 Hash armazenado: {usuario[2]}")
+        conn = self.get_connection()    # ← 8 ESPAÇOS DE INDENTAÇÃO
+        cursor = conn.cursor()
         
-        # Verificar senha
-        from auth import verify_password
-        senha_correta = verify_password(usuario[2], password)
-        print(f"🔒 Senha correta: {senha_correta}")
+        print(f"🔐 MÉTODO verificar_login CHAMADO:")
+        print(f"   Username: '{username}'")
+        print(f"   Password: '{password}'")
         
-        if senha_correta:
-            return {
-                'id': usuario[0],
-                'username': usuario[1],
-                'nome': usuario[3],
-                'email': usuario[4],
-                'nivel_acesso': usuario[5]
-            }
-    else:
-        print("❌ Usuário NÃO encontrado no banco")
-    
-    return None
+        cursor.execute('SELECT * FROM usuarios WHERE username = ?', (username,))
+        usuario = cursor.fetchone()
+        conn.close()
+        
+        if usuario:
+            print(f"✅ Usuário encontrado no banco: {usuario[1]}")
+            print(f"🔑 Hash armazenado: {usuario[2]}")
+            
+            # Verificar senha
+            from auth import verify_password
+            senha_correta = verify_password(usuario[2], password)
+            print(f"🔒 Senha correta: {senha_correta}")
+            
+            if senha_correta:
+                return {
+                    'id': usuario[0],
+                    'username': usuario[1],
+                    'nome': usuario[3],
+                    'email': usuario[4],
+                    'nivel_acesso': usuario[5]
+                }
+        else:
+            print("❌ Usuário NÃO encontrado no banco")
+        
+        return None
     # Métodos para financiamentos
     def add_financiamento(self, financiamento_data):
         conn = self.get_connection()
