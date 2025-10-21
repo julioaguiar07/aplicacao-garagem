@@ -506,33 +506,34 @@ class Database:
         cursor = conn.cursor()
         
         # Calcular preço de venda
-        preco_venda = veiculo_data['preco_entrada'] * (1 + veiculo_data.get('margem_negociacao', 30)/100)
+        margem = veiculo_data.get('margem_negociacao', 30)
+        preco_venda = veiculo_data['preco_entrada'] * (1 + margem/100)
         
         if os.getenv('DATABASE_URL'):  # PostgreSQL
             cursor.execute('''
                 INSERT INTO veiculos 
-                (modelo, ano, marca, cor, preco_entrada, preco_venda, fornecedor, km, placa, chassi, combustivel, cambio, portas, observacoes)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                (modelo, ano, marca, cor, preco_entrada, preco_venda, fornecedor, km, placa, chassi, combustivel, cambio, portas, observacoes, margem_negociacao)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 RETURNING id
             ''', (
                 veiculo_data['modelo'], veiculo_data['ano'], veiculo_data['marca'],
                 veiculo_data['cor'], veiculo_data['preco_entrada'], preco_venda,
                 veiculo_data['fornecedor'], veiculo_data['km'], veiculo_data['placa'],
                 veiculo_data['chassi'], veiculo_data['combustivel'], veiculo_data['cambio'],
-                veiculo_data['portas'], veiculo_data['observacoes']
+                veiculo_data['portas'], veiculo_data['observacoes'], margem  # ← ADICIONAR margem aqui
             ))
             veiculo_id = cursor.fetchone()[0]
         else:  # SQLite
             cursor.execute('''
                 INSERT INTO veiculos 
-                (modelo, ano, marca, cor, preco_entrada, preco_venda, fornecedor, km, placa, chassi, combustivel, cambio, portas, observacoes)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                (modelo, ano, marca, cor, preco_entrada, preco_venda, fornecedor, km, placa, chassi, combustivel, cambio, portas, observacoes, margem_negociacao)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ''', (
                 veiculo_data['modelo'], veiculo_data['ano'], veiculo_data['marca'],
                 veiculo_data['cor'], veiculo_data['preco_entrada'], preco_venda,
                 veiculo_data['fornecedor'], veiculo_data['km'], veiculo_data['placa'],
                 veiculo_data['chassi'], veiculo_data['combustivel'], veiculo_data['cambio'],
-                veiculo_data['portas'], veiculo_data['observacoes']
+                veiculo_data['portas'], veiculo_data['observacoes'], margem  # ← ADICIONAR margem aqui
             ))
             veiculo_id = cursor.lastrowid
         
