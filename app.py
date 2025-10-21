@@ -2914,192 +2914,192 @@ with tab3:
     col_venda1, col_venda2 = st.columns(2)
     
     with col_venda1:
-    st.markdown("#### 🛒 Nova Venda")
-    veiculos_estoque = [v for v in db.get_veiculos() if v['status'] == 'Em estoque']
-    
-    if veiculos_estoque:
-        # ✅ CORREÇÃO: Usar session_state para controlar o veículo selecionado
-        if 'veiculo_venda_selecionado' not in st.session_state:
-            st.session_state.veiculo_venda_selecionado = None
-        if 'valor_venda_atual' not in st.session_state:
-            st.session_state.valor_venda_atual = 0.0
+        st.markdown("#### 🛒 Nova Venda")
+        veiculos_estoque = [v for v in db.get_veiculos() if v['status'] == 'Em estoque']
         
-        with st.form("nova_venda_form", clear_on_submit=True):
-            veiculo_options = [f"{v['id']} - {v['marca']} {v['modelo']} ({v['ano']})" for v in veiculos_estoque]
-            veiculo_selecionado = st.selectbox(
-                "Veículo*", 
-                veiculos_options,
-                key="select_veiculo_venda"
-            )
+        if veiculos_estoque:
+            # ✅ CORREÇÃO: Usar session_state para controlar o veículo selecionado
+            if 'veiculo_venda_selecionado' not in st.session_state:
+                st.session_state.veiculo_venda_selecionado = None
+            if 'valor_venda_atual' not in st.session_state:
+                st.session_state.valor_venda_atual = 0.0
             
-            # ✅ CORREÇÃO: Processar veículo selecionado IMEDIATAMENTE
-            if veiculo_selecionado:
-                veiculo_id = int(veiculo_selecionado.split(" - ")[0])
-                veiculo = next(v for v in veiculos_estoque if v['id'] == veiculo_id)
-                
-                # ✅ CORREÇÃO: Atualizar session_state quando o veículo muda
-                if (st.session_state.veiculo_venda_selecionado != veiculo_id and 
-                    st.session_state.get('select_veiculo_venda') == veiculo_selecionado):
-                    st.session_state.veiculo_venda_selecionado = veiculo_id
-                    st.session_state.valor_venda_atual = veiculo['preco_venda']
-                
-                # Calcular custos totais
-                gastos_veiculo = db.get_gastos(veiculo_id)
-                total_gastos = sum(g['valor'] for g in gastos_veiculo)
-                custo_total = veiculo['preco_entrada'] + total_gastos
-                
-                st.markdown(f"""
-                <div style="padding: 1rem; background: rgba(232, 142, 27, 0.1); border-radius: 8px; margin: 1rem 0;">
-                    <strong>Veículo Selecionado:</strong><br>
-                    {veiculo['marca']} {veiculo['modelo']} {veiculo['ano']} - {veiculo['cor']}<br>
-                    <small><strong>Custo Total:</strong> R$ {custo_total:,.2f}</small><br>
-                    <small>Compra: R$ {veiculo['preco_entrada']:,.2f} + Gastos: R$ {total_gastos:,.2f}</small>
-                </div>
-                """, unsafe_allow_html=True)
-            
-                # ✅ CORREÇÃO: Campo de valor com callback para atualizar em tempo real
-                valor_venda = st.number_input(
-                    "Valor da Venda (R$)*", 
-                    min_value=0.0, 
-                    value=float(st.session_state.valor_venda_atual),
-                    step=1000.0,
-                    key="input_valor_venda"
+            with st.form("nova_venda_form", clear_on_submit=True):
+                veiculo_options = [f"{v['id']} - {v['marca']} {v['modelo']} ({v['ano']})" for v in veiculos_estoque]
+                veiculo_selecionado = st.selectbox(
+                    "Veículo*", 
+                    veiculos_options,
+                    key="select_veiculo_venda"
                 )
                 
-                # ✅ CORREÇÃO: Atualizar session_state quando o valor muda
-                if st.session_state.valor_venda_atual != valor_venda:
-                    st.session_state.valor_venda_atual = valor_venda
-                
-                # ✅ CORREÇÃO: CÁLCULOS EM TEMPO REAL (sempre executam)
-                lucro_venda = valor_venda - custo_total
-                margem_lucro = (lucro_venda / custo_total * 100) if custo_total > 0 else 0
-                
-                # Exibir métricas de lucro EM TEMPO REAL
-                col_lucro1, col_lucro2 = st.columns(2)
-                
-                with col_lucro1:
-                    # Lucro em R$
-                    cor_lucro = "normal" if lucro_venda >= 0 else "inverse"
-                    st.metric(
-                        "💰 Lucro Estimado", 
-                        f"R$ {lucro_venda:,.2f}",
-                        delta=f"R$ {lucro_venda:,.2f}" if lucro_venda != 0 else "R$ 0.00",
-                        delta_color=cor_lucro
-                    )
-                
-                with col_lucro2:
-                    # Margem em %
-                    if margem_lucro >= 20:
-                        cor_margem = "normal"
-                    elif margem_lucro >= 10:
-                        cor_margem = "off" 
-                    else:
-                        cor_margem = "inverse"
+                # ✅ CORREÇÃO: Processar veículo selecionado IMEDIATAMENTE
+                if veiculo_selecionado:
+                    veiculo_id = int(veiculo_selecionado.split(" - ")[0])
+                    veiculo = next(v for v in veiculos_estoque if v['id'] == veiculo_id)
                     
-                    st.metric(
-                        "📈 Margem de Lucro", 
-                        f"{margem_lucro:.1f}%",
-                        delta=f"{margem_lucro:.1f}%" if margem_lucro != 0 else "0.0%",
-                        delta_color=cor_margem
-                    )
-                
-                # ✅ CORREÇÃO: Barra visual de rentabilidade EM TEMPO REAL
-                st.markdown("#### 📊 Análise de Rentabilidade em Tempo Real")
-                
-                # Calcular porcentagem para a barra
-                valor_maximo = max(custo_total * 1.5, valor_venda * 1.1)  # 50% acima do custo ou 10% acima da venda
-                porcentagem_barra = min(max((valor_venda / valor_maximo) * 100, 0), 100)
-                
-                # Cor da barra baseada no lucro
-                if lucro_venda >= custo_total * 0.2:  # Lucro > 20%
-                    cor_barra = "#27AE60"
-                    texto_status = "✅ Excelente"
-                    emoji = "🚀"
-                elif lucro_venda >= custo_total * 0.1:  # Lucro entre 10-20%
-                    cor_barra = "#F39C12" 
-                    texto_status = "⚠️ Bom"
-                    emoji = "📈"
-                elif lucro_venda >= 0:  # Lucro entre 0-10%
-                    cor_barra = "#E74C3C"
-                    texto_status = "❌ Baixo"
-                    emoji = "📉"
-                else:  # Prejuízo
-                    cor_barra = "#95A5A6"
-                    texto_status = "💀 Prejuízo"
-                    emoji = "🔻"
-                
-                # Barra de progresso visual
-                st.markdown(f"""
-                <div style="margin: 1rem 0;">
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
-                        <span>R$ 0</span>
-                        <span style="color: {cor_barra}; font-weight: bold;">
-                            {emoji} {texto_status}
-                        </span>
-                        <span>R$ {valor_maximo:,.0f}</span>
-                    </div>
-                    <div style="background: rgba(255,255,255,0.1); border-radius: 10px; height: 20px; position: relative;">
-                        <div style="background: {cor_barra}; width: {porcentagem_barra}%; height: 100%; border-radius: 10px;"></div>
-                        <div style="position: absolute; left: {(custo_total/valor_maximo)*100}%; top: 0; bottom: 0; width: 2px; background: rgba(255,255,255,0.5);"></div>
-                    </div>
-                    <div style="display: flex; justify-content: space-between; margin-top: 0.5rem; font-size: 0.8rem; color: #a0a0a0;">
-                        <span>Custo: R$ {custo_total:,.2f}</span>
-                        <span>Venda: R$ {valor_venda:,.2f}</span>
-                    </div>
-                    <div style="text-align: center; margin-top: 0.5rem; color: {cor_barra}; font-weight: bold;">
-                        Lucro: R$ {lucro_venda:,.2f} ({margem_lucro:.1f}%)
-                    </div>
-                </div>
-                """, unsafe_allow_html=True)
-            
-            st.markdown("#### 👤 Dados do Comprador")
-            comprador_nome = st.text_input("Nome Completo*", placeholder="Maria Santos")
-            comprador_cpf = st.text_input("CPF*", placeholder="123.456.789-00")
-            comprador_endereco = st.text_area("Endereço", placeholder="Rua Exemplo, 123 - Cidade/UF")
-            
-            submitted = st.form_submit_button("✅ Finalizar Venda", use_container_width=True)
-            
-            if submitted:
-                if not prevenir_loop_submit():
-                    st.stop()
+                    # ✅ CORREÇÃO: Atualizar session_state quando o veículo muda
+                    if (st.session_state.veiculo_venda_selecionado != veiculo_id and 
+                        st.session_state.get('select_veiculo_venda') == veiculo_selecionado):
+                        st.session_state.veiculo_venda_selecionado = veiculo_id
+                        st.session_state.valor_venda_atual = veiculo['preco_venda']
                     
-                if comprador_nome and comprador_cpf and valor_venda > 0 and veiculo_selecionado:
-                    venda_data = {
-                        'veiculo_id': veiculo_id,
-                        'comprador_nome': comprador_nome,
-                        'comprador_cpf': comprador_cpf,
-                        'comprador_endereco': comprador_endereco,
-                        'valor_venda': valor_venda  # ✅ AGORA vai salvar o valor correto
-                    }
-                    success = db.add_venda(venda_data)
-                    if success:
-                        # Registrar no fluxo de caixa
-                        fluxo_data = {
-                            'data': datetime.datetime.now().date(),
-                            'descricao': f'Venda - {veiculo["marca"]} {veiculo["modelo"]}',
-                            'tipo': 'Entrada',
-                            'categoria': 'Vendas',
-                            'valor': valor_venda,  # ✅ Valor correto aqui também
+                    # Calcular custos totais
+                    gastos_veiculo = db.get_gastos(veiculo_id)
+                    total_gastos = sum(g['valor'] for g in gastos_veiculo)
+                    custo_total = veiculo['preco_entrada'] + total_gastos
+                    
+                    st.markdown(f"""
+                    <div style="padding: 1rem; background: rgba(232, 142, 27, 0.1); border-radius: 8px; margin: 1rem 0;">
+                        <strong>Veículo Selecionado:</strong><br>
+                        {veiculo['marca']} {veiculo['modelo']} {veiculo['ano']} - {veiculo['cor']}<br>
+                        <small><strong>Custo Total:</strong> R$ {custo_total:,.2f}</small><br>
+                        <small>Compra: R$ {veiculo['preco_entrada']:,.2f} + Gastos: R$ {total_gastos:,.2f}</small>
+                    </div>
+                    """, unsafe_allow_html=True)
+                
+                    # ✅ CORREÇÃO: Campo de valor com callback para atualizar em tempo real
+                    valor_venda = st.number_input(
+                        "Valor da Venda (R$)*", 
+                        min_value=0.0, 
+                        value=float(st.session_state.valor_venda_atual),
+                        step=1000.0,
+                        key="input_valor_venda"
+                    )
+                    
+                    # ✅ CORREÇÃO: Atualizar session_state quando o valor muda
+                    if st.session_state.valor_venda_atual != valor_venda:
+                        st.session_state.valor_venda_atual = valor_venda
+                    
+                    # ✅ CORREÇÃO: CÁLCULOS EM TEMPO REAL (sempre executam)
+                    lucro_venda = valor_venda - custo_total
+                    margem_lucro = (lucro_venda / custo_total * 100) if custo_total > 0 else 0
+                    
+                    # Exibir métricas de lucro EM TEMPO REAL
+                    col_lucro1, col_lucro2 = st.columns(2)
+                    
+                    with col_lucro1:
+                        # Lucro em R$
+                        cor_lucro = "normal" if lucro_venda >= 0 else "inverse"
+                        st.metric(
+                            "💰 Lucro Estimado", 
+                            f"R$ {lucro_venda:,.2f}",
+                            delta=f"R$ {lucro_venda:,.2f}" if lucro_venda != 0 else "R$ 0.00",
+                            delta_color=cor_lucro
+                        )
+                    
+                    with col_lucro2:
+                        # Margem em %
+                        if margem_lucro >= 20:
+                            cor_margem = "normal"
+                        elif margem_lucro >= 10:
+                            cor_margem = "off" 
+                        else:
+                            cor_margem = "inverse"
+                        
+                        st.metric(
+                            "📈 Margem de Lucro", 
+                            f"{margem_lucro:.1f}%",
+                            delta=f"{margem_lucro:.1f}%" if margem_lucro != 0 else "0.0%",
+                            delta_color=cor_margem
+                        )
+                    
+                    # ✅ CORREÇÃO: Barra visual de rentabilidade EM TEMPO REAL
+                    st.markdown("#### 📊 Análise de Rentabilidade em Tempo Real")
+                    
+                    # Calcular porcentagem para a barra
+                    valor_maximo = max(custo_total * 1.5, valor_venda * 1.1)  # 50% acima do custo ou 10% acima da venda
+                    porcentagem_barra = min(max((valor_venda / valor_maximo) * 100, 0), 100)
+                    
+                    # Cor da barra baseada no lucro
+                    if lucro_venda >= custo_total * 0.2:  # Lucro > 20%
+                        cor_barra = "#27AE60"
+                        texto_status = "✅ Excelente"
+                        emoji = "🚀"
+                    elif lucro_venda >= custo_total * 0.1:  # Lucro entre 10-20%
+                        cor_barra = "#F39C12" 
+                        texto_status = "⚠️ Bom"
+                        emoji = "📈"
+                    elif lucro_venda >= 0:  # Lucro entre 0-10%
+                        cor_barra = "#E74C3C"
+                        texto_status = "❌ Baixo"
+                        emoji = "📉"
+                    else:  # Prejuízo
+                        cor_barra = "#95A5A6"
+                        texto_status = "💀 Prejuízo"
+                        emoji = "🔻"
+                    
+                    # Barra de progresso visual
+                    st.markdown(f"""
+                    <div style="margin: 1rem 0;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                            <span>R$ 0</span>
+                            <span style="color: {cor_barra}; font-weight: bold;">
+                                {emoji} {texto_status}
+                            </span>
+                            <span>R$ {valor_maximo:,.0f}</span>
+                        </div>
+                        <div style="background: rgba(255,255,255,0.1); border-radius: 10px; height: 20px; position: relative;">
+                            <div style="background: {cor_barra}; width: {porcentagem_barra}%; height: 100%; border-radius: 10px;"></div>
+                            <div style="position: absolute; left: {(custo_total/valor_maximo)*100}%; top: 0; bottom: 0; width: 2px; background: rgba(255,255,255,0.5);"></div>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-top: 0.5rem; font-size: 0.8rem; color: #a0a0a0;">
+                            <span>Custo: R$ {custo_total:,.2f}</span>
+                            <span>Venda: R$ {valor_venda:,.2f}</span>
+                        </div>
+                        <div style="text-align: center; margin-top: 0.5rem; color: {cor_barra}; font-weight: bold;">
+                            Lucro: R$ {lucro_venda:,.2f} ({margem_lucro:.1f}%)
+                        </div>
+                    </div>
+                    """, unsafe_allow_html=True)
+                
+                st.markdown("#### 👤 Dados do Comprador")
+                comprador_nome = st.text_input("Nome Completo*", placeholder="Maria Santos")
+                comprador_cpf = st.text_input("CPF*", placeholder="123.456.789-00")
+                comprador_endereco = st.text_area("Endereço", placeholder="Rua Exemplo, 123 - Cidade/UF")
+                
+                submitted = st.form_submit_button("✅ Finalizar Venda", use_container_width=True)
+                
+                if submitted:
+                    if not prevenir_loop_submit():
+                        st.stop()
+                        
+                    if comprador_nome and comprador_cpf and valor_venda > 0 and veiculo_selecionado:
+                        venda_data = {
                             'veiculo_id': veiculo_id,
-                            'status': 'Concluído'
+                            'comprador_nome': comprador_nome,
+                            'comprador_cpf': comprador_cpf,
+                            'comprador_endereco': comprador_endereco,
+                            'valor_venda': valor_venda  # ✅ AGORA vai salvar o valor correto
                         }
-                        db.add_fluxo_caixa(fluxo_data)
-                        
-                        st.success("🎉 Venda registrada com sucesso!")
-                        st.balloons()
-                        
-                        # ✅ CORREÇÃO: Resetar estados após venda bem-sucedida
-                        st.session_state.veiculo_venda_selecionado = None
-                        st.session_state.valor_venda_atual = 0.0
-                        resetar_formulario()
-                        
-                        # Pequeno delay para mostrar a mensagem de sucesso
-                        time.sleep(2)
-                        st.rerun()
-                else:
-                    st.error("❌ Preencha todos os campos obrigatórios!")
-    else:
-        st.info("📝 Não há veículos em estoque para venda.")
+                        success = db.add_venda(venda_data)
+                        if success:
+                            # Registrar no fluxo de caixa
+                            fluxo_data = {
+                                'data': datetime.datetime.now().date(),
+                                'descricao': f'Venda - {veiculo["marca"]} {veiculo["modelo"]}',
+                                'tipo': 'Entrada',
+                                'categoria': 'Vendas',
+                                'valor': valor_venda,  # ✅ Valor correto aqui também
+                                'veiculo_id': veiculo_id,
+                                'status': 'Concluído'
+                            }
+                            db.add_fluxo_caixa(fluxo_data)
+                            
+                            st.success("🎉 Venda registrada com sucesso!")
+                            st.balloons()
+                            
+                            # ✅ CORREÇÃO: Resetar estados após venda bem-sucedida
+                            st.session_state.veiculo_venda_selecionado = None
+                            st.session_state.valor_venda_atual = 0.0
+                            resetar_formulario()
+                            
+                            # Pequeno delay para mostrar a mensagem de sucesso
+                            time.sleep(2)
+                            st.rerun()
+                    else:
+                        st.error("❌ Preencha todos os campos obrigatórios!")
+        else:
+            st.info("📝 Não há veículos em estoque para venda.")
         
     with col_venda2:
     st.markdown("#### 📋 Histórico de Vendas")
