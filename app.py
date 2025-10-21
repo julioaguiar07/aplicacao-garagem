@@ -2212,6 +2212,7 @@ with tab2:
                     novo_veiculo = {
                         'modelo': modelo, 'ano': ano, 'marca': marca, 'cor': cor,
                         'preco_entrada': preco_entrada, 'preco_venda': preco_venda_final,
+                        'margem_negociacao': margem_negociacao,  # ← ESTA LINHA FALTANDO!
                         'fornecedor': fornecedor, 'km': km, 'placa': placa,
                         'chassi': chassi, 'combustivel': combustivel, 'cambio': cambio,
                         'portas': portas, 'observacoes': observacoes
