@@ -45,6 +45,32 @@ def prevenir_loop_submit():
     
     st.session_state.ultimo_submit = agora
     return True
+
+# =============================================
+# FUNÇÃO AUXILIAR PARA DATAS - CORRIGE POSTGRESQL
+# =============================================
+
+def formatar_data(data):
+    """Formata data para exibição, funcionando com SQLite e PostgreSQL"""
+    if data is None:
+        return "Data inválida"
+    
+    try:
+        if hasattr(data, 'strftime'):
+            # Timestamp do PostgreSQL
+            return data.strftime('%Y-%m-%d')
+        elif isinstance(data, str):
+            # String do SQLite
+            return data[:10] if len(data) >= 10 else data
+        elif hasattr(data, 'date'):
+            # Date object
+            return data.strftime('%Y-%m-%d')
+        else:
+            return str(data)
+    except Exception as e:
+        print(f"⚠️ Erro ao formatar data {data}: {e}")
+        return "Data inválida"
+        
 # =============================================
 # CONFIGURAÇÃO DA PÁGINA - DEVE SER O PRIMEIRO COMANDO
 # =============================================
@@ -2725,13 +2751,16 @@ with tab2:
                 if gastos_veiculo:
                     st.markdown("#### 💰 Gastos Detalhados")
                     for i, gasto in enumerate(gastos_veiculo):
+                        # ✅ CORREÇÃO: Usar função auxiliar para data do gasto
+                        data_gasto_formatada = formatar_data(gasto['data'])
+                        
                         # Key única para cada gasto
                         gasto_key = f"gasto_{veiculo['id']}_{i}"
                         st.markdown(f"""
                         <div style="padding: 0.5rem; margin: 0.25rem 0; background: rgba(255,255,255,0.02); border-radius: 6px;">
                             <strong>{gasto['tipo_gasto']}</strong> - R$ {gasto['valor']:,.2f}
                             <div style="color: #a0a0a0; font-size: 0.8rem;">
-                                {gasto['data']} • {gasto['descricao']}
+                                {data_gasto_formatada} • {gasto['descricao']}
                             </div>
                         </div>
                         """, unsafe_allow_html=True)
@@ -3017,17 +3046,8 @@ with tab3:
         
         if vendas:
             for venda in vendas[:10]:
-                # ✅ CORREÇÃO: Converter data corretamente
-                data_venda_formatada = ""
-                try:
-                    if hasattr(venda['data_venda'], 'strftime'):
-                        # Se for Timestamp (PostgreSQL)
-                        data_venda_formatada = venda['data_venda'].strftime('%Y-%m-%d')
-                    else:
-                        # Se for string (SQLite)
-                        data_venda_formatada = venda['data_venda'][:10]
-                except:
-                    data_venda_formatada = "Data inválida"
+                # ✅ CORREÇÃO: Usar função auxiliar para data
+                data_venda_formatada = formatar_data(venda['data_venda'])
                 
                 st.markdown(f"""
                 <div style="padding: 1rem; margin: 0.5rem 0; background: rgba(255,255,255,0.03); border-radius: 8px;">
@@ -3262,6 +3282,9 @@ with tab5:
         
         if documentos:
             for doc in documentos[:8]:
+                # ✅ CORREÇÃO: Usar função auxiliar para data
+                data_upload_formatada = formatar_data(doc['data_upload'])
+                
                 st.markdown(f"""
                 <div style="padding: 1rem; margin: 0.5rem 0; background: rgba(255,255,255,0.03); border-radius: 8px;">
                     <div style="display: flex; justify-content: between; align-items: start;">
@@ -3271,7 +3294,7 @@ with tab5:
                                 {doc['marca']} {doc['modelo']} • {doc['tipo_documento']}
                             </div>
                             <div style="color: #666; font-size: 0.8rem; margin-top: 0.5rem;">
-                                {doc['data_upload'][:10]}
+                                {data_upload_formatada}
                             </div>
                         </div>
                     </div>
@@ -3378,7 +3401,7 @@ with tab6:
                         st.rerun()
                 else:
                     st.error("❌ Preencha todos os campos obrigatórios!")
-    
+        
     with col_fc2:
         st.markdown("#### 📋 Últimas Movimentações")
         
@@ -3386,13 +3409,16 @@ with tab6:
             cor = "#27AE60" if mov['tipo'] == 'Entrada' else "#E74C3C"
             veiculo_info = f" • {mov['marca']} {mov['modelo']}" if mov['marca'] else ""
             
+            # ✅ CORREÇÃO: Usar função auxiliar para data
+            data_mov_formatada = formatar_data(mov['data'])
+            
             st.markdown(f"""
             <div style="padding: 1rem; margin: 0.5rem 0; background: rgba(255,255,255,0.03); border-radius: 8px;">
                 <div style="display: flex; justify-content: between; align-items: start;">
                     <div style="flex: 1;">
                         <strong>{mov['descricao']}</strong>
                         <div style="color: #a0a0a0; font-size: 0.9rem;">
-                            {mov['categoria']}{veiculo_info} • {mov['data']}
+                            {mov['categoria']}{veiculo_info} • {data_mov_formatada}
                         </div>
                     </div>
                     <span style="color: {cor}; font-weight: bold;">
@@ -3442,13 +3468,16 @@ with tab7:
                         st.rerun()
                 else:
                     st.error("❌ Nome é obrigatório!")
-    
+        
     with col_ctt2:
         st.markdown("#### 📋 Lista de Contatos")
         
         contatos = db.get_contatos()
         
         for contato in contatos[:10]:
+            # ✅ CORREÇÃO: Usar função auxiliar para data
+            data_contato_formatada = formatar_data(contato['data_contato'])
+            
             st.markdown(f"""
             <div style="padding: 1rem; margin: 0.5rem 0; background: rgba(255,255,255,0.03); border-radius: 8px;">
                 <div style="display: flex; justify-content: between; align-items: start;">
@@ -3461,7 +3490,7 @@ with tab7:
                             {contato['veiculo_interesse'] or 'Sem interesse específico'}
                         </div>
                         <div style="color: #666; font-size: 0.7rem; margin-top: 0.5rem;">
-                            {contato['data_contato']}
+                            {data_contato_formatada}
                         </div>
                     </div>
                     <span style="background: #e88e1b; color: white; padding: 0.2rem 0.5rem; border-radius: 12px; font-size: 0.7rem;">
