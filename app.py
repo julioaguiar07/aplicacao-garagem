@@ -2651,11 +2651,12 @@ with tab1:
                 mes_data = datetime.datetime.now().date() + datetime.timedelta(days=30*i)
                 mes_nome = mes_data.strftime("%b/%Y")
                 
-                valor_mes = sum(
-                    p['valor_parcela'] for p in parcelas_pendentes 
-                    if p['data_vencimento'] and processar_data_postgresql(p['data_vencimento']).month == mes_data.month and
-                    processar_data_postgresql(p['data_vencimento']).year == mes_data.year
-                )
+            # Linha ~2654-2659 - Previsão de recebíveis (CORRIGIDA):
+            valor_mes = sum(
+                p['valor_parcela'] for p in parcelas_pendentes 
+                if p['data_vencimento'] and processar_data_postgresql(p['data_vencimento']).month == mes_data.month and
+                processar_data_postgresql(p['data_vencimento']).year == mes_data.year
+            )
 
                 
                 meses_previsao.append(mes_nome)
@@ -3244,7 +3245,7 @@ with tab4:
     
     # Cálculos para métricas
     parcelas_vencidas = [p for p in parcelas if p['status'] == 'Pendente' and p['data_vencimento'] and processar_data_postgresql(p['data_vencimento']) < datetime.datetime.now().date()]
-    parcelas_mes = [p for p in parcelas if p['status'] == 'Pendente' and p['data_vencimento'] and processar_data_postgresql(p['data_vencimento']).date().month == datetime.datetime.now().date().month]
+    parcelas_mes = [p for p in parcelas if p['status'] == 'Pendente' and p['data_vencimento'] and processar_data_postgresql(p['data_vencimento']).month == datetime.datetime.now().date().month]
     total_a_receber = sum(p['valor_parcela'] for p in parcelas if p['status'] == 'Pendente')
     
     col_met1, col_met2, col_met3, col_met4 = st.columns(4)
@@ -3375,7 +3376,7 @@ with tab4:
     
     with col_parc2:
         st.markdown("##### 📈 Próximas Parcelas (7 dias)")
-        parcelas_proximas = [p for p in parcelas if p['status'] == 'Pendente' and p['data_vencimento'] and 0 <= (processar_data_postgresql(p['data_vencimento']).date() - datetime.datetime.now().date()).days <= 7]
+        parcelas_proximas = [p for p in parcelas if p['status'] == 'Pendente' and p['data_vencimento'] and 0 <= (processar_data_postgresql(p['data_vencimento']) - datetime.datetime.now().date()).days <= 7]
         
         for parcela in parcelas_proximas[:5]:
             dias_restantes = (datetime.datetime.strptime(parcela['data_vencimento'], '%Y-%m-%d').date() - datetime.datetime.now().date()).days
