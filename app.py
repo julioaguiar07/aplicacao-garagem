@@ -3010,13 +3010,25 @@ with tab3:
                         st.error("❌ Preencha todos os campos obrigatórios!")
         else:
             st.info("📝 Não há veículos em estoque para venda.")
-    
+        
     with col_venda2:
         st.markdown("#### 📋 Histórico de Vendas")
         vendas = db.get_vendas()
         
         if vendas:
             for venda in vendas[:10]:
+                # ✅ CORREÇÃO: Converter data corretamente
+                data_venda_formatada = ""
+                try:
+                    if hasattr(venda['data_venda'], 'strftime'):
+                        # Se for Timestamp (PostgreSQL)
+                        data_venda_formatada = venda['data_venda'].strftime('%Y-%m-%d')
+                    else:
+                        # Se for string (SQLite)
+                        data_venda_formatada = venda['data_venda'][:10]
+                except:
+                    data_venda_formatada = "Data inválida"
+                
                 st.markdown(f"""
                 <div style="padding: 1rem; margin: 0.5rem 0; background: rgba(255,255,255,0.03); border-radius: 8px;">
                     <div style="display: flex; justify-content: between; align-items: start;">
@@ -3028,7 +3040,7 @@ with tab3:
                             <div style="margin-top: 0.5rem;">
                                 <span style="color: #27AE60; font-weight: bold;">R$ {venda['valor_venda']:,.2f}</span>
                                 <span style="margin-left: 1rem; color: #a0a0a0; font-size: 0.8rem;">
-                                    {venda['data_venda'][:10]}
+                                    {data_venda_formatada}
                                 </span>
                             </div>
                         </div>
