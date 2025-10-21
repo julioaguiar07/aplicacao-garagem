@@ -2540,10 +2540,25 @@ with tab1:
     financiamentos = db.get_financiamentos()
     parcelas = db.get_parcelas()
     
-    # Cálculos para as análises
+    # ✅ CORREÇÃO: Função para processar datas do PostgreSQL
+    def processar_data_postgresql(data):
+        """Processa data do PostgreSQL (pode ser string ou date object)"""
+        if data is None:
+            return None
+        if isinstance(data, str):
+            return datetime.datetime.strptime(data, '%Y-%m-%d').date()
+        elif hasattr(data, 'date'):
+            return data.date() if hasattr(data, 'date') else data
+        return data
+
+    # Cálculos para métricas - CORRIGIDOS PARA POSTGRESQL
     parcelas_pendentes = [p for p in parcelas if p['status'] == 'Pendente']
-    parcelas_vencidas = [p for p in parcelas_pendentes if p['data_vencimento'] and datetime.datetime.strptime(p['data_vencimento'], '%Y-%m-%d').date() < datetime.datetime.now().date()]
-    parcelas_este_mes = [p for p in parcelas_pendentes if p['data_vencimento'] and datetime.datetime.strptime(p['data_vencimento'], '%Y-%m-%d').date().month == datetime.datetime.now().date().month]
+    
+    # ✅ CORREÇÃO: Filtrar parcelas vencidas
+    parcelas_vencidas = [p for p in parcelas_pendentes if p['data_vencimento'] and processar_data_postgresql(p['data_vencimento']) < datetime.datetime.now().date()]
+    
+    # ✅ CORREÇÃO: Filtrar parcelas deste mês  
+    parcelas_este_mes = [p for p in parcelas_pendentes if p['data_vencimento'] and processar_data_postgresql(p['data_vencimento']).month == datetime.datetime.now().date().month]
     
     total_a_receber = sum(p['valor_parcela'] for p in parcelas_pendentes)
     total_vencido = sum(p['valor_parcela'] for p in parcelas_vencidas)
@@ -2638,8 +2653,7 @@ with tab1:
                 
                 valor_mes = sum(
                     p['valor_parcela'] for p in parcelas_pendentes 
-                    if p['data_vencimento'] and 
-                    datetime.datetime.strptime(p['data_vencimento'], '%Y-%m-%d').date().month == mes_data.month and
+                    if p['data_vencimento'] and processar_data_postgresql(p['data_vencimento']).month == mes_data.month and
                     datetime.datetime.strptime(p['data_vencimento'], '%Y-%m-%d').date().year == mes_data.year
                 )
                 
@@ -3339,7 +3353,8 @@ with tab4:
     with col_parc1:
         st.markdown("##### ⏰ Parcelas Vencidas")
         for parcela in parcelas_vencidas[:5]:
-            dias_vencido = (datetime.datetime.now().date() - datetime.datetime.strptime(parcela['data_vencimento'], '%Y-%m-%d').date()).days
+            dias_vencido = (datetime.datetime.now().date() - processar_data_postgresql(parcela['data_vencimento'])).days
+
             
             st.markdown(f"""
             <div style="padding: 1rem; margin: 0.5rem 0; background: rgba(231, 76, 60, 0.1); border-radius: 8px;">
