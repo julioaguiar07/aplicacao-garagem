@@ -3102,35 +3102,35 @@ with tab3:
             st.info("📝 Não há veículos em estoque para venda.")
         
     with col_venda2:
-    st.markdown("#### 📋 Histórico de Vendas")
-    vendas = db.get_vendas()
-    
-    if vendas:
-        for venda in vendas[:10]:
-            # ✅ CORREÇÃO: Usar função auxiliar para data
-            data_venda_formatada = formatar_data(venda['data_venda'])
-            
-            # ✅ CORREÇÃO: Mostrar o VALOR REAL da venda (não o preço de venda do veículo)
-            st.markdown(f"""
-            <div style="padding: 1rem; margin: 0.5rem 0; background: rgba(255,255,255,0.03); border-radius: 8px;">
-                <div style="display: flex; justify-content: between; align-items: start;">
-                    <div style="flex: 1;">
-                        <strong>{venda['marca']} {venda['modelo']} ({venda['ano']})</strong>
-                        <div style="color: #a0a0a0; font-size: 0.9rem;">
-                            Comprador: {venda['comprador_nome']}
-                        </div>
-                        <div style="margin-top: 0.5rem;">
-                            <span style="color: #27AE60; font-weight: bold;">R$ {venda['valor_venda']:,.2f}</span>
-                            <span style="margin-left: 1rem; color: #a0a0a0; font-size: 0.8rem;">
-                                {data_venda_formatada}
-                            </span>
+        st.markdown("#### 📋 Histórico de Vendas")
+        vendas = db.get_vendas()
+        
+        if vendas:
+            for venda in vendas[:10]:
+                # ✅ CORREÇÃO: Usar função auxiliar para data
+                data_venda_formatada = formatar_data(venda['data_venda'])
+                
+                # ✅ CORREÇÃO: Mostrar o VALOR REAL da venda (não o preço de venda do veículo)
+                st.markdown(f"""
+                <div style="padding: 1rem; margin: 0.5rem 0; background: rgba(255,255,255,0.03); border-radius: 8px;">
+                    <div style="display: flex; justify-content: between; align-items: start;">
+                        <div style="flex: 1;">
+                            <strong>{venda['marca']} {venda['modelo']} ({venda['ano']})</strong>
+                            <div style="color: #a0a0a0; font-size: 0.9rem;">
+                                Comprador: {venda['comprador_nome']}
+                            </div>
+                            <div style="margin-top: 0.5rem;">
+                                <span style="color: #27AE60; font-weight: bold;">R$ {venda['valor_venda']:,.2f}</span>
+                                <span style="margin-left: 1rem; color: #a0a0a0; font-size: 0.8rem;">
+                                    {data_venda_formatada}
+                                </span>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
-            """, unsafe_allow_html=True)
-    else:
-        st.info("📝 Nenhuma venda registrada ainda.")
+                """, unsafe_allow_html=True)
+        else:
+            st.info("📝 Nenhuma venda registrada ainda.")
 
 with tab4:
     st.markdown("""
