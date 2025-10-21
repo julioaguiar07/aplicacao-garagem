@@ -249,11 +249,11 @@ class Database:
         
         database_url = os.getenv('DATABASE_URL')
         
-        if database_url:
+        if database_url and database_url.startswith('postgresql://'):
             print("✅ Conectando ao PostgreSQL...")
             try:
                 conn = psycopg2.connect(database_url, sslmode='require')
-                print("✅ PostgreSQL conectado com sucesso!")
+                print("🎉 PostgreSQL conectado com sucesso!")
                 return conn
             except Exception as e:
                 print(f"❌ Erro PostgreSQL: {e}")
@@ -684,13 +684,42 @@ class Database:
         
     def get_veiculos(self, filtro_status=None):
         conn = self.get_connection()
-        query = 'SELECT * FROM veiculos'
-        if filtro_status and filtro_status != 'Todos':
-            query += f" WHERE status = '{filtro_status}'"
-        query += ' ORDER BY data_cadastro DESC'
-        df = pd.read_sql(query, conn)
-        conn.close()
-        return df.to_dict('records')
+        
+        # Verificar se estamos usando PostgreSQL
+        usando_postgres = os.getenv('DATABASE_URL') is not None
+        
+        try:
+            # Construir query base
+            if usando_postgres:
+                query = 'SELECT *, margem_negociacao FROM veiculos'
+            else:
+                query = 'SELECT *, margem_negociacao FROM veiculos'
+            
+            # Aplicar filtro de status
+            if filtro_status and filtro_status != 'Todos':
+                if usando_postgres:
+                    query += f" WHERE status = '{filtro_status}'"
+                else:
+                    query += f" WHERE status = '{filtro_status}'"
+            
+            query += ' ORDER BY data_cadastro DESC'
+            
+            df = pd.read_sql(query, conn)
+            return df.to_dict('records')
+            
+        except Exception as e:
+            print(f"❌ Erro ao buscar veículos: {e}")
+            return []
+        finally:
+            conn.close()(self, filtro_status=None):
+            conn = self.get_connection()
+            query = 'SELECT * FROM veiculos'
+            if filtro_status and filtro_status != 'Todos':
+                query += f" WHERE status = '{filtro_status}'"
+            query += ' ORDER BY data_cadastro DESC'
+            df = pd.read_sql(query, conn)
+            conn.close()
+            return df.to_dict('records')
     
     def add_veiculo(self, veiculo_data):
         print(f"🔍 DEBUG add_veiculo - Iniciando cadastro...")
@@ -769,17 +798,33 @@ class Database:
     # Métodos para gastos
     def get_gastos(self, veiculo_id=None):
         conn = self.get_connection()
-        query = '''
-            SELECT g.*, v.marca, v.modelo 
-            FROM gastos g 
-            LEFT JOIN veiculos v ON g.veiculo_id = v.id
-        '''
-        if veiculo_id:
-            query += f' WHERE g.veiculo_id = {veiculo_id}'
-        query += ' ORDER BY g.data DESC'
-        df = pd.read_sql(query, conn)
-        conn.close()
-        return df.to_dict('records')
+        
+        # Verificar se estamos usando PostgreSQL
+        usando_postgres = os.getenv('DATABASE_URL') is not None
+        
+        try:
+            query = '''
+                SELECT g.*, v.marca, v.modelo 
+                FROM gastos g 
+                LEFT JOIN veiculos v ON g.veiculo_id = v.id
+            '''
+            
+            if veiculo_id:
+                if usando_postgres:
+                    query += f' WHERE g.veiculo_id = {veiculo_id}'
+                else:
+                    query += f' WHERE g.veiculo_id = {veiculo_id}'
+            
+            query += ' ORDER BY g.data DESC'
+            
+            df = pd.read_sql(query, conn)
+            return df.to_dict('records')
+            
+        except Exception as e:
+            print(f"❌ Erro ao buscar gastos: {e}")
+            return []
+        finally:
+            conn.close()
     
     def add_gasto(self, gasto_data):
         conn = self.get_connection()
@@ -976,38 +1021,52 @@ class Database:
     
     # Métodos para usuários
     def verificar_login(self, username, password):
-        conn = self.get_connection()    # ← 8 ESPAÇOS DE INDENTAÇÃO
+        conn = self.get_connection()
         cursor = conn.cursor()
+        
+        # Verificar se estamos usando PostgreSQL
+        usando_postgres = os.getenv('DATABASE_URL') is not None
         
         print(f"🔐 MÉTODO verificar_login CHAMADO:")
         print(f"   Username: '{username}'")
-        print(f"   Password: '{password}'")
+        print(f"   Banco: {'PostgreSQL' if usando_postgres else 'SQLite'}")
         
-        cursor.execute('SELECT * FROM usuarios WHERE username = ?', (username,))
-        usuario = cursor.fetchone()
-        conn.close()
-        
-        if usuario:
-            print(f"✅ Usuário encontrado no banco: {usuario[1]}")
-            print(f"🔑 Hash armazenado: {usuario[2]}")
+        try:
+            if usando_postgres:
+                # ✅ PostgreSQL - usar %s
+                cursor.execute('SELECT * FROM usuarios WHERE username = %s', (username,))
+            else:
+                # ✅ SQLite - usar ?
+                cursor.execute('SELECT * FROM usuarios WHERE username = ?', (username,))
             
-            # Verificar senha
-            from auth import verify_password
-            senha_correta = verify_password(usuario[2], password)
-            print(f"🔒 Senha correta: {senha_correta}")
+            usuario = cursor.fetchone()
             
-            if senha_correta:
-                return {
-                    'id': usuario[0],
-                    'username': usuario[1],
-                    'nome': usuario[3],
-                    'email': usuario[4],
-                    'nivel_acesso': usuario[5]
-                }
-        else:
-            print("❌ Usuário NÃO encontrado no banco")
-        
-        return None
+            if usuario:
+                print(f"✅ Usuário encontrado no banco: {usuario[1]}")
+                
+                # Verificar senha
+                from auth import verify_password
+                senha_correta = verify_password(usuario[2], password)
+                print(f"🔒 Senha correta: {senha_correta}")
+                
+                if senha_correta:
+                    return {
+                        'id': usuario[0],
+                        'username': usuario[1],
+                        'nome': usuario[3],
+                        'email': usuario[4],
+                        'nivel_acesso': usuario[5]
+                    }
+            else:
+                print("❌ Usuário NÃO encontrado no banco")
+            
+            return None
+            
+        except Exception as e:
+            print(f"❌ Erro no login: {e}")
+            return None
+        finally:
+            conn.close()
     # Métodos para financiamentos
     def add_financiamento(self, financiamento_data):
         conn = self.get_connection()
