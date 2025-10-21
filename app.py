@@ -26,7 +26,25 @@ if 'autenticado' not in st.session_state:
     st.session_state.autenticado = False
 if 'usuario' not in st.session_state:
     st.session_state.usuario = None
+    
+# =============================================
+# FUNÇÃO PARA PREVENIR LOOP DE SUBMIT
+# =============================================
 
+def prevenir_loop_submit():
+    """Previne múltiplos submits rápidos que causam loop"""
+    if 'ultimo_submit' not in st.session_state:
+        st.session_state.ultimo_submit = 0
+    
+    agora = time.time()
+    # Só permite submit a cada 3 segundos
+    if agora - st.session_state.ultimo_submit < 3:
+        st.warning("⏳ Aguarde alguns segundos antes de enviar novamente...")
+        time.sleep(1)
+        return False
+    
+    st.session_state.ultimo_submit = agora
+    return True
 # =============================================
 # CONFIGURAÇÃO DA PÁGINA - DEVE SER O PRIMEIRO COMANDO
 # =============================================
@@ -2040,16 +2058,33 @@ with tab2:
         <p style="color: #a0a0a0;">Cadastro completo e gestão do seu estoque</p>
     </div>
     """, unsafe_allow_html=True)
-    # BOTÃO DE EMERGÊNCIA - REMOVER DEPOIS
-    if st.button("🚨 LIMPAR VEÍCULOS DE TESTE (EMERGÊNCIA)", type="secondary"):
-        conn = db.get_connection()
-        cursor = conn.cursor()
-        cursor.execute('DELETE FROM veiculos WHERE id > 0')
-        conn.commit()
-        conn.close()
-        st.success("✅ Todos os veículos foram removidos!")
-        st.rerun()
-        col_veic1, col_veic2 = st.columns([1, 2])
+
+
+    
+    st.markdown("---")
+    col_emerg1, col_emerg2 = st.columns(2)
+    with col_emerg1:
+        if st.button("🗑️ LIMPAR TODOS OS VEÍCULOS", type="secondary", use_container_width=True):
+            conn = db.get_connection()
+            cursor = conn.cursor()
+            cursor.execute('DELETE FROM veiculos')
+            conn.commit()
+            conn.close()
+            st.success("✅ Todos os veículos foram removidos!")
+            time.sleep(1)
+            st.rerun()
+    
+    with col_emerg2:
+        if st.button("🔍 VER QUANTOS VEÍCULOS EXISTEM", use_container_width=True):
+            conn = db.get_connection()
+            cursor = conn.cursor()
+            cursor.execute('SELECT COUNT(*) FROM veiculos')
+            total = cursor.fetchone()[0]
+            conn.close()
+            st.info(f"📊 Total de veículos no banco: {total}")
+
+
+
     
     with col_veic1:
         st.markdown("#### ➕ Novo Veículo")
@@ -2082,8 +2117,7 @@ with tab2:
             observacoes = st.text_area("Observações")
             
             submitted = st.form_submit_button("Cadastrar Veículo", use_container_width=True)
-            if submitted:
-                time.sleep(0.5)
+            if submitted and prevenir_loop_submit():
                 if modelo and marca and fornecedor:
                     # Calcular preço de venda com margem
                     preco_venda_final = preco_entrada * (1 + margem_negociacao/100)
@@ -2099,6 +2133,7 @@ with tab2:
                     success = db.add_veiculo(novo_veiculo)
                     if success:
                         st.success("✅ Veículo cadastrado com sucesso!")
+                        time.sleep(1)
                         st.rerun()
                 else:
                     st.error("❌ Preencha todos os campos obrigatórios!")
