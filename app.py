@@ -642,6 +642,15 @@ class Database:
     # =============================================
     # MÉTODOS ORIGINAIS - ADAPTADOS PARA AMBOS OS BANCOS
     # =============================================
+
+    def get_sqlalchemy_connection(self):
+        """Retorna conexão SQLAlchemy para pandas"""
+        database_url = os.getenv('DATABASE_URL')
+        if database_url:
+            return database_url
+        else:
+            return f"sqlite:///{self.db_path}"
+        
     def salvar_foto_veiculo(self, veiculo_id, foto_bytes):
         """Salva a foto do veículo no banco"""
         conn = self.get_connection()
@@ -1325,7 +1334,18 @@ def debug_database():
     
     # Verificar se a tabela usuarios existe
     try:
-        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='usuarios'")
+        # ✅ CORREÇÃO: Usar a query correta para cada banco
+        if os.getenv('DATABASE_URL'):
+            # PostgreSQL
+            cursor.execute("""
+                SELECT table_name 
+                FROM information_schema.tables 
+                WHERE table_schema = 'public' AND table_name = 'usuarios'
+            """)
+        else:
+            # SQLite
+            cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='usuarios'")
+        
         tabela_existe = cursor.fetchone()
         print(f"📊 Tabela 'usuarios' existe: {tabela_existe is not None}")
         
@@ -2235,42 +2255,49 @@ with tab1:
     if vendas:
         vendas_por_mes = {}
         for venda in vendas:
-            data_venda = datetime.datetime.strptime(venda['data_venda'][:10], '%Y-%m-%d')
-            mes_ano = data_venda.strftime("%Y-%m")
-            if mes_ano not in vendas_por_mes:
-                vendas_por_mes[mes_ano] = 0
-            vendas_por_mes[mes_ano] += venda['valor_venda']
-        
-        # Ordenar por data
-        meses_ordenados = sorted(vendas_por_mes.items())
-        meses = [mes for mes, valor in meses_ordenados[-12:]]  # Últimos 12 meses
-        valores = [valor for mes, valor in meses_ordenados[-12:]]
-        
-        if len(valores) > 1:
-            col_trend1, col_trend2 = st.columns(2)
+            # ✅ CORREÇÃO: Verificar se data_venda existe e é válida
+            if venda.get('data_venda'):
+                try:
+                    data_venda = datetime.datetime.strptime(venda['data_venda'][:10], '%Y-%m-%d')
+                    mes_ano = data_venda.strftime("%Y-%m")
+                    if mes_ano not in vendas_por_mes:
+                        vendas_por_mes[mes_ano] = 0
+                    vendas_por_mes[mes_ano] += venda['valor_venda']
+                except (ValueError, TypeError, IndexError) as e:
+                    print(f"⚠️ Erro ao processar data da venda: {e}")
+                    continue
+    
+        # Ordenar por data se houver dados
+        if vendas_por_mes:
+            meses_ordenados = sorted(vendas_por_mes.items())
+            meses = [mes for mes, valor in meses_ordenados[-12:]]  # Últimos 12 meses
+            valores = [valor for mes, valor in meses_ordenados[-12:]]
             
-            with col_trend1:
-                # Gráfico de tendência
-                fig = px.line(
-                    x=meses,
-                    y=valores,
-                    title="Evolução de Vendas (Últimos 12 meses)",
-                    markers=True
-                )
+            if len(valores) > 1:
+                col_trend1, col_trend2 = st.columns(2)
                 
-                fig.update_layout(
-                    plot_bgcolor='rgba(0,0,0,0)',
-                    paper_bgcolor='rgba(0,0,0,0)',
-                    font=dict(color='white'),
-                    height=400,
-                    xaxis_title="Mês",
-                    yaxis_title="Valor de Vendas (R$)",
-                    showlegend=False
-                )
-                
-                fig.update_traces(line=dict(color='#e88e1b', width=3))
-                
-                st.plotly_chart(fig, use_container_width=True)
+                with col_trend1:
+                    # Gráfico de tendência
+                    fig = px.line(
+                        x=meses,
+                        y=valores,
+                        title="Evolução de Vendas (Últimos 12 meses)",
+                        markers=True
+                    )
+                    
+                    fig.update_layout(
+                        plot_bgcolor='rgba(0,0,0,0)',
+                        paper_bgcolor='rgba(0,0,0,0)',
+                        font=dict(color='white'),
+                        height=400,
+                        xaxis_title="Mês",
+                        yaxis_title="Valor de Vendas (R$)",
+                        showlegend=False
+                    )
+                    
+                    fig.update_traces(line=dict(color='#e88e1b', width=3))
+                    
+                    st.plotly_chart(fig, use_container_width=True)
             
             with col_trend2:
                 # Análise de preços médios
