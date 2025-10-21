@@ -32,15 +32,15 @@ if 'usuario' not in st.session_state:
 # =============================================
 
 def prevenir_loop_submit():
-    """Previne múltiplos submits rápidos que causam loop"""
+    """Previne múltiplos submits rápidos que causam loop - VERSÃO CORRIGIDA"""
     if 'ultimo_submit' not in st.session_state:
         st.session_state.ultimo_submit = 0
     
     agora = time.time()
-    # Só permite submit a cada 3 segundos
-    if agora - st.session_state.ultimo_submit < 3:
-        st.warning("⏳ Aguarde alguns segundos antes de enviar novamente...")
-        time.sleep(1)
+    # Só permite submit a cada 2 segundos (reduzido)
+    if agora - st.session_state.ultimo_submit < 2:
+        tempo_restante = 2 - (agora - st.session_state.ultimo_submit)
+        st.warning(f"⏳ Aguarde {tempo_restante:.1f} segundos antes de enviar novamente...")
         return False
     
     st.session_state.ultimo_submit = agora
@@ -2651,7 +2651,7 @@ with tab2:
             submitted = st.form_submit_button("Cadastrar Veículo", use_container_width=True)
             if submitted:
                 if not prevenir_loop_submit():
-                    st.stop()  # ⬅️ IMPEDE EXECUÇÃO SE NÃO PASSAR NA VERIFICAÇÃO
+                    st.stop()  # ⬅️ Mantém esta linha
                     
                 if modelo and marca and fornecedor:
                     # Calcular preço de venda com margem
@@ -2677,10 +2677,10 @@ with tab2:
                         st.success("✅ Veículo cadastrado com sucesso!")
                         st.balloons()  # Efeito visual
                         
-                        # ✅ CORREÇÃO: Usar st.stop() em vez de st.rerun()
-                        st.info("🔄 Atualizando página...")
+                        # ✅✅✅ CORREÇÃO CRÍTICA: Usar st.rerun() CORRETAMENTE
+                        st.session_state.ultimo_submit = 0  # Reseta o controle de submit
                         time.sleep(2)
-                        st.stop()  # ⬅️ PARA A EXECUÇÃO SEM LOOP
+                        st.rerun()  # ⬅️ AGORA SIM, vai funcionar!
                         
                     else:
                         st.error("❌ Erro ao cadastrar veículo. Verifique os logs.")
