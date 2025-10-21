@@ -42,16 +42,16 @@ if 'valor_venda_atual' not in st.session_state:
 # =============================================
 
 def prevenir_loop_submit():
-    """Previne múltiplos submits rápidos que causam loop - VERSÃO SUPER SEGURA"""
+    """Previne múltiplos submits rápidos - VERSÃO SUPER RESTRITIVA"""
     if 'ultimo_submit' not in st.session_state:
         st.session_state.ultimo_submit = 0
     
     agora = time.time()
-    # Aumentado para 3 segundos para maior segurança
-    if agora - st.session_state.ultimo_submit < 3:
-        tempo_restante = 3 - (agora - st.session_state.ultimo_submit)
-        st.warning(f"⏳ Aguarde {tempo_restante:.1f} segundos antes de enviar novamente...")
-        st.stop()  # PARA completamente
+    # 5 segundos para máxima segurança
+    if agora - st.session_state.ultimo_submit < 5:
+        tempo_restante = 5 - (agora - st.session_state.ultimo_submit)
+        st.warning(f"⏳ Aguarde {tempo_restante:.1f} segundos...")
+        st.stop()
     
     st.session_state.ultimo_submit = agora
     return True
@@ -3037,209 +3037,136 @@ with tab3:
         st.markdown("#### 🛒 Nova Venda")
         veiculos_estoque = [v for v in db.get_veiculos() if v['status'] == 'Em estoque']
         
-        if veiculos_estoque:
-            # ✅ CORREÇÃO: Estados para controle do formulário
-            if 'veiculo_venda_selecionado' not in st.session_state:
-                st.session_state.veiculo_venda_selecionado = None
-            if 'valor_venda_atual' not in st.session_state:
-                st.session_state.valor_venda_atual = 0.0
-            if 'ultimo_veiculo_selecionado' not in st.session_state:
-                st.session_state.ultimo_veiculo_selecionado = None
-            
-            # ✅ CORREÇÃO: Definir veiculos_options ANTES de usar
-            veiculos_options = [f"{v['id']} - {v['marca']} {v['modelo']} ({v['ano']})" for v in veiculos_estoque]
-            
-            with st.form("nova_venda_form", clear_on_submit=True):
-                # ✅ CORREÇÃO: Selectbox que detecta mudanças
-                veiculo_selecionado = st.selectbox(
-                    "Veículo*", 
-                    veiculos_options,
-                    key="select_veiculo_venda",
-                    index=0  # Sempre começa com o primeiro
-                )
-                
-                # ✅ CORREÇÃO: Processar veículo selecionado IMEDIATAMENTE
-                if veiculo_selecionado:
-                    veiculo_id = int(veiculo_selecionado.split(" - ")[0])
-                    veiculo = next((v for v in veiculos_estoque if v['id'] == veiculo_id), None)
-                    
-                    if veiculo:
-                        # ✅ CORREÇÃO CRÍTICA: Forçar atualização quando o veículo muda
-                        veiculo_mudou = st.session_state.ultimo_veiculo_selecionado != veiculo_id
-                        
-                        if veiculo_mudou:
-                            st.session_state.veiculo_venda_selecionado = veiculo_id
-                            st.session_state.valor_venda_atual = veiculo['preco_venda']
-                            st.session_state.ultimo_veiculo_selecionado = veiculo_id
-                            
-                            # ✅ FORÇAR ATUALIZAÇÃO DOS CÁLCULOS
-                            st.rerun()
-                        
-                        # Calcular custos totais
-                        gastos_veiculo = db.get_gastos(veiculo_id)
-                        total_gastos = sum(g['valor'] for g in gastos_veiculo)
-                        custo_total = veiculo['preco_entrada'] + total_gastos
-                        
-                        st.markdown(f"""
-                        <div style="padding: 1rem; background: rgba(232, 142, 27, 0.1); border-radius: 8px; margin: 1rem 0;">
-                            <strong>🚗 Veículo Selecionado:</strong><br>
-                            <strong>{veiculo['marca']} {veiculo['modelo']} {veiculo['ano']} - {veiculo['cor']}</strong><br>
-                            <small><strong>💰 Custo Total:</strong> R$ {custo_total:,.2f}</small><br>
-                            <small>Compra: R$ {veiculo['preco_entrada']:,.2f} + Gastos: R$ {total_gastos:,.2f}</small><br>
-                            <small>📊 Preço Sugerido: R$ {veiculo['preco_venda']:,.2f}</small>
-                        </div>
-                        """, unsafe_allow_html=True)
-                    
-                        # ✅ CORREÇÃO: Campo de valor que atualiza em tempo real
-                        valor_venda = st.number_input(
-                            "💵 Valor da Venda (R$)*", 
-                            min_value=0.0, 
-                            value=float(st.session_state.valor_venda_atual),
-                            step=1000.0,
-                            key="input_valor_venda"
-                        )
-                        
-                        # ✅ CORREÇÃO: Atualizar session_state quando o valor muda
-                        if st.session_state.valor_venda_atual != valor_venda:
-                            st.session_state.valor_venda_atual = valor_venda
-                        
-                        # ✅ CORREÇÃO: CÁLCULOS EM TEMPO REAL (sempre executam)
-                        lucro_venda = valor_venda - custo_total
-                        margem_lucro = (lucro_venda / custo_total * 100) if custo_total > 0 else 0
-                        
-                        # Exibir métricas de lucro EM TEMPO REAL
-                        st.markdown("#### 📈 Análise de Rentabilidade")
-                        
-                        col_lucro1, col_lucro2 = st.columns(2)
-                        
-                        with col_lucro1:
-                            # Lucro em R$
-                            cor_lucro = "normal" if lucro_venda >= 0 else "inverse"
-                            st.metric(
-                                "💰 Lucro Estimado", 
-                                f"R$ {lucro_venda:,.2f}",
-                                delta=f"R$ {lucro_venda:,.2f}" if lucro_venda != 0 else "R$ 0.00",
-                                delta_color=cor_lucro
-                            )
-                        
-                        with col_lucro2:
-                            # Margem em %
-                            if margem_lucro >= 20:
-                                cor_margem = "normal"
-                            elif margem_lucro >= 10:
-                                cor_margem = "off" 
-                            else:
-                                cor_margem = "inverse"
-                            
-                            st.metric(
-                                "📊 Margem de Lucro", 
-                                f"{margem_lucro:.1f}%",
-                                delta=f"{margem_lucro:.1f}%" if margem_lucro != 0 else "0.0%",
-                                delta_color=cor_margem
-                            )
-                        
-                        # ✅ CORREÇÃO: Barra visual de rentabilidade EM TEMPO REAL
-                        st.markdown("#### 🎯 Status da Venda")
-                        
-                        # Calcular porcentagem para a barra
-                        valor_maximo = max(custo_total * 1.5, valor_venda * 1.1, custo_total * 1.1)
-                        porcentagem_barra = min(max((valor_venda / valor_maximo) * 100, 0), 100)
-                        
-                        # Cor da barra baseada no lucro
-                        if lucro_venda >= custo_total * 0.2:  # Lucro > 20%
-                            cor_barra = "#27AE60"
-                            texto_status = "✅ EXCELENTE"
-                            emoji = "🚀"
-                        elif lucro_venda >= custo_total * 0.1:  # Lucro entre 10-20%
-                            cor_barra = "#F39C12" 
-                            texto_status = "⚠️ BOM"
-                            emoji = "📈"
-                        elif lucro_venda >= 0:  # Lucro entre 0-10%
-                            cor_barra = "#E74C3C"
-                            texto_status = "❌ BAIXO"
-                            emoji = "📉"
-                        else:  # Prejuízo
-                            cor_barra = "#95A5A6"
-                            texto_status = "💀 PREJUÍZO"
-                            emoji = "🔻"
-                        
-                        # Barra de progresso visual
-                        st.markdown(f"""
-                        <div style="margin: 1rem 0;">
-                            <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
-                                <span style="color: #a0a0a0;">R$ 0</span>
-                                <span style="color: {cor_barra}; font-weight: bold; font-size: 1.1rem;">
-                                    {emoji} {texto_status}
-                                </span>
-                                <span style="color: #a0a0a0;">R$ {valor_maximo:,.0f}</span>
-                            </div>
-                            <div style="background: rgba(255,255,255,0.1); border-radius: 10px; height: 20px; position: relative;">
-                                <div style="background: {cor_barra}; width: {porcentagem_barra}%; height: 100%; border-radius: 10px;"></div>
-                                <div style="position: absolute; left: {(custo_total/valor_maximo)*100}%; top: 0; bottom: 0; width: 2px; background: rgba(255,255,255,0.5);"></div>
-                            </div>
-                            <div style="display: flex; justify-content: space-between; margin-top: 0.5rem; font-size: 0.8rem; color: #a0a0a0;">
-                                <span>💰 Custo: R$ {custo_total:,.2f}</span>
-                                <span>💵 Venda: R$ {valor_venda:,.2f}</span>
-                            </div>
-                            <div style="text-align: center; margin-top: 0.5rem; color: {cor_barra}; font-weight: bold; font-size: 1rem;">
-                                🎯 Lucro: R$ {lucro_venda:,.2f} ({margem_lucro:.1f}%)
-                            </div>
-                        </div>
-                        """, unsafe_allow_html=True)
-                    
-                        st.markdown("#### 👤 Dados do Comprador")
-                        comprador_nome = st.text_input("Nome Completo*", placeholder="Maria Santos", key="comprador_nome_venda")
-                        comprador_cpf = st.text_input("CPF*", placeholder="123.456.789-00", key="comprador_cpf_venda")
-                        comprador_endereco = st.text_area("Endereço", placeholder="Rua Exemplo, 123 - Cidade/UF", key="comprador_endereco_venda")
-                        
-                        submitted = st.form_submit_button("✅ Finalizar Venda", use_container_width=True)
-                        
-                        if submitted:
-                            if not prevenir_loop_submit():
-                                st.stop()
-                                
-                            if comprador_nome and comprador_cpf and valor_venda > 0:
-                                venda_data = {
-                                    'veiculo_id': veiculo_id,
-                                    'comprador_nome': comprador_nome,
-                                    'comprador_cpf': comprador_cpf,
-                                    'comprador_endereco': comprador_endereco,
-                                    'valor_venda': valor_venda
-                                }
-                                success = db.add_venda(venda_data)
-                                if success:
-                                    # Registrar no fluxo de caixa
-                                    fluxo_data = {
-                                        'data': datetime.datetime.now().date(),
-                                        'descricao': f'Venda - {veiculo["marca"]} {veiculo["modelo"]}',
-                                        'tipo': 'Entrada',
-                                        'categoria': 'Vendas',
-                                        'valor': valor_venda,
-                                        'veiculo_id': veiculo_id,
-                                        'status': 'Concluído'
-                                    }
-                                    db.add_fluxo_caixa(fluxo_data)
-                                    
-                                    st.success("🎉 Venda registrada com sucesso!")
-                                    st.balloons()
-                                    
-                                    # ✅ CORREÇÃO: Resetar estados após venda bem-sucedida
-                                    st.session_state.veiculo_venda_selecionado = None
-                                    st.session_state.valor_venda_atual = 0.0
-                                    st.session_state.ultimo_veiculo_selecionado = None
-                                    resetar_formulario()
-                                    
-                                    # Pequeno delay para mostrar a mensagem de sucesso
-                                    time.sleep(2)
-                                    st.rerun()
-                            else:
-                                st.error("❌ Preencha todos os campos obrigatórios!")
-                    else:
-                        st.error("❌ Veículo não encontrado.")
-                else:
-                    st.error("❌ Selecione um veículo para vender.")
+        # ✅ CONTROLE DE ESTADO SEGURO
+        venda_form_key = "venda_form_submitted"
+        if venda_form_key not in st.session_state:
+            st.session_state[venda_form_key] = False
+        
+        # Se uma venda foi concluída recentemente, mostrar confirmação
+        if st.session_state[venda_form_key]:
+            st.success("🎉 Venda registrada com sucesso!")
+            if st.button("🛒 Fazer Nova Venda"):
+                st.session_state[venda_form_key] = False
+                st.rerun()
         else:
-            st.info("📝 Não há veículos em estoque para venda.")
+            if veiculos_estoque:
+                veiculos_options = [f"{v['id']} - {v['marca']} {v['modelo']} ({v['ano']})" for v in veiculos_estoque]
+                
+                with st.form("nova_venda_form", clear_on_submit=True):
+                    # Seleção do veículo
+                    veiculo_selecionado = st.selectbox(
+                        "Veículo*", 
+                        veiculos_options,
+                        key="select_veiculo_venda"
+                    )
+                    
+                    if veiculo_selecionado:
+                        veiculo_id = int(veiculo_selecionado.split(" - ")[0])
+                        veiculo = next((v for v in veiculos_estoque if v['id'] == veiculo_id), None)
+                        
+                        if veiculo:
+                            # Calcular custos totais UMA VEZ (não em loop)
+                            gastos_veiculo = db.get_gastos(veiculo_id)
+                            total_gastos = sum(g['valor'] for g in gastos_veiculo)
+                            custo_total = veiculo['preco_entrada'] + total_gastos
+                            
+                            st.markdown(f"""
+                            <div style="padding: 1rem; background: rgba(232, 142, 27, 0.1); border-radius: 8px; margin: 1rem 0;">
+                                <strong>🚗 Veículo Selecionado:</strong><br>
+                                <strong>{veiculo['marca']} {veiculo['modelo']} {veiculo['ano']} - {veiculo['cor']}</strong><br>
+                                <small><strong>💰 Custo Total:</strong> R$ {custo_total:,.2f}</small><br>
+                                <small>Compra: R$ {veiculo['preco_entrada']:,.2f} + Gastos: R$ {total_gastos:,.2f}</small>
+                            </div>
+                            """, unsafe_allow_html=True)
+                        
+                            # Campo de valor da venda
+                            valor_venda = st.number_input(
+                                "💵 Valor da Venda (R$)*", 
+                                min_value=0.0, 
+                                value=float(veiculo['preco_venda']),
+                                step=1000.0,
+                                key="input_valor_venda"
+                            )
+                            
+                            # ✅ CÁLCULOS EM TEMPO REAL (apenas exibição, não causam loop)
+                            lucro_venda = valor_venda - custo_total
+                            margem_lucro = (lucro_venda / custo_total * 100) if custo_total > 0 else 0
+                            
+                            # Exibir métricas de lucro
+                            col_lucro1, col_lucro2 = st.columns(2)
+                            
+                            with col_lucro1:
+                                cor_lucro = "normal" if lucro_venda >= 0 else "inverse"
+                                st.metric(
+                                    "💰 Lucro Estimado", 
+                                    f"R$ {lucro_venda:,.2f}",
+                                    delta_color=cor_lucro
+                                )
+                            
+                            with col_lucro2:
+                                if margem_lucro >= 20:
+                                    cor_margem = "normal"
+                                elif margem_lucro >= 10:
+                                    cor_margem = "off" 
+                                else:
+                                    cor_margem = "inverse"
+                                
+                                st.metric(
+                                    "📊 Margem", 
+                                    f"{margem_lucro:.1f}%",
+                                    delta_color=cor_margem
+                                )
+                            
+                            st.markdown("#### 👤 Dados do Comprador")
+                            comprador_nome = st.text_input("Nome Completo*", placeholder="Maria Santos", key="comprador_nome_venda")
+                            comprador_cpf = st.text_input("CPF*", placeholder="123.456.789-00", key="comprador_cpf_venda")
+                            comprador_endereco = st.text_area("Endereço", placeholder="Rua Exemplo, 123 - Cidade/UF", key="comprador_endereco_venda")
+                            
+                            submitted = st.form_submit_button("✅ Finalizar Venda", use_container_width=True)
+                            
+                            if submitted:
+                                if not prevenir_loop_submit():
+                                    st.stop()
+                                    
+                                if comprador_nome and comprador_cpf and valor_venda > 0:
+                                    venda_data = {
+                                        'veiculo_id': veiculo_id,
+                                        'comprador_nome': comprador_nome,
+                                        'comprador_cpf': comprador_cpf,
+                                        'comprador_endereco': comprador_endereco,
+                                        'valor_venda': valor_venda
+                                    }
+                                    success = db.add_venda(venda_data)
+                                    if success:
+                                        # Registrar no fluxo de caixa
+                                        fluxo_data = {
+                                            'data': datetime.datetime.now().date(),
+                                            'descricao': f'Venda - {veiculo["marca"]} {veiculo["modelo"]}',
+                                            'tipo': 'Entrada',
+                                            'categoria': 'Vendas',
+                                            'valor': valor_venda,
+                                            'veiculo_id': veiculo_id,
+                                            'status': 'Concluído'
+                                        }
+                                        db.add_fluxo_caixa(fluxo_data)
+                                        
+                                        # ✅ CORREÇÃO CRÍTICA: MARCAR COMO SUBMETIDO SEM st.rerun() IMEDIATO
+                                        st.session_state[venda_form_key] = True
+                                        forcar_atualizacao_gastos()
+                                        resetar_formulario()
+                                        
+                                        # ✅ MENSAGEM QUE PERSISTE SEM RECARREGAR
+                                        st.success("🎉 Venda registrada com sucesso!")
+                                        st.balloons()
+                                        
+                                else:
+                                    st.error("❌ Preencha todos os campos obrigatórios!")
+                        else:
+                            st.error("❌ Veículo não encontrado.")
+                    else:
+                        st.error("❌ Selecione um veículo para vender.")
+            else:
+                st.info("📝 Não há veículos em estoque para venda.")
         
     with col_venda2:
         st.markdown("#### 📋 Histórico de Vendas")
