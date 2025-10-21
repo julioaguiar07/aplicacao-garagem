@@ -2020,10 +2020,23 @@ with tab1:
     else:
         data_corte = datetime.datetime(2000, 1, 1)  # Data muito antiga
     
+    # Filtrar veículos
+    veiculos_filtrados = []
+    for veiculo in veiculos:
+        data_cadastro = veiculo['data_cadastro']
+        if isinstance(data_cadastro, str):
+            data_cadastro = datetime.datetime.strptime(data_cadastro[:10], '%Y-%m-%d')
+        elif hasattr(data_cadastro, 'date'):
+            data_cadastro = data_cadastro.date()
+            data_cadastro = datetime.datetime.combine(data_cadastro, datetime.time())
+        
+        if data_cadastro >= data_corte:
+            if marca_filtro == "Todas" or veiculo['marca'] == marca_filtro:
+                veiculos_filtrados.append(veiculo)
+    
     # Filtrar vendas
     vendas_filtradas = []
     for venda in vendas:
-        # ✅ CORREÇÃO: Lidar com Timestamp do PostgreSQL
         data_venda = venda['data_venda']
         if isinstance(data_venda, str):
             data_venda = datetime.datetime.strptime(data_venda[:10], '%Y-%m-%d')
@@ -2031,27 +2044,9 @@ with tab1:
             data_venda = data_venda.date()
             data_venda = datetime.datetime.combine(data_venda, datetime.time())
         
-        mes_ano = data_venda.strftime("%Y-%m")
         if data_venda >= data_corte:
             if marca_filtro == "Todas" or venda['marca'] == marca_filtro:
                 vendas_filtradas.append(venda)
-    
-    # Filtrar veículos
-    veiculos_filtrados = []
-    for veiculo in veiculos:
-        # ✅ CORREÇÃO: Lidar com Timestamp do PostgreSQL - APENAS PARA FILTRAR
-        data_cadastro = veiculo['data_cadastro']
-        if isinstance(data_cadastro, str):
-            # Se for string (SQLite), converter
-            data_cadastro = datetime.datetime.strptime(data_cadastro[:10], '%Y-%m-%d')
-        elif hasattr(data_cadastro, 'date'):
-            # Se for Timestamp (PostgreSQL), extrair a data
-            data_cadastro = data_cadastro.date()
-            data_cadastro = datetime.datetime.combine(data_cadastro, datetime.time())
-        
-        if data_cadastro >= data_corte:
-            if marca_filtro == "Todas" or veiculo['marca'] == marca_filtro:
-                veiculos_filtrados.append(veiculo)
 
     
     # ANÁLISE 1: PERFORMANCE DE MARGENS POR MODELO
