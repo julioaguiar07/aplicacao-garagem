@@ -711,15 +711,7 @@ class Database:
             print(f"❌ Erro ao buscar veículos: {e}")
             return []
         finally:
-            conn.close()(self, filtro_status=None):
-            conn = self.get_connection()
-            query = 'SELECT * FROM veiculos'
-            if filtro_status and filtro_status != 'Todos':
-                query += f" WHERE status = '{filtro_status}'"
-            query += ' ORDER BY data_cadastro DESC'
-            df = pd.read_sql(query, conn)
             conn.close()
-            return df.to_dict('records')
     
     def add_veiculo(self, veiculo_data):
         print(f"🔍 DEBUG add_veiculo - Iniciando cadastro...")
