@@ -2064,14 +2064,6 @@ with tab1:
     </div>
     """, unsafe_allow_html=True)
 
-    col_refresh, col_stats = st.columns([1, 5])
-    with col_refresh:
-        if st.button("🔄 Atualizar Dados", use_container_width=True):
-            forcar_atualizacao_gastos()
-            st.success("✅ Dados atualizados!")
-            time.sleep(1)
-            st.rerun()
-    
     # Métricas principais
     veiculos = db.get_veiculos()
     vendas = db.get_vendas()
