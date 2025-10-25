@@ -9,13 +9,14 @@ import sqlite3
 import hashlib
 import os
 import io
-from PIL import Image
+from PIL import Image, ImageDraw, ImageFont
 import secrets
 import hmac
 import time
 from functools import wraps
 import psycopg2
 import time
+import textwrap
 
 # =============================================
 # INICIALIZAÇÃO DE SESSION STATE
@@ -198,21 +199,19 @@ def atualizar_margem_veiculo(veiculo_id, nova_margem):
     
     conn.close()
     return True
-def gerar_papel_timbrado(texto, nome_arquivo="documento_timbrado.png"):
-    """Gera um documento com papel timbrado personalizado"""
+    
+def gerar_papel_timbrado(texto, nome_arquivo="documento_timbrado.png", margem_esquerda=50, margem_direita=50, margem_topo=200, espacamento_linhas=8):
+    """Gera um documento com papel timbrado personalizado.
+    - quebra o texto automaticamente por largura,
+    - expande a imagem se necessário (mantendo o timbrado no topo).
+    """
     try:
         # Carregar a imagem do papel timbrado
         timbrado = Image.open("papeltimbrado.png")
-        
-        # Criar uma nova imagem para escrever
         img = timbrado.copy()
-        
-        # Adicionar texto à imagem
-        from PIL import ImageDraw, ImageFont
-        
         draw = ImageDraw.Draw(img)
-        
-        # Tentar usar uma fonte (pode precisar ajustar o caminho)
+
+        # Carregar fonte (ajuste caminho/tamanho conforme desejar)
         try:
             font = ImageFont.truetype("arial.ttf", 20)
         except:
@@ -220,20 +219,76 @@ def gerar_papel_timbrado(texto, nome_arquivo="documento_timbrado.png"):
                 font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 20)
             except:
                 font = ImageFont.load_default()
-        
-        # Dividir o texto em linhas
-        linhas = texto.split('\n')
-        y_pos = 200  # Posição inicial do texto (ajuste conforme necessário)
-        
-        for linha in linhas:
-            draw.text((50, y_pos), linha, fill="black", font=font)
-            y_pos += 30
-        
-        # Salvar a imagem
+
+        largura_disponivel = img.width - margem_esquerda - margem_direita
+
+        # Função que recebe um parágrafo (sem \n) e retorna lista de linhas ajustadas em pixels
+        def quebrar_paragrafo(paragrafo):
+            palavras = paragrafo.split()
+            if not palavras:
+                return ['']  # linha em branco mantém espaçamento entre parágrafos
+            linhas = []
+            linha_atual = palavras[0]
+            for palavra in palavras[1:]:
+                teste = linha_atual + ' ' + palavra
+                # medir largura do texto de teste
+                bbox = draw.textbbox((0,0), teste, font=font)
+                largura_teste = bbox[2] - bbox[0]
+                if largura_teste <= largura_disponivel:
+                    linha_atual = teste
+                else:
+                    linhas.append(linha_atual)
+                    linha_atual = palavra
+            linhas.append(linha_atual)
+            return linhas
+
+        # Processar o texto: preservar parágrafos (separados por '\n\n' ou '\n')
+        # Aqui tratamos cada linha do usuário: respeitamos que ele pode ter quebras manuais.
+        paragrafos = texto.split('\n')
+        linhas_finais = []
+        for p in paragrafos:
+            # Se o usuário colocou uma linha vazia, mantemos linha vazia
+            if p.strip() == '':
+                linhas_finais.append('')
+            else:
+                linhas_finais.extend(quebrar_paragrafo(p))
+
+        # calcular altura necessária
+        # altura de linha: usar bbox de uma amostra ou font.getmetrics
+        sample_bbox = draw.textbbox((0,0), "Ay", font=font)
+        altura_linha = (sample_bbox[3] - sample_bbox[1]) + espacamento_linhas
+
+        y_pos = margem_topo
+        linha_count = len(linhas_finais)
+        altura_necessaria = y_pos + linha_count * altura_linha + 50  # 50 = margem inferior
+
+        # Se passar da imagem, expandir
+        if altura_necessaria > img.height:
+            extra = altura_necessaria - img.height
+            new_height = img.height + extra
+            # Criar nova imagem com altura maior e mesmo modo
+            new_img = Image.new(img.mode, (img.width, new_height), (255,255,255,0) if img.mode=='RGBA' else (255,255,255))
+            # Colar o timbrado original no topo
+            new_img.paste(img, (0,0))
+            img = new_img
+            draw = ImageDraw.Draw(img)
+
+        # Escrever as linhas
+        for linha in linhas_finais:
+            draw.text((margem_esquerda, y_pos), linha, fill="black", font=font)
+            y_pos += altura_linha
+
+        # Salvar
         img.save(nome_arquivo)
         return nome_arquivo
+
     except Exception as e:
-        st.error(f"Erro ao gerar papel timbrado: {e}")
+        # Se estiver usando streamlit, st.error; senão, levantar
+        try:
+            import streamlit as st
+            st.error(f"Erro ao gerar papel timbrado: {e}")
+        except:
+            print(f"Erro ao gerar papel timbrado: {e}")
         return None
 
 def seção_papel_timbrado():
