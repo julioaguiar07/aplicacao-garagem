@@ -3510,25 +3510,24 @@ with tab3:
                                     st.error("❌ Preencha todos os campos obrigatórios!")
             else:
                 st.info("📝 Não há veículos em estoque para venda.")
-                                
+        if 'contrato_gerado' in st.session_state:
+            st.markdown("---")
+            st.markdown("#### 📄 Contrato Gerado - Faça o Download")
+            
+            st.download_button(
+            label="📥 Baixar Contrato de Compra e Venda",
+            data=st.session_state.contrato_gerado,
+            file_name=st.session_state.contrato_nome,
+            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            )
+            
+            with st.expander("👁️ Visualizar Contrato"):
+                st.text_area("Prévia do Contrato", st.session_state.ultimo_contrato, height=400, key="previa_contrato")                        
         with col_venda2:
             st.markdown("#### 📊 Resumo Financeiro")
             # Aqui pode mostrar cálculos detalhados, simulações, etc.
             st.info("💡 **Dica:** Preencha os dados à esquerda para ver o resumo financeiro completo aqui.")
 
-        if 'ultimo_contrato' in st.session_state:
-            st.markdown("---")
-            st.markdown("#### 📄 Contrato Gerado - Faça o Download")
-            
-            st.download_button(
-                label="📥 Baixar Contrato de Compra e Venda",
-                data=st.session_state.ultimo_contrato,
-                file_name=st.session_state.ultimo_contrato_nome,
-                mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-            )
-            
-            with st.expander("👁️ Visualizar Contrato"):
-                st.text_area("Prévia do Contrato", st.session_state.ultimo_contrato, height=400, key="previa_contrato")
 
     
     with sub_tab2:
