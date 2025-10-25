@@ -3132,8 +3132,8 @@ with tab3:
     sub_tab1, sub_tab2, sub_tab3 = st.tabs(["🛒 Nova Venda", "📋 Histórico", "📅 Parcelas"])
     
     with sub_tab1:
-        col_venda1 = st.columns(1)
-        
+        col_venda1, col_venda2 = st.columns(2)
+                
         with col_venda1:
             st.markdown("#### 👤 Dados da Venda")
             veiculos_estoque = [v for v in db.get_veiculos() if v['status'] == 'Em estoque']
@@ -3282,7 +3282,11 @@ with tab3:
                                     st.error("❌ Preencha todos os campos obrigatórios!")
             else:
                 st.info("📝 Não há veículos em estoque para venda.")
-        
+                                
+        with col_venda2:
+            st.markdown("#### 📊 Resumo Financeiro")
+            # Aqui pode mostrar cálculos detalhados, simulações, etc.
+            st.info("💡 **Dica:** Preencha os dados à esquerda para ver o resumo financeiro completo aqui.")
     
     with sub_tab2:
         st.markdown("#### 📋 Histórico Completo de Vendas")
