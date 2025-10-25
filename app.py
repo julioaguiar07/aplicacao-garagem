@@ -2122,6 +2122,20 @@ def calcular_estatisticas_veiculos():
 def gerar_contrato_venda(dados_venda):
     """Gera contrato de compra e venda automático"""
     
+    # ⬇️ A PRÓPRIA FUNÇÃO CALCULA A DESCRIÇÃO ⬇️
+    if dados_venda['num_parcelas'] > 1:
+        valor_parcela = (dados_venda['valor_total'] - dados_venda['valor_entrada']) / dados_venda['num_parcelas']
+        descricao_pagamento = f"ESTOU RECEBENDO R$ {dados_venda['valor_entrada']:,.2f} DE ENTRADA, E RECEBENDO {dados_venda['num_parcelas']}X DE R$ {valor_parcela:,.2f}"
+        
+        # Se houve troca, adicionar na descrição
+        if dados_venda.get('tem_troca') and dados_venda.get('troca_valor', 0) > 0:
+            descricao_pagamento = f"ESTOU RECEBENDO UM CARRO {dados_venda['troca_marca_modelo']} PLACA {dados_venda['troca_placa']}, E RECEBENDO {dados_venda['valor_total']:,.2f} SENDO DIVIDIDO EM {dados_venda['num_parcelas']}X DE {valor_parcela:,.2f}"
+    else:
+        descricao_pagamento = f"R$ {dados_venda['valor_total']:,.2f} À VISTA"
+    
+    # ... resto do contrato usando {descricao_pagamento} ...
+   
+    
     contrato = f"""
 **[CONTRATO DE COMPRA E VENDA DE VEÍCULO]{{.underline}}**
 
@@ -3473,7 +3487,6 @@ with tab3:
                                         'valor_total': valor_total,
                                         'valor_entrada': valor_entrada,
                                         'num_parcelas': num_parcelas,
-                                        'descricao_pagamento': f"ESTOU RECEBENDO R$ {valor_entrada:,.2f} DE ENTRADA, E RECEBENDO {num_parcelas}X DE R$ {(valor_total - valor_entrada) / num_parcelas:,.2f}" if tipo_pagamento != "À Vista" else f"R$ {valor_total:,.2f} À VISTA",
                                         'data_venda': datetime.datetime.now().strftime("%d/%m/%Y"),
                                         'km_atual': km_atual,
                                         'testemunha1_nome': testemunha1_nome,
@@ -3491,20 +3504,8 @@ with tab3:
                                     }
                                     
                                     contrato_gerado = gerar_contrato_venda(dados_contrato)
-                                    
-                                    # Oferecer download do contrato
-                                    st.markdown("---")
-                                    st.markdown("#### 📄 Contrato Gerado Automaticamente")
-                                    st.download_button(
-                                        label="📥 Baixar Contrato de Compra e Venda",
-                                        data=contrato_gerado,
-                                        file_name=f"contrato_{veiculo['marca']}_{veiculo['modelo']}_{comprador_nome.replace(' ', '_')}.docx",
-                                        mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                                    )
-                                    
-                                    # Mostrar prévia
-                                    with st.expander("👁️ Visualizar Contrato"):
-                                        st.text_area("Prévia do Contrato", contrato_gerado, height=400)
+                                    st.session_state.contrato_gerado = contrato_gerado
+                                    st.session_state.contrato_nome = f"contrato_{veiculo['marca']}_{veiculo['modelo']}_{comprador_nome.replace(' ', '_')}.docx" 
                                 else:
                                     st.error("❌ Preencha todos os campos obrigatórios!")
             else:
@@ -3514,6 +3515,21 @@ with tab3:
             st.markdown("#### 📊 Resumo Financeiro")
             # Aqui pode mostrar cálculos detalhados, simulações, etc.
             st.info("💡 **Dica:** Preencha os dados à esquerda para ver o resumo financeiro completo aqui.")
+
+        if 'ultimo_contrato' in st.session_state:
+            st.markdown("---")
+            st.markdown("#### 📄 Contrato Gerado - Faça o Download")
+            
+            st.download_button(
+                label="📥 Baixar Contrato de Compra e Venda",
+                data=st.session_state.ultimo_contrato,
+                file_name=st.session_state.ultimo_contrato_nome,
+                mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            )
+            
+            with st.expander("👁️ Visualizar Contrato"):
+                st.text_area("Prévia do Contrato", st.session_state.ultimo_contrato, height=400, key="previa_contrato")
+
     
     with sub_tab2:
         st.markdown("#### 📋 Histórico Completo de Vendas")
