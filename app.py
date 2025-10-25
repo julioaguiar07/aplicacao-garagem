@@ -1322,63 +1322,79 @@ class Database:
             conn.close()
     # Métodos para financiamentos
     def add_financiamento(self, financiamento_data):
+        """Adiciona financiamento e marca veículo como VENDIDO"""
         conn = self.get_connection()
         cursor = conn.cursor()
         
-        if os.getenv('DATABASE_URL'):
-            cursor.execute('''
-                INSERT INTO financiamentos 
-                (veiculo_id, tipo_financiamento, valor_total, valor_entrada, num_parcelas, data_contrato, observacoes)
-                VALUES (%s, %s, %s, %s, %s, %s, %s)
-                RETURNING id
-            ''', (
-                financiamento_data['veiculo_id'],
-                financiamento_data['tipo_financiamento'],
-                financiamento_data['valor_total'],
-                financiamento_data.get('valor_entrada', 0),
-                financiamento_data.get('num_parcelas', 1),
-                financiamento_data.get('data_contrato'),
-                financiamento_data.get('observacoes', '')
-            ))
-            financiamento_id = cursor.fetchone()[0]
-        else:
-            cursor.execute('''
-                INSERT INTO financiamentos 
-                (veiculo_id, tipo_financiamento, valor_total, valor_entrada, num_parcelas, data_contrato, observacoes)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
-            ''', (
-                financiamento_data['veiculo_id'],
-                financiamento_data['tipo_financiamento'],
-                financiamento_data['valor_total'],
-                financiamento_data.get('valor_entrada', 0),
-                financiamento_data.get('num_parcelas', 1),
-                financiamento_data.get('data_contrato'),
-                financiamento_data.get('observacoes', '')
-            ))
-            financiamento_id = cursor.lastrowid
-        
-        # Criar parcelas automaticamente se for parcelado
-        if financiamento_data.get('num_parcelas', 1) > 1:
-            valor_parcela = (financiamento_data['valor_total'] - financiamento_data.get('valor_entrada', 0)) / financiamento_data['num_parcelas']
-            data_contrato = datetime.datetime.strptime(financiamento_data['data_contrato'], '%Y-%m-%d') if isinstance(financiamento_data['data_contrato'], str) else financiamento_data['data_contrato']
+        try:
+            if os.getenv('DATABASE_URL'):
+                cursor.execute('''
+                    INSERT INTO financiamentos 
+                    (veiculo_id, tipo_financiamento, valor_total, valor_entrada, num_parcelas, data_contrato, observacoes)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s)
+                    RETURNING id
+                ''', (
+                    financiamento_data['veiculo_id'],
+                    financiamento_data['tipo_financiamento'],
+                    financiamento_data['valor_total'],
+                    financiamento_data.get('valor_entrada', 0),
+                    financiamento_data.get('num_parcelas', 1),
+                    financiamento_data.get('data_contrato'),
+                    financiamento_data.get('observacoes', '')
+                ))
+                financiamento_id = cursor.fetchone()[0]
+            else:
+                cursor.execute('''
+                    INSERT INTO financiamentos 
+                    (veiculo_id, tipo_financiamento, valor_total, valor_entrada, num_parcelas, data_contrato, observacoes)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                ''', (
+                    financiamento_data['veiculo_id'],
+                    financiamento_data['tipo_financiamento'],
+                    financiamento_data['valor_total'],
+                    financiamento_data.get('valor_entrada', 0),
+                    financiamento_data.get('num_parcelas', 1),
+                    financiamento_data.get('data_contrato'),
+                    financiamento_data.get('observacoes', '')
+                ))
+                financiamento_id = cursor.lastrowid
             
-            for i in range(financiamento_data['num_parcelas']):
-                data_vencimento = data_contrato + datetime.timedelta(days=30*(i+1))
+            # ✅ CORREÇÃO CRÍTICA: Atualizar status do veículo para VENDIDO
+            if os.getenv('DATABASE_URL'):
+                cursor.execute('UPDATE veiculos SET status = %s WHERE id = %s', 
+                             ('Vendido', financiamento_data['veiculo_id']))
+            else:
+                cursor.execute('UPDATE veiculos SET status = ? WHERE id = ?', 
+                             ('Vendido', financiamento_data['veiculo_id']))
+            
+            # Criar parcelas automaticamente se for parcelado
+            if financiamento_data.get('num_parcelas', 1) > 1:
+                valor_parcela = (financiamento_data['valor_total'] - financiamento_data.get('valor_entrada', 0)) / financiamento_data['num_parcelas']
+                data_contrato = datetime.datetime.strptime(financiamento_data['data_contrato'], '%Y-%m-%d') if isinstance(financiamento_data['data_contrato'], str) else financiamento_data['data_contrato']
                 
-                if os.getenv('DATABASE_URL'):
-                    cursor.execute('''
-                        INSERT INTO parcelas (financiamento_id, numero_parcela, valor_parcela, data_vencimento)
-                        VALUES (%s, %s, %s, %s)
-                    ''', (financiamento_id, i+1, valor_parcela, data_vencimento))
-                else:
-                    cursor.execute('''
-                        INSERT INTO parcelas (financiamento_id, numero_parcela, valor_parcela, data_vencimento)
-                        VALUES (?, ?, ?, ?)
-                    ''', (financiamento_id, i+1, valor_parcela, data_vencimento))
-        
-        conn.commit()
-        conn.close()
-        return financiamento_id
+                for i in range(financiamento_data['num_parcelas']):
+                    data_vencimento = data_contrato + datetime.timedelta(days=30*(i+1))
+                    
+                    if os.getenv('DATABASE_URL'):
+                        cursor.execute('''
+                            INSERT INTO parcelas (financiamento_id, numero_parcela, valor_parcela, data_vencimento)
+                            VALUES (%s, %s, %s, %s)
+                        ''', (financiamento_id, i+1, valor_parcela, data_vencimento))
+                    else:
+                        cursor.execute('''
+                            INSERT INTO parcelas (financiamento_id, numero_parcela, valor_parcela, data_vencimento)
+                            VALUES (?, ?, ?, ?)
+                        ''', (financiamento_id, i+1, valor_parcela, data_vencimento))
+            
+            conn.commit()
+            return financiamento_id
+            
+        except Exception as e:
+            conn.rollback()
+            print(f"❌ Erro ao cadastrar financiamento: {e}")
+            return None
+        finally:
+            conn.close()
 
     def get_financiamentos(self, veiculo_id=None):
         """Busca financiamentos com SQLAlchemy"""
@@ -2176,7 +2192,7 @@ st.markdown("""
 with st.container():
     st.markdown('<div class="full-width-tabs">', unsafe_allow_html=True)
     tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs([
-        "📊 DASHBOARD", "🚗 VEÍCULOS", "💰 VENDAS", "🏦 FINANCIAMENTOS", "📄 DOCUMENTOS", 
+        "📊 DASHBOARD", "🚗 VEÍCULOS", "💰 VENDAS & FINANCIAMENTOS", "📄 DOCUMENTOS", 
         "💸 FLUXO DE CAIXA", "📞 CONTATOS", "⚙️ CONFIGURAÇÕES"
     ])
     st.markdown('</div>', unsafe_allow_html=True)
@@ -3104,49 +3120,37 @@ with tab2:
                         st.info("📝 Vendido - não pode excluir")
 
 with tab3:
-    # VENDAS
+    # ABA UNIFICADA VENDAS + FINANCIAMENTOS
     st.markdown("""
     <div class="glass-card">
-        <h2>💰 Gestão de Vendas</h2>
-        <p style="color: #a0a0a0;">Processo completo de vendas com documentação</p>
+        <h2>💰 Vendas & Financiamentos</h2>
+        <p style="color: #a0a0a0;">Processo completo de vendas com financiamento integrado</p>
     </div>
     """, unsafe_allow_html=True)
     
-    col_venda1, col_venda2 = st.columns(2)
+    # Sub-abas dentro da aba unificada
+    sub_tab1, sub_tab2, sub_tab3 = st.tabs(["🛒 Nova Venda", "📋 Histórico", "📅 Parcelas"])
     
-    with col_venda1:
-        st.markdown("#### 🛒 Nova Venda")
-        veiculos_estoque = [v for v in db.get_veiculos() if v['status'] == 'Em estoque']
+    with sub_tab1:
+        col_venda1, col_venda2 = st.columns(2)
         
-        # ✅ CONTROLE DE ESTADO SEGURO
-        venda_form_key = "venda_form_submitted"
-        if venda_form_key not in st.session_state:
-            st.session_state[venda_form_key] = False
-        
-        # Se uma venda foi concluída recentemente, mostrar confirmação
-        if st.session_state[venda_form_key]:
-            st.success("🎉 Venda registrada com sucesso!")
-            if st.button("🛒 Fazer Nova Venda"):
-                st.session_state[venda_form_key] = False
-                st.rerun()
-        else:
+        with col_venda1:
+            st.markdown("#### 👤 Dados da Venda")
+            veiculos_estoque = [v for v in db.get_veiculos() if v['status'] == 'Em estoque']
+            
             if veiculos_estoque:
                 veiculos_options = [f"{v['id']} - {v['marca']} {v['modelo']} ({v['ano']})" for v in veiculos_estoque]
                 
-                with st.form("nova_venda_form", clear_on_submit=True):
+                with st.form("venda_financiamento_form", clear_on_submit=True):
                     # Seleção do veículo
-                    veiculo_selecionado = st.selectbox(
-                        "Veículo*", 
-                        veiculos_options,
-                        key="select_veiculo_venda"
-                    )
+                    veiculo_selecionado = st.selectbox("Veículo*", veiculos_options)
                     
                     if veiculo_selecionado:
                         veiculo_id = int(veiculo_selecionado.split(" - ")[0])
                         veiculo = next((v for v in veiculos_estoque if v['id'] == veiculo_id), None)
                         
                         if veiculo:
-                            # Calcular custos totais UMA VEZ (não em loop)
+                            # Calcular custos
                             gastos_veiculo = db.get_gastos(veiculo_id)
                             total_gastos = sum(g['valor'] for g in gastos_veiculo)
                             custo_total = veiculo['preco_entrada'] + total_gastos
@@ -3156,52 +3160,62 @@ with tab3:
                                 <strong>🚗 Veículo Selecionado:</strong><br>
                                 <strong>{veiculo['marca']} {veiculo['modelo']} {veiculo['ano']} - {veiculo['cor']}</strong><br>
                                 <small><strong>💰 Custo Total:</strong> R$ {custo_total:,.2f}</small><br>
-                                <small>Compra: R$ {veiculo['preco_entrada']:,.2f} + Gastos: R$ {total_gastos:,.2f}</small>
+                                <small><strong>💵 Preço Sugerido:</strong> R$ {veiculo['preco_venda']:,.2f}</small>
                             </div>
                             """, unsafe_allow_html=True)
-                        
-                            # Campo de valor da venda
-                            valor_venda = st.number_input(
-                                "💵 Valor da Venda (R$)*", 
-                                min_value=0.0, 
-                                value=float(veiculo['preco_venda']),
-                                step=1000.0,
-                                key="input_valor_venda"
-                            )
                             
-                            # ✅ CÁLCULOS EM TEMPO REAL (apenas exibição, não causam loop)
-                            lucro_venda = valor_venda - custo_total
+                            # Dados do cliente
+                            st.markdown("#### 👤 Dados do Comprador")
+                            comprador_nome = st.text_input("Nome Completo*", placeholder="Maria Santos")
+                            comprador_cpf = st.text_input("CPF*", placeholder="123.456.789-00")
+                            comprador_endereco = st.text_area("Endereço", placeholder="Rua Exemplo, 123 - Cidade/UF")
+                            comprador_telefone = st.text_input("Telefone", placeholder="(11) 99999-9999")
+                            
+                            # Dados do financiamento
+                            st.markdown("#### 💳 Condições de Pagamento")
+                            
+                            col_cond1, col_cond2 = st.columns(2)
+                            with col_cond1:
+                                tipo_pagamento = st.selectbox("Forma de Pagamento*", 
+                                    ["Financiamento", "Crédito Direto", "Cheques", "Cartão", "À Vista"])
+                                valor_total = st.number_input("Valor Total da Venda (R$)*", 
+                                    min_value=0.0, value=float(veiculo['preco_venda']), step=1000.0)
+                            
+                            with col_cond2:
+                                if tipo_pagamento != "À Vista":
+                                    valor_entrada = st.number_input("Valor de Entrada (R$)", 
+                                        min_value=0.0, value=0.0, step=1000.0)
+                                    num_parcelas = st.number_input("Número de Parcelas", 
+                                        min_value=1, value=12, max_value=60)
+                                else:
+                                    valor_entrada = valor_total
+                                    num_parcelas = 1
+                            
+                            # Cálculos automáticos
+                            if tipo_pagamento != "À Vista" and num_parcelas > 1:
+                                valor_financiado = valor_total - valor_entrada
+                                valor_parcela = valor_financiado / num_parcelas
+                                
+                                st.markdown(f"""
+                                <div style="padding: 1rem; background: rgba(39, 174, 96, 0.1); border-radius: 8px; margin: 1rem 0;">
+                                    <strong>📊 Resumo do Financiamento:</strong><br>
+                                    <small>Valor Financiado: R$ {valor_financiado:,.2f}</small><br>
+                                    <small>Valor da Parcela: R$ {valor_parcela:,.2f}</small><br>
+                                    <small>Total de Parcelas: {num_parcelas}x</small>
+                                </div>
+                                """, unsafe_allow_html=True)
+                            
+                            # Cálculo de lucro
+                            lucro_venda = valor_total - custo_total
                             margem_lucro = (lucro_venda / custo_total * 100) if custo_total > 0 else 0
                             
-                            # Exibir métricas de lucro
                             col_lucro1, col_lucro2 = st.columns(2)
-                            
                             with col_lucro1:
-                                cor_lucro = "normal" if lucro_venda >= 0 else "inverse"
-                                st.metric(
-                                    "💰 Lucro Estimado", 
-                                    f"R$ {lucro_venda:,.2f}",
-                                    delta_color=cor_lucro
-                                )
-                            
+                                st.metric("💰 Lucro Estimado", f"R$ {lucro_venda:,.2f}")
                             with col_lucro2:
-                                if margem_lucro >= 20:
-                                    cor_margem = "normal"
-                                elif margem_lucro >= 10:
-                                    cor_margem = "off" 
-                                else:
-                                    cor_margem = "inverse"
-                                
-                                st.metric(
-                                    "📊 Margem", 
-                                    f"{margem_lucro:.1f}%",
-                                    delta_color=cor_margem
-                                )
+                                st.metric("📊 Margem", f"{margem_lucro:.1f}%")
                             
-                            st.markdown("#### 👤 Dados do Comprador")
-                            comprador_nome = st.text_input("Nome Completo*", placeholder="Maria Santos", key="comprador_nome_venda")
-                            comprador_cpf = st.text_input("CPF*", placeholder="123.456.789-00", key="comprador_cpf_venda")
-                            comprador_endereco = st.text_area("Endereço", placeholder="Rua Exemplo, 123 - Cidade/UF", key="comprador_endereco_venda")
+                            observacoes = st.text_area("Observações da Venda")
                             
                             submitted = st.form_submit_button("✅ Finalizar Venda", use_container_width=True)
                             
@@ -3209,248 +3223,177 @@ with tab3:
                                 if not prevenir_loop_submit():
                                     st.stop()
                                     
-                                if comprador_nome and comprador_cpf and valor_venda > 0:
+                                if comprador_nome and comprador_cpf and valor_total > 0:
+                                    # Registrar a venda
                                     venda_data = {
                                         'veiculo_id': veiculo_id,
                                         'comprador_nome': comprador_nome,
                                         'comprador_cpf': comprador_cpf,
                                         'comprador_endereco': comprador_endereco,
-                                        'valor_venda': valor_venda
+                                        'valor_venda': valor_total
                                     }
-                                    success = db.add_venda(venda_data)
-                                    if success:
-                                        # Registrar no fluxo de caixa
-                                        fluxo_data = {
-                                            'data': datetime.datetime.now().date(),
-                                            'descricao': f'Venda - {veiculo["marca"]} {veiculo["modelo"]}',
-                                            'tipo': 'Entrada',
-                                            'categoria': 'Vendas',
-                                            'valor': valor_venda,
+                                    success_venda = db.add_venda(venda_data)
+                                    
+                                    if success_venda and tipo_pagamento != "À Vista":
+                                        # Registrar financiamento
+                                        financiamento_data = {
                                             'veiculo_id': veiculo_id,
-                                            'status': 'Concluído'
+                                            'tipo_financiamento': tipo_pagamento,
+                                            'valor_total': valor_total,
+                                            'valor_entrada': valor_entrada,
+                                            'num_parcelas': num_parcelas,
+                                            'data_contrato': datetime.datetime.now().date(),
+                                            'observacoes': f"Venda para {comprador_nome}. {observacoes}"
                                         }
-                                        db.add_fluxo_caixa(fluxo_data)
+                                        financiamento_id = db.add_financiamento(financiamento_data)
                                         
-                                        # ✅ CORREÇÃO CRÍTICA: MARCAR COMO SUBMETIDO SEM st.rerun() IMEDIATO
-                                        st.session_state[venda_form_key] = True
-                                        forcar_atualizacao_gastos()
-                                        resetar_formulario()
-                                        
-                                        # ✅ MENSAGEM QUE PERSISTE SEM RECARREGAR
-                                        st.success("🎉 Venda registrada com sucesso!")
-                                        st.balloons()
-                                        
+                                        if financiamento_id:
+                                            st.success("🎉 Venda e financiamento registrados com sucesso!")
+                                    else:
+                                        st.success("🎉 Venda à vista registrada com sucesso!")
+                                    
+                                    # Registrar no fluxo de caixa
+                                    fluxo_data = {
+                                        'data': datetime.datetime.now().date(),
+                                        'descricao': f'Venda - {veiculo["marca"]} {veiculo["modelo"]}',
+                                        'tipo': 'Entrada',
+                                        'categoria': 'Vendas',
+                                        'valor': valor_entrada if tipo_pagamento != "À Vista" else valor_total,
+                                        'veiculo_id': veiculo_id,
+                                        'status': 'Concluído'
+                                    }
+                                    db.add_fluxo_caixa(fluxo_data)
+                                    
+                                    # Registrar contato do cliente
+                                    contato_data = {
+                                        'nome': comprador_nome,
+                                        'telefone': comprador_telefone,
+                                        'email': '',
+                                        'tipo': 'Cliente',
+                                        'veiculo_interesse': f"{veiculo['marca']} {veiculo['modelo']}",
+                                        'data_contato': datetime.datetime.now().date(),
+                                        'observacoes': f"Comprou veículo por R$ {valor_total:,.2f}. {observacoes}"
+                                    }
+                                    db.add_contato(contato_data)
+                                    
+                                    st.balloons()
+                                    resetar_formulario()
                                 else:
                                     st.error("❌ Preencha todos os campos obrigatórios!")
-                        else:
-                            st.error("❌ Veículo não encontrado.")
-                    else:
-                        st.error("❌ Selecione um veículo para vender.")
             else:
                 st.info("📝 Não há veículos em estoque para venda.")
         
-    with col_venda2:
-        st.markdown("#### 📋 Histórico de Vendas")
+        with col_venda2:
+            st.markdown("#### 📊 Resumo Financeiro")
+            # Aqui pode mostrar cálculos detalhados, simulações, etc.
+            st.info("💡 **Dica:** Preencha os dados à esquerda para ver o resumo financeiro completo aqui.")
+    
+    with sub_tab2:
+        st.markdown("#### 📋 Histórico Completo de Vendas")
+        
         vendas = db.get_vendas()
+        financiamentos = db.get_financiamentos()
         
-        if vendas:
-            for venda in vendas[:10]:
-                # ✅ CORREÇÃO: Usar chaves corretas
-                data_venda_formatada = formatar_data(venda.get('data_venda'))
-                
-                # ✅ CORREÇÃO: Usar .get() para evitar KeyError
-                marca = venda.get('marca', 'N/A')
-                modelo = venda.get('modelo', 'N/A')
-                ano = venda.get('ano', 'N/A')
-                comprador = venda.get('comprador_nome', 'N/A')
-                valor = venda.get('valor_venda', 0)
-                
-                st.markdown(f"""
-                <div style="padding: 1rem; margin: 0.5rem 0; background: rgba(255,255,255,0.03); border-radius: 8px;">
-                    <div style="display: flex; justify-content: between; align-items: start;">
-                        <div style="flex: 1;">
-                            <strong>{marca} {modelo} ({ano})</strong>
-                            <div style="color: #a0a0a0; font-size: 0.9rem;">
-                                Comprador: {comprador}
-                            </div>
-                            <div style="margin-top: 0.5rem;">
-                                <span style="color: #27AE60; font-weight: bold;">R$ {valor:,.2f}</span>
-                                <span style="margin-left: 1rem; color: #a0a0a0; font-size: 0.8rem;">
-                                    {data_venda_formatada}
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                """, unsafe_allow_html=True)
-        else:
-            st.info("📝 Nenhuma venda registrada ainda.")
-
-with tab4:
-    st.markdown("""
-    <div class="glass-card">
-        <h2>🏦 Gestão de Financiamentos</h2>
-        <p style="color: #a0a0a0;">Controle completo de financiamentos, parcelas e recebíveis</p>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    # Métricas principais
-    financiamentos = db.get_financiamentos()
-    parcelas = db.get_parcelas()
-    
-    # Cálculos para métricas
-    parcelas_vencidas = [p for p in parcelas if p['status'] == 'Pendente' and p['data_vencimento'] and processar_data_postgresql(p['data_vencimento']) < datetime.datetime.now().date()]
-    parcelas_mes = [p for p in parcelas if p['status'] == 'Pendente' and p['data_vencimento'] and processar_data_postgresql(p['data_vencimento']).month == datetime.datetime.now().date().month]
-    total_a_receber = sum(p['valor_parcela'] for p in parcelas if p['status'] == 'Pendente')
-    
-    col_met1, col_met2, col_met3, col_met4 = st.columns(4)
-    with col_met1:
-        st.metric("📈 Financiamentos Ativos", len([f for f in financiamentos if f['status'] == 'Ativo']))
-    with col_met2:
-        st.metric("⚠️ Parcelas Vencidas", len(parcelas_vencidas))
-    with col_met3:
-        st.metric("💰 Receber Este Mês", f"R$ {sum(p['valor_parcela'] for p in parcelas_mes):,.2f}")
-    with col_met4:
-        st.metric("🏦 Total a Receber", f"R$ {total_a_receber:,.2f}")
-    
-    col_fin1, col_fin2 = st.columns(2)
-    
-    with col_fin1:
-        st.markdown("#### ➕ Novo Financiamento")
-        with st.form("novo_financiamento_form", clear_on_submit=True):
-            # Selecionar veículo
-            veiculos_options = [f"{v['id']} - {v['marca']} {v['modelo']} ({v['ano']})" for v in db.get_veiculos() if v['status'] == 'Em estoque']
-            veiculo_selecionado = st.selectbox("Veículo*", veiculos_options)
+        # Combinar dados de vendas e financiamentos
+        vendas_completas = []
+        for venda in vendas:
+            venda_completa = venda.copy()
+            # Buscar financiamento correspondente
+            financiamento = next((f for f in financiamentos if f['veiculo_id'] == venda['veiculo_id']), None)
+            if financiamento:
+                venda_completa['tipo_pagamento'] = financiamento['tipo_financiamento']
+                venda_completa['num_parcelas'] = financiamento['num_parcelas']
+                venda_completa['valor_entrada'] = financiamento['valor_entrada']
+            else:
+                venda_completa['tipo_pagamento'] = 'À Vista'
+                venda_completa['num_parcelas'] = 1
+                venda_completa['valor_entrada'] = venda['valor_venda']
             
-            tipo_financiamento = st.selectbox("Tipo de Financiamento*", 
-                ["Crédito Direto", "Cheques", "Promissória", "Cartão", "Financiamento Bancário", "Consórcio"])
-            
-            valor_total = st.number_input("Valor Total (R$)*", min_value=0.0, value=0.0)
-            valor_entrada = st.number_input("Valor de Entrada (R$)", min_value=0.0, value=0.0)
-            num_parcelas = st.number_input("Número de Parcelas", min_value=1, value=1)
-            data_contrato = st.date_input("Data do Contrato*", value=datetime.datetime.now())
-            observacoes = st.text_area("Observações")
-            
-            submitted = st.form_submit_button("💾 Cadastrar Financiamento", use_container_width=True)
-            if submitted:
-                if not prevenir_loop_submit():
-                    st.stop()
-                    
-                if veiculo_selecionado and valor_total > 0:
-                    financiamento_data = {
-                        'veiculo_id': int(veiculo_selecionado.split(" - ")[0]),
-                        'tipo_financiamento': tipo_financiamento,
-                        'valor_total': valor_total,
-                        'valor_entrada': valor_entrada,
-                        'num_parcelas': num_parcelas,
-                        'data_contrato': data_contrato,
-                        'observacoes': observacoes
-                    }
-                    financiamento_id = db.add_financiamento(financiamento_data)
-                    if financiamento_id:
-                        st.success("✅ Financiamento cadastrado com sucesso!")
-                        
-                        # Atualizar status do veículo
-                        db.update_veiculo_status(int(veiculo_selecionado.split(" - ")[0]), "Financiado")
-                        resetar_formulario()
-                else:
-                    st.error("❌ Preencha todos os campos obrigatórios!")
-    
-    with col_fin2:
-        st.markdown("#### 📋 Financiamentos Ativos")
+            vendas_completas.append(venda_completa)
         
-        financiamentos_ativos = [f for f in financiamentos if f['status'] == 'Ativo']
-        
-        for fin in financiamentos_ativos[:5]:
-            # Calcular próxima parcela
-            parcelas_fin = db.get_parcelas(fin['id'], 'Pendente')
-            proxima_parcela = parcelas_fin[0] if parcelas_fin else None
+        for venda in vendas_completas[:15]:
+            data_venda_formatada = formatar_data(venda.get('data_venda'))
             
             st.markdown(f"""
             <div style="padding: 1rem; margin: 0.5rem 0; background: rgba(255,255,255,0.03); border-radius: 8px;">
                 <div style="display: flex; justify-content: between; align-items: start;">
                     <div style="flex: 1;">
-                        <strong>{fin['marca']} {fin['modelo']} ({fin['ano']})</strong>
+                        <strong>{venda.get('marca', 'N/A')} {venda.get('modelo', 'N/A')} ({venda.get('ano', 'N/A')})</strong>
                         <div style="color: #a0a0a0; font-size: 0.9rem;">
-                            {fin['tipo_financiamento']} • {fin['num_parcelas']} parcelas
+                            👤 {venda.get('comprador_nome', 'N/A')} • {venda['tipo_pagamento']}
                         </div>
                         <div style="margin-top: 0.5rem;">
-                            <span style="color: #e88e1b; font-weight: bold;">R$ {fin['valor_total']:,.2f}</span>
-                            <span style="margin-left: 1rem; color: #a0a0a0;">
-                                Pendente: R$ {fin['total_pendente'] or 0:,.2f}
+                            <span style="color: #27AE60; font-weight: bold;">R$ {venda.get('valor_venda', 0):,.2f}</span>
+                            <span style="margin-left: 1rem; color: #a0a0a0; font-size: 0.8rem;">
+                                {venda['num_parcelas']}x de R$ {(venda.get('valor_venda', 0) - venda.get('valor_entrada', 0)) / venda['num_parcelas']:,.2f}
                             </span>
                         </div>
+                        <div style="color: #666; font-size: 0.7rem; margin-top: 0.5rem;">
+                            {data_venda_formatada}
+                        </div>
+                    </div>
+                </div>
+            </div>
             """, unsafe_allow_html=True)
+    
+    with sub_tab3:
+        st.markdown("#### 📅 Gestão de Parcelas")
+        
+        # ✅ CORREÇÃO: Cálculo "Receber Este Mês" - Próximos 30 dias
+        parcelas = db.get_parcelas()
+        hoje = datetime.datetime.now().date()
+        data_fim_mes = hoje + datetime.timedelta(days=30)
+        
+        parcelas_pendentes = [p for p in parcelas if p['status'] == 'Pendente']
+        parcelas_vencidas = [p for p in parcelas_pendentes if p['data_vencimento'] and processar_data_postgresql(p['data_vencimento']) < hoje]
+        parcelas_este_mes = [p for p in parcelas_pendentes if p['data_vencimento'] and processar_data_postgresql(p['data_vencimento']) <= data_fim_mes]
+        
+        # Métricas
+        col_met1, col_met2, col_met3 = st.columns(3)
+        with col_met1:
+            st.metric("⏰ Vencidas", len(parcelas_vencidas))
+        with col_met2:
+            st.metric("💰 Este Mês", f"R$ {sum(p['valor_parcela'] for p in parcelas_este_mes):,.2f}")
+        with col_met3:
+            st.metric("🏦 Total Pendente", f"R$ {sum(p['valor_parcela'] for p in parcelas_pendentes):,.2f}")
+        
+        col_parc1, col_parc2 = st.columns(2)
+        
+        with col_parc1:
+            st.markdown("##### ⏰ Parcelas Vencidas")
             
-            if proxima_parcela:
-                vencimento = processar_data_postgresql(proxima_parcela['data_vencimento'])
-                hoje = datetime.datetime.now().date()
-                dias_restantes = (vencimento - hoje).days
-                
-                cor_alerta = "#E74C3C" if dias_restantes < 0 else "#F39C12" if dias_restantes <= 7 else "#27AE60"
+            for parcela in parcelas_vencidas[:10]:
+                dias_vencido = (hoje - processar_data_postgresql(parcela['data_vencimento'])).days
                 
                 st.markdown(f"""
-                        <div style="color: {cor_alerta}; font-size: 0.8rem; margin-top: 0.5rem;">
-                            ⏰ Próxima parcela: R$ {proxima_parcela['valor_parcela']:,.2f} em {dias_restantes} dias
-                        </div>
+                <div style="padding: 1rem; margin: 0.5rem 0; background: rgba(231, 76, 60, 0.1); border-radius: 8px;">
+                    <strong>{parcela['marca']} {parcela['modelo']}</strong>
+                    <div style="color: #a0a0a0; font-size: 0.9rem;">
+                        Parcela {parcela['numero_parcela']} • Vencida há {dias_vencido} dias
+                    </div>
+                    <div style="color: #E74C3C; font-weight: bold; margin-top: 0.5rem;">
+                        R$ {parcela['valor_parcela']:,.2f}
+                    </div>
+                </div>
                 """, unsafe_allow_html=True)
-            
-            st.markdown("""
-                    </div>
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
-    
-    # Aba de Parcelas e Pagamentos
-    st.markdown("---")
-    st.markdown("#### 📅 Gestão de Parcelas")
-    
-    col_parc1, col_parc2 = st.columns(2)
-    
-    with col_parc1:
-        st.markdown("##### ⏰ Parcelas Vencidas")
-        for parcela in parcelas_vencidas[:5]:
-            dias_vencido = (datetime.datetime.now().date() - processar_data_postgresql(parcela['data_vencimento'])).days
-
-            
-            st.markdown(f"""
-            <div style="padding: 1rem; margin: 0.5rem 0; background: rgba(231, 76, 60, 0.1); border-radius: 8px;">
-                <div style="display: flex; justify-content: between; align-items: center;">
-                    <div style="flex: 1;">
-                        <strong>{parcela['marca']} {parcela['modelo']}</strong>
-                        <div style="color: #a0a0a0; font-size: 0.9rem;">
-                            Parcela {parcela['numero_parcela']} • Vencida há {dias_vencido} dias
-                        </div>
-                    </div>
-                    <span style="color: #E74C3C; font-weight: bold;">
-                        R$ {parcela['valor_parcela']:,.2f}
-                    </span>
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
-    
-    with col_parc2:
-        st.markdown("##### 📈 Próximas Parcelas (7 dias)")
-        parcelas_proximas = [p for p in parcelas if p['status'] == 'Pendente' and p['data_vencimento'] and 0 <= (processar_data_postgresql(p['data_vencimento']) - datetime.datetime.now().date()).days <= 7]
         
-        for parcela in parcelas_proximas[:5]:
-            dias_restantes = (datetime.datetime.strptime(parcela['data_vencimento'], '%Y-%m-%d').date() - datetime.datetime.now().date()).days
+        with col_parc2:
+            st.markdown("##### 📈 Próximas Parcelas (30 dias)")
             
-            st.markdown(f"""
-            <div style="padding: 1rem; margin: 0.5rem 0; background: rgba(243, 156, 18, 0.1); border-radius: 8px;">
-                <div style="display: flex; justify-content: between; align-items: center;">
-                    <div style="flex: 1;">
-                        <strong>{parcela['marca']} {parcela['modelo']}</strong>
-                        <div style="color: #a0a0a0; font-size: 0.9rem;">
-                            Parcela {parcela['numero_parcela']} • {dias_restantes} dias
-                        </div>
+            for parcela in parcelas_este_mes[:10]:
+                dias_restantes = (processar_data_postgresql(parcela['data_vencimento']) - hoje).days
+                
+                st.markdown(f"""
+                <div style="padding: 1rem; margin: 0.5rem 0; background: rgba(243, 156, 18, 0.1); border-radius: 8px;">
+                    <strong>{parcela['marca']} {parcela['modelo']}</strong>
+                    <div style="color: #a0a0a0; font-size: 0.9rem;">
+                        Parcela {parcela['numero_parcela']} • {dias_restantes} dias
                     </div>
-                    <span style="color: #F39C12; font-weight: bold;">
+                    <div style="color: #F39C12; font-weight: bold; margin-top: 0.5rem;">
                         R$ {parcela['valor_parcela']:,.2f}
-                    </span>
+                    </div>
                 </div>
-            </div>
-            """, unsafe_allow_html=True)            
+                """, unsafe_allow_html=True)      
 
 with tab5:
     # DOCUMENTOS
