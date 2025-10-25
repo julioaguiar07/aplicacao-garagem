@@ -3336,14 +3336,20 @@ with tab3:
                             # Troca (opcional)
                             st.markdown("#### 🔄 Veículo em Troca (Opcional)")
                             tem_troca = st.checkbox("Há veículo em troca?")
+                            troca_marca_modelo = ""
+                            troca_placa = "" 
+                            troca_ano = 0
+                            troca_valor = 0.0
+                            
                             if tem_troca:
                                 col_troca1, col_troca2 = st.columns(2)
                                 with col_troca1:
                                     troca_marca_modelo = st.text_input("Veículo trocado - Marca/Modelo", placeholder="Ford Ka 2020")
                                     troca_placa = st.text_input("Veículo trocado - Placa", placeholder="QUY4A64")
                                 with col_troca2:
-                                    troca_ano = st.number_input("Veículo trocado - Ano", min_value=1990, max_value=2024)
+                                    troca_ano = st.number_input("Veículo trocado - Ano", min_value=1990, max_value=2024, value=2020)
                                     troca_valor = st.number_input("Valor da Troca (R$)", min_value=0.0, value=0.0)
+
                             # Dados do financiamento
                             st.markdown("#### 💳 Condições de Pagamento")
                             
