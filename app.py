@@ -2163,7 +2163,7 @@ def gerar_contrato_venda(dados_venda):
 
 **[DO PREÇO E DO PAGAMENTO]{{.underline}}**
 
-**Cláusula 4ª.** O **COMPRADOR** pagará ao **VENDEDOR**, pela compra do veículo objeto deste contrato, {dados_venda['descricao_pagamento']}.
+**Cláusula 4ª.** O **COMPRADOR** pagará ao **VENDEDOR**, pela compra do veículo objeto deste contrato, {descricao_pagamento}.
 
 **Parágrafo primeiro:** O atraso de qualquer parcela, acarretará multa de 5% (cinco por cento) do valor da parcela, e juros de 1% (um por cento) ao mês.
 
