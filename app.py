@@ -3395,7 +3395,7 @@ with tab3:
                 </div>
                 """, unsafe_allow_html=True)      
 
-with tab5:
+with tab4:
     # DOCUMENTOS
     st.markdown("""
     <div class="glass-card">
@@ -3480,7 +3480,7 @@ with tab5:
         else:
             st.info("📝 Nenhum documento salvo ainda.")
 
-with tab6:
+with tab5:
     # FLUXO DE CAIXA COMPLETO
     st.markdown("""
     <div class="glass-card">
@@ -3597,7 +3597,7 @@ with tab6:
             </div>
             """, unsafe_allow_html=True)
 
-with tab7:
+with tab6:
     # CONTATOS
     st.markdown("""
     <div class="glass-card">
@@ -3672,7 +3672,7 @@ with tab7:
             </div>
             """, unsafe_allow_html=True)
 
-with tab8:
+with tab7:
     st.markdown("""
     <div class="glass-card">
         <h2>⚙️ Configurações do Sistema</h2>
