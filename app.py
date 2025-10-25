@@ -3473,6 +3473,7 @@ with tab3:
                                         'valor_total': valor_total,
                                         'valor_entrada': valor_entrada,
                                         'num_parcelas': num_parcelas,
+                                        'descricao_pagamento': f"ESTOU RECEBENDO R$ {valor_entrada:,.2f} DE ENTRADA, E RECEBENDO {num_parcelas}X DE R$ {(valor_total - valor_entrada) / num_parcelas:,.2f}" if tipo_pagamento != "À Vista" else f"R$ {valor_total:,.2f} À VISTA",
                                         'data_venda': datetime.datetime.now().strftime("%d/%m/%Y"),
                                         'km_atual': km_atual,
                                         'testemunha1_nome': testemunha1_nome,
@@ -3486,6 +3487,7 @@ with tab3:
                                         'troca_placa': troca_placa,
                                         'troca_ano': troca_ano,
                                         'troca_valor': troca_valor
+                                        
                                     }
                                     
                                     contrato_gerado = gerar_contrato_venda(dados_contrato)
