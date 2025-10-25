@@ -2848,7 +2848,7 @@ with tab2:
         with st.form("novo_veiculo_form", clear_on_submit=True):  # ← CLEAR_ON_SUBMIT ADICIONADO
             modelo = st.text_input("Modelo*", placeholder="Civic Touring")
             marca = st.text_input("Marca*", placeholder="Honda")
-            ano = st.number_input("Ano*", min_value=1990, max_value=2024, value=2023)
+            ano = st.number_input("Ano*", min_value=1970, max_value=2030, value=2023)
             cor = st.selectbox("Cor*", ["Prata", "Preto", "Branco", "Vermelho", "Azul", "Cinza", "Verde"])
             
             # NOVOS CAMPOS DE PREÇO
