@@ -3010,9 +3010,7 @@ with tab2:
             fornecedor = st.text_input("Fornecedor*", placeholder="Nome do fornecedor")
             
             km = st.number_input("Quilometragem", value=0)
-            placa = st.text_input("Placa", placeholder="ABC1D23")
-            chassi = st.text_input("Chassi", placeholder="9BWZZZ377VT004251")
-            
+            placa = st.text_input("Placa", placeholder="ABC1D23")            
             combustivel = st.selectbox("Combustível", ["Gasolina", "Álcool", "Flex", "Diesel", "Elétrico"])
             cambio = st.selectbox("Câmbio", ["Automático", "Manual", "CVT"])
             portas = st.selectbox("Portas", [2, 4, 5])
@@ -3037,7 +3035,6 @@ with tab2:
                         'chassi': chassi, 'combustivel': combustivel, 'cambio': cambio,
                         'portas': portas, 'observacoes': observacoes,
                         'renavam': renavam,
-                        'chassi': chassi,
                         'ano_fabricacao': ano_fabricacao,
                         'ano_modelo': ano_modelo
                     }
