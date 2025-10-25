@@ -3035,7 +3035,7 @@ with tab2:
                         'margem_negociacao': margem_negociacao,
                         'fornecedor': fornecedor, 'km': km, 'placa': placa,
                         'chassi': chassi, 'combustivel': combustivel, 'cambio': cambio,
-                        'portas': portas, 'observacoes': observacoes
+                        'portas': portas, 'observacoes': observacoes,
                         'renavam': renavam,
                         'chassi': chassi,
                         'ano_fabricacao': ano_fabricacao,
