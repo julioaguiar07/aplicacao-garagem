@@ -2118,6 +2118,147 @@ def calcular_estatisticas_veiculos():
         'gastos_por_categoria': gastos_por_categoria,
         'gastos_por_veiculo': gastos_por_veiculo
     }
+
+def gerar_contrato_venda(dados_venda):
+    """Gera contrato de compra e venda automático"""
+    
+    contrato = f"""
+**[CONTRATO DE COMPRA E VENDA DE VEÍCULO]{{.underline}}**
+
+**  
+[VENDEDOR:]{{.underline}}** **[GARAGEM VEICULOS E LOCAÇÕES LTDA]{{.underline}}**, pessoa jurídica de direito privado, inscrita no CNPJ nº 23.193.404/0001-44, com sede na Av. Lauro Monte, nº 475, sala B, Abolição, CEP: 59.619-000, Mossoró/RN.
+
+**[COMPRADOR; {dados_venda['comprador_nome']}]{{.underline}}**, CPF nº {dados_venda['comprador_cpf']}, residente e domiciliado na {dados_venda['comprador_endereco']}.
+
+***As partes acima identificadas têm, entre si, justo e acertado o presente Contrato de Compra e Venda de Veículo à prazo, que se regerá pelas cláusulas seguintes e pelas condições descritas no presente.***
+
+***  
+[DO OBJETO DO CONTRATO]{{.underline}}**
+
+**Cláusula 1ª.** O presente contrato tem como OBJETO a venda, realizada entre **VENDEDOR** e **COMPRADOR**, compreendendo a um Veículo com as seguintes descrições: **Marca/Modelo/Versão**: {dados_venda['veiculo_marca']}/{dados_venda['veiculo_modelo']}, **Placa**: {dados_venda['veiculo_placa']}, **Renavam**: {dados_venda['veiculo_renavam']}, **Ano de Fabricação**: {dados_venda['veiculo_ano_fabricacao']}, **Ano Modelo**:{dados_venda['veiculo_ano_modelo']}, **Chassi**:{dados_venda['veiculo_chassi']}.
+
+**[DAS OBRIGAÇÕES]{{.underline}}**
+
+**Cláusula 2ª.** O veículo objeto do presente contrato está sendo entregue pelo **VENDEDOR** ao **COMPRADOR** na data da assinatura deste contrato, a partir da qual o **COMPRADOR** será responsável por todas as despesas, taxas, impostos e multas por infrações cometidas a partir do horário em que o contrato for assinado, inclusive o IPVA do corrente ano.
+
+**[DA TRANSFERÊNCIA DE PROPRIEDADE DO VEÍCULO]{{.underline}}**
+
+**Cláusula 3ª.** O Documento Único de Transferência (DUT) será entregue ao **COMPRADOR**, devidamente preenchido e assinado com reconhecimento de firma, no prazo de 05 (cinco) dias após a quitação.
+
+**Parágrafo único**: O **COMPRADOR** está ciente do atual estado em que se encontra o bem, objeto do presente contrato, recebendo-o nestas condições, nada mais tendo a reclamar, eis que vistoriou o mesmo.
+
+**[DO PREÇO E DO PAGAMENTO]{{.underline}}**
+
+**Cláusula 4ª.** O **COMPRADOR** pagará ao **VENDEDOR**, pela compra do veículo objeto deste contrato, {dados_venda['descricao_pagamento']}.
+
+**Parágrafo primeiro:** O atraso de qualquer parcela, acarretará multa de 5% (cinco por cento) do valor da parcela, e juros de 1% (um por cento) ao mês.
+
+**[DA GARANTIA]{{.underline}}**
+
+**Cláusula 5ª.** A **VENDEDORA** responde pelo bom estado e funcionamento em relação a defeitos e/ou vícios relacionados somente ao motor e câmbio do veículo pelo prazo de 90 dias, a contar da data de sua entrega, ou até os primeiros 5.000 km rodados pelo **COMPRADOR**, tudo conforme art. 26, II, da lei nº 8.078/90 (código de defesa do Consumidor), O VEICULO SAI HOJE {dados_venda['data_venda']} COM {dados_venda['km_atual']} KM.
+
+**[DA RESCISÃO DO CONTRATO]{{.underline}}**
+
+**Cláusula 6ª.** A falta de pagamento de qualquer parcela no prazo acordado acarretará a aplicação de multa de 10% (dez por cento) sobre a mesma e juros de 1% (um por cento) ao mês.
+
+**Parágrafo primeiro:** se houver atraso de pagamento de 03 (três) parcelas, o presente contrato estará automaticamente rescindo e o **COMPRADOR** deverá restituir o veículo ao **VENDEDOR**, sob pena de busca e apreensão.
+
+**Parágrafo segundo:** em caso de rescisão de contrato por falta de pagamento das parcelas ou por desistência do **COMPRADOR**, além da restituição do veículo, fica resguardado o **VENDEDOR** o direito de retenção 100% (cem por cento) da primeira parcela pagas e de 50% das demais parcelas, a título de indenização pela frustração do negócio e taxa de ocupação do veículo, sem prejuízo de valor para restauração de eventuais avarias causadas pelo **COMPRADOR**.
+
+**[CONDIÇÕES GERAIS]{{.underline}}**
+
+**Cláusula 7ª.** O presente contrato passa a valer a partir da assinatura pelas partes, obrigando-se a ele os herdeiros ou sucessores dos mesmos.
+
+**[DO FORO]{{.underline}}**
+
+**Cláusula 7ª.** Para dirimir quaisquer controvérsias oriundas do CONTRATO, as partes elegem o foro da comarca de Mossoró-RN.  
+
+       Por estarem assim justos e contratados, firmam o presente instrumento, em duas vias de igual teor, juntamente com 2 (duas) testemunhas.
+
+ Mossoró/RN, {dados_venda['data_venda']}.
+
++------------------------------------------------------------------------------------+
+| ____________________________________________________ |
++:==================================================================================:+
+| JOSE CARLOS ALVES DE MELO FILHO                                                    |
++------------------------------------------------------------------------------------+
+| CPF nº 059.571.594-09                                                              |
+|                                                                                    |
+| **(VENDEDOR**)                                                                     |
++------------------------------------------------------------------------------------+
+
+____________________________________________________
+{dados_venda['comprador_nome']}
+CPF nº {dados_venda['comprador_cpf']}
+
+**(COMPRADOR)**
+
+**TESTEMUNHAS**
+
+**NOME: {dados_venda['testemunha1_nome']}**
+
+**CPF: {dados_venda['testemunha1_cpf']}**
+
+**NOME: {dados_venda['testemunha2_nome']}**
+
+**CPF: {dados_venda['testemunha2_cpf']}**
+
+**CHECK-LIST DE VEÍCULO**
+
+**1 -- DADOS DO VEÍCULO:**
+
+**MARCA : {dados_venda['veiculo_marca']} MODELO: {dados_venda['veiculo_modelo']}**
+
+**ANO/MODELO: {dados_venda['veiculo_ano_modelo']} PLACA: {dados_venda['veiculo_placa']}**
+
+**KM: {dados_venda['km_atual']} DATA DE VENDA:{dados_venda['data_venda']}**
+
+**2 -- DADOS DO COMPRADOR:**
+
+**NOME:{dados_venda['comprador_nome']} FONE:{dados_venda['comprador_telefone']}**
+
+**CPF:{dados_venda['comprador_cpf']} ENDEREÇO:{dados_venda['comprador_endereco']}**
+
+**3 -- ITENS INSPECIONADOS:**
+
+  ------------------------------------------------------------------------------------------------------------------------
+   **BOM**   **RUIM**   **N/A**         **ITENS**         **BOM**   **RUIM**   **N/A**              **ITENS**
+  --------- ---------- --------- ----------------------- --------- ---------- --------- ----------------------------------
+                                  FARÓIS/LÂMPADAS/PISCA                                         CINTO DE SEGURANÇA
+
+                                   STEP/CHAVE DE RODA                                           INDICADORES PAINEL
+
+                                    MACACO/TRIÂNGULO                                              ÓLEO DO MOTOR
+
+                                  LIMPADOR DE PARABRISA                                          FLUIDO DE FREIO
+
+                                  EXTINTOR DE INCÊNDIO                                          LÍQ. ARREFECIMENTO
+
+                                         BUZINA                                                  MOTOR DE PARTIDA
+
+                                    PNEUS DIANTEIROS                                            FECH. DAS JANELAS
+
+                                     PNEUS TRAZEIROS                                                 TAPETES
+
+                                      CALOTAS/RODAS                                          ANTENA E TAMPÃO TRASEIRO
+
+                                         FREIOS                                          OUTRO:___________________
+  ------------------------------------------------------------------------------------------------------------------------
+
+**OBS: {dados_venda['observacoes_checklist']}**
+
+**AVARIAS: {dados_venda['avarias']}**
+
+Declara o **COMPRADOR** estar ciente, no momento da compra, de toda a situação do veículo acima caracterizada, estando desde já de acordo em receber o veículo nas condições em que se encontra.
+
+Mossoró/RN, {dados_venda['data_venda']}.
+
+**{dados_venda['comprador_nome']}**  
+CPF nº {dados_venda['comprador_cpf']}
+
+**(COMPRADOR)**
+"""
+    return contrato
 # =============================================
 # HEADER PRINCIPAL
 # =============================================
@@ -2850,7 +2991,11 @@ with tab2:
             marca = st.text_input("Marca*", placeholder="Honda")
             ano = st.number_input("Ano*", min_value=1970, max_value=2030, value=2023)
             cor = st.selectbox("Cor*", ["Prata", "Preto", "Branco", "Vermelho", "Azul", "Cinza", "Verde"])
-            
+            st.markdown("#### 📄 Dados para Contrato")
+            renavam = st.text_input("RENAVAM", placeholder="12345678901")
+            chassi = st.text_input("Chassi", placeholder="9BWZZZ377VT004251")
+            ano_fabricacao = st.number_input("Ano de Fabricação", min_value=1990, max_value=2024, value=2023)
+            ano_modelo = st.number_input("Ano Modelo", min_value=1990, max_value=2024, value=2023)
             # NOVOS CAMPOS DE PREÇO
             preco_entrada = st.number_input("Preço de Custo (R$)*", min_value=0.0, value=0.0, 
                                         help="Valor que o veículo custou")
@@ -2891,6 +3036,10 @@ with tab2:
                         'fornecedor': fornecedor, 'km': km, 'placa': placa,
                         'chassi': chassi, 'combustivel': combustivel, 'cambio': cambio,
                         'portas': portas, 'observacoes': observacoes
+                        'renavam': renavam,
+                        'chassi': chassi,
+                        'ano_fabricacao': ano_fabricacao,
+                        'ano_modelo': ano_modelo
                     }
                     
                     print("🔄 Tentando cadastrar veículo...")
@@ -3170,7 +3319,34 @@ with tab3:
                             comprador_cpf = st.text_input("CPF*", placeholder="123.456.789-00")
                             comprador_endereco = st.text_area("Endereço", placeholder="Rua Exemplo, 123 - Cidade/UF")
                             comprador_telefone = st.text_input("Telefone", placeholder="(11) 99999-9999")
-                            
+                            st.markdown("#### 📝 Dados para Contrato")
+                            # Dados das testemunhas
+                            col_test1, col_test2 = st.columns(2)
+                            with col_test1:
+                                testemunha1_nome = st.text_input("Testemunha 1 - Nome", placeholder="Nome completo")
+                                testemunha1_cpf = st.text_input("Testemunha 1 - CPF", placeholder="000.000.000-00")
+                            with col_test2:
+                                testemunha2_nome = st.text_input("Testemunha 2 - Nome", placeholder="Nome completo") 
+                                testemunha2_cpf = st.text_input("Testemunha 2 - CPF", placeholder="000.000.000-00")      
+                            # Checklist do veículo
+                            st.markdown("#### 🔍 Checklist do Veículo")
+                            col_check1, col_check2 = st.columns(2)
+                            with col_check1:
+                                km_atual = st.number_input("Quilometragem Atual", value=veiculo['km'])
+                                observacoes_checklist = st.text_area("Observações do Veículo", placeholder="Estado geral, avarias, etc.")
+                            with col_check2:
+                                avarias = st.text_area("Avarias Identificadas", placeholder="Descreva avarias se houver")
+                            # Troca (opcional)
+                            st.markdown("#### 🔄 Veículo em Troca (Opcional)")
+                            tem_troca = st.checkbox("Há veículo em troca?")
+                            if tem_troca:
+                                col_troca1, col_troca2 = st.columns(2)
+                                with col_troca1:
+                                    troca_marca_modelo = st.text_input("Veículo trocado - Marca/Modelo", placeholder="Ford Ka 2020")
+                                    troca_placa = st.text_input("Veículo trocado - Placa", placeholder="QUY4A64")
+                                with col_troca2:
+                                    troca_ano = st.number_input("Veículo trocado - Ano", min_value=1990, max_value=2024)
+                                    troca_valor = st.number_input("Valor da Troca (R$)", min_value=0.0, value=0.0)
                             # Dados do financiamento
                             st.markdown("#### 💳 Condições de Pagamento")
                             
@@ -3278,6 +3454,52 @@ with tab3:
                                     
                                     st.balloons()
                                     resetar_formulario()
+                                    # Gerar contrato automático
+                                    dados_contrato = {
+                                        'comprador_nome': comprador_nome,
+                                        'comprador_cpf': comprador_cpf,
+                                        'comprador_endereco': comprador_endereco,
+                                        'comprador_telefone': comprador_telefone,
+                                        'veiculo_marca': veiculo['marca'],
+                                        'veiculo_modelo': veiculo['modelo'],
+                                        'veiculo_placa': veiculo['placa'],
+                                        'veiculo_renavam': veiculo.get('renavam', ''),
+                                        'veiculo_ano_fabricacao': veiculo.get('ano_fabricacao', veiculo['ano']),
+                                        'veiculo_ano_modelo': veiculo.get('ano_modelo', veiculo['ano']),
+                                        'veiculo_chassi': veiculo.get('chassi', ''),
+                                        'valor_total': valor_total,
+                                        'valor_entrada': valor_entrada,
+                                        'num_parcelas': num_parcelas,
+                                        'data_venda': datetime.datetime.now().strftime("%d/%m/%Y"),
+                                        'km_atual': km_atual,
+                                        'testemunha1_nome': testemunha1_nome,
+                                        'testemunha1_cpf': testemunha1_cpf,
+                                        'testemunha2_nome': testemunha2_nome,
+                                        'testemunha2_cpf': testemunha2_cpf,
+                                        'observacoes_checklist': observacoes_checklist,
+                                        'avarias': avarias,
+                                        'tem_troca': tem_troca,
+                                        'troca_marca_modelo': troca_marca_modelo,
+                                        'troca_placa': troca_placa,
+                                        'troca_ano': troca_ano,
+                                        'troca_valor': troca_valor
+                                    }
+                                    
+                                    contrato_gerado = gerar_contrato_venda(dados_contrato)
+                                    
+                                    # Oferecer download do contrato
+                                    st.markdown("---")
+                                    st.markdown("#### 📄 Contrato Gerado Automaticamente")
+                                    st.download_button(
+                                        label="📥 Baixar Contrato de Compra e Venda",
+                                        data=contrato_gerado,
+                                        file_name=f"contrato_{veiculo['marca']}_{veiculo['modelo']}_{comprador_nome.replace(' ', '_')}.docx",
+                                        mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                                    )
+                                    
+                                    # Mostrar prévia
+                                    with st.expander("👁️ Visualizar Contrato"):
+                                        st.text_area("Prévia do Contrato", contrato_gerado, height=400)
                                 else:
                                     st.error("❌ Preencha todos os campos obrigatórios!")
             else:
