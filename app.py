@@ -3512,7 +3512,7 @@ with tab3:
         )
             
             with st.expander("👁️ Visualizar Contrato"):
-                st.text_area("Prévia do Contrato", st.session_state.contrato_gertado, height=400, key="previa_contrato")                        
+                st.text_area("Prévia do Contrato", st.session_state.contrato_gerado, height=400, key="previa_contrato")                        
         with col_venda2:
             st.markdown("#### 📊 Resumo Financeiro")
             # Aqui pode mostrar cálculos detalhados, simulações, etc.
