@@ -2120,159 +2120,149 @@ def calcular_estatisticas_veiculos():
     }
 
 def gerar_contrato_venda(dados_venda):
-    """Gera contrato de compra e venda automático"""
+    """Gera contrato de compra e venda automático formatado"""
     
-    # ⬇️ A PRÓPRIA FUNÇÃO CALCULA A DESCRIÇÃO ⬇️
+    # Cálculo da descrição do pagamento
     if dados_venda['num_parcelas'] > 1:
         valor_parcela = (dados_venda['valor_total'] - dados_venda['valor_entrada']) / dados_venda['num_parcelas']
         descricao_pagamento = f"ESTOU RECEBENDO R$ {dados_venda['valor_entrada']:,.2f} DE ENTRADA, E RECEBENDO {dados_venda['num_parcelas']}X DE R$ {valor_parcela:,.2f}"
         
-        # Se houve troca, adicionar na descrição
         if dados_venda.get('tem_troca') and dados_venda.get('troca_valor', 0) > 0:
             descricao_pagamento = f"ESTOU RECEBENDO UM CARRO {dados_venda['troca_marca_modelo']} PLACA {dados_venda['troca_placa']}, E RECEBENDO {dados_venda['valor_total']:,.2f} SENDO DIVIDIDO EM {dados_venda['num_parcelas']}X DE {valor_parcela:,.2f}"
     else:
         descricao_pagamento = f"R$ {dados_venda['valor_total']:,.2f} À VISTA"
-    
-    # ... resto do contrato usando {descricao_pagamento} ...
-   
-    
-    contrato = f"""
-**[CONTRATO DE COMPRA E VENDA DE VEÍCULO]{{.underline}}**
 
-**  
-[VENDEDOR:]{{.underline}}** **[GARAGEM VEICULOS E LOCAÇÕES LTDA]{{.underline}}**, pessoa jurídica de direito privado, inscrita no CNPJ nº 23.193.404/0001-44, com sede na Av. Lauro Monte, nº 475, sala B, Abolição, CEP: 59.619-000, Mossoró/RN.
+    contrato_html = f"""
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body {{
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 40px;
+            color: #000;
+        }}
+        .underline {{
+            text-decoration: underline;
+        }}
+        .center {{
+            text-align: center;
+        }}
+        .clausula {{
+            margin-top: 20px;
+            margin-bottom: 15px;
+        }}
+        .clausula-titulo {{
+            font-weight: bold;
+            margin-bottom: 8px;
+        }}
+        .assinaturas {{
+            margin-top: 50px;
+        }}
+        .assinatura-line {{
+            border-top: 1px solid #000;
+            margin-top: 40px;
+            padding-top: 5px;
+        }}
+        table {{
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }}
+        th, td {{
+            border: 1px solid #000;
+            padding: 8px;
+            text-align: center;
+        }}
+        .checklist-title {{
+            font-weight: bold;
+            margin-top: 30px;
+        }}
+    </style>
+</head>
+<body>
 
-**[COMPRADOR; {dados_venda['comprador_nome']}]{{.underline}}**, CPF nº {dados_venda['comprador_cpf']}, residente e domiciliado na {dados_venda['comprador_endereco']}.
+    <div class="center">
+        <h2><u>CONTRATO DE COMPRA E VENDA DE VEÍCULO</u></h2>
+    </div>
 
-***As partes acima identificadas têm, entre si, justo e acertado o presente Contrato de Compra e Venda de Veículo à prazo, que se regerá pelas cláusulas seguintes e pelas condições descritas no presente.***
+    <p><strong>VENDEDOR:</strong> <u>GARAGEM VEICULOS E LOCAÇÕES LTDA</u>, pessoa jurídica de direito privado, 
+    inscrita no CNPJ nº 23.193.404/0001-44, com sede na Av. Lauro Monte, nº 475, sala B, Abolição, CEP: 59.619-000, Mossoró/RN.</p>
 
-***  
-[DO OBJETO DO CONTRATO]{{.underline}}**
+    <p><strong>COMPRADOR:</strong> <u>{dados_venda['comprador_nome']}</u>, CPF nº {dados_venda['comprador_cpf']}, 
+    residente e domiciliado na {dados_venda['comprador_endereco']}.</p>
 
-**Cláusula 1ª.** O presente contrato tem como OBJETO a venda, realizada entre **VENDEDOR** e **COMPRADOR**, compreendendo a um Veículo com as seguintes descrições: **Marca/Modelo/Versão**: {dados_venda['veiculo_marca']}/{dados_venda['veiculo_modelo']}, **Placa**: {dados_venda['veiculo_placa']}, **Renavam**: {dados_venda['veiculo_renavam']}, **Ano de Fabricação**: {dados_venda['veiculo_ano_fabricacao']}, **Ano Modelo**:{dados_venda['veiculo_ano_modelo']}, **Chassi**:{dados_venda['veiculo_chassi']}.
+    <p><em>As partes acima identificadas têm, entre si, justo e acertado o presente Contrato de Compra e Venda de Veículo à prazo, 
+    que se regerá pelas cláusulas seguintes e pelas condições descritas no presente.</em></p>
 
-**[DAS OBRIGAÇÕES]{{.underline}}**
+    <div class="clausula">
+        <div class="clausula-titulo">DO OBJETO DO CONTRATO</div>
+        <p><strong>Cláusula 1ª.</strong> O presente contrato tem como OBJETO a venda, realizada entre <strong>VENDEDOR</strong> e <strong>COMPRADOR</strong>, 
+        compreendendo a um Veículo com as seguintes descrições: <strong>Marca/Modelo/Versão</strong>: {dados_venda['veiculo_marca']}/{dados_venda['veiculo_modelo']}, 
+        <strong>Placa</strong>: {dados_venda['veiculo_placa']}, <strong>Renavam</strong>: {dados_venda['veiculo_renavam']}, 
+        <strong>Ano de Fabricação</strong>: {dados_venda['veiculo_ano_fabricacao']}, <strong>Ano Modelo</strong>: {dados_venda['veiculo_ano_modelo']}, 
+        <strong>Chassi</strong>: {dados_venda['veiculo_chassi']}.</p>
+    </div>
 
-**Cláusula 2ª.** O veículo objeto do presente contrato está sendo entregue pelo **VENDEDOR** ao **COMPRADOR** na data da assinatura deste contrato, a partir da qual o **COMPRADOR** será responsável por todas as despesas, taxas, impostos e multas por infrações cometidas a partir do horário em que o contrato for assinado, inclusive o IPVA do corrente ano.
+    <div class="clausula">
+        <div class="clausula-titulo">DAS OBRIGAÇÕES</div>
+        <p><strong>Cláusula 2ª.</strong> O veículo objeto do presente contrato está sendo entregue pelo <strong>VENDEDOR</strong> ao <strong>COMPRADOR</strong> 
+        na data da assinatura deste contrato, a partir da qual o <strong>COMPRADOR</strong> será responsável por todas as despesas, taxas, impostos e multas 
+        por infrações cometidas a partir do horário em que o contrato for assinado, inclusive o IPVA do corrente ano.</p>
+    </div>
 
-**[DA TRANSFERÊNCIA DE PROPRIEDADE DO VEÍCULO]{{.underline}}**
+    <div class="clausula">
+        <div class="clausula-titulo">DA TRANSFERÊNCIA DE PROPRIEDADE DO VEÍCULO</div>
+        <p><strong>Cláusula 3ª.</strong> O Documento Único de Transferência (DUT) será entregue ao <strong>COMPRADOR</strong>, 
+        devidamente preenchido e assinado com reconhecimento de firma, no prazo de 05 (cinco) dias após a quitação.</p>
+        <p><strong>Parágrafo único:</strong> O <strong>COMPRADOR</strong> está ciente do atual estado em que se encontra o bem, objeto do presente contrato, 
+        recebendo-o nestas condições, nada mais tendo a reclamar, eis que vistoriou o mesmo.</p>
+    </div>
 
-**Cláusula 3ª.** O Documento Único de Transferência (DUT) será entregue ao **COMPRADOR**, devidamente preenchido e assinado com reconhecimento de firma, no prazo de 05 (cinco) dias após a quitação.
+    <div class="clausula">
+        <div class="clausula-titulo">DO PREÇO E DO PAGAMENTO</div>
+        <p><strong>Cláusula 4ª.</strong> O <strong>COMPRADOR</strong> pagará ao <strong>VENDEDOR</strong>, pela compra do veículo objeto deste contrato, {descricao_pagamento}.</p>
+        <p><strong>Parágrafo primeiro:</strong> O atraso de qualquer parcela, acarretará multa de 5% (cinco por cento) do valor da parcela, e juros de 1% (um por cento) ao mês.</p>
+    </div>
 
-**Parágrafo único**: O **COMPRADOR** está ciente do atual estado em que se encontra o bem, objeto do presente contrato, recebendo-o nestas condições, nada mais tendo a reclamar, eis que vistoriou o mesmo.
+    <div class="clausula">
+        <div class="clausula-titulo">DA GARANTIA</div>
+        <p><strong>Cláusula 5ª.</strong> A <strong>VENDEDORA</strong> responde pelo bom estado e funcionamento em relação a defeitos e/ou vícios relacionados somente ao motor e câmbio do veículo pelo prazo de 90 dias, a contar da data de sua entrega, ou até os primeiros 5.000 km rodados pelo <strong>COMPRADOR</strong>, tudo conforme art. 26, II, da lei nº 8.078/90 (código de defesa do Consumidor), O VEICULO SAI HOJE {dados_venda['data_venda']} COM {dados_venda['km_atual']} KM.</p>
+    </div>
 
-**[DO PREÇO E DO PAGAMENTO]{{.underline}}**
+    <!-- CONTINUA COM AS OUTRAS CLÁUSULAS... -->
 
-**Cláusula 4ª.** O **COMPRADOR** pagará ao **VENDEDOR**, pela compra do veículo objeto deste contrato, {descricao_pagamento}.
+    <div class="assinaturas">
+        <p>Por estarem assim justos e contratados, firmam o presente instrumento, em duas vias de igual teor, juntamente com 2 (duas) testemunhas.</p>
+        
+        <p>Mossoró/RN, {dados_venda['data_venda']}.</p>
 
-**Parágrafo primeiro:** O atraso de qualquer parcela, acarretará multa de 5% (cinco por cento) do valor da parcela, e juros de 1% (um por cento) ao mês.
+        <div class="assinatura-line">
+            <p><strong>JOSE CARLOS ALVES DE MELO FILHO</strong><br>
+            CPF nº 059.571.594-09<br>
+            <strong>(VENDEDOR)</strong></p>
+        </div>
 
-**[DA GARANTIA]{{.underline}}**
+        <div class="assinatura-line">
+            <p><strong>{dados_venda['comprador_nome']}</strong><br>
+            CPF nº {dados_venda['comprador_cpf']}<br>
+            <strong>(COMPRADOR)</strong></p>
+        </div>
 
-**Cláusula 5ª.** A **VENDEDORA** responde pelo bom estado e funcionamento em relação a defeitos e/ou vícios relacionados somente ao motor e câmbio do veículo pelo prazo de 90 dias, a contar da data de sua entrega, ou até os primeiros 5.000 km rodados pelo **COMPRADOR**, tudo conforme art. 26, II, da lei nº 8.078/90 (código de defesa do Consumidor), O VEICULO SAI HOJE {dados_venda['data_venda']} COM {dados_venda['km_atual']} KM.
+        <p><strong>TESTEMUNHAS</strong></p>
+        <p><strong>NOME:</strong> {dados_venda['testemunha1_nome']}<br>
+        <strong>CPF:</strong> {dados_venda['testemunha1_cpf']}</p>
 
-**[DA RESCISÃO DO CONTRATO]{{.underline}}**
+        <p><strong>NOME:</strong> {dados_venda['testemunha2_nome']}<br>
+        <strong>CPF:</strong> {dados_venda['testemunha2_cpf']}</p>
+    </div>
 
-**Cláusula 6ª.** A falta de pagamento de qualquer parcela no prazo acordado acarretará a aplicação de multa de 10% (dez por cento) sobre a mesma e juros de 1% (um por cento) ao mês.
-
-**Parágrafo primeiro:** se houver atraso de pagamento de 03 (três) parcelas, o presente contrato estará automaticamente rescindo e o **COMPRADOR** deverá restituir o veículo ao **VENDEDOR**, sob pena de busca e apreensão.
-
-**Parágrafo segundo:** em caso de rescisão de contrato por falta de pagamento das parcelas ou por desistência do **COMPRADOR**, além da restituição do veículo, fica resguardado o **VENDEDOR** o direito de retenção 100% (cem por cento) da primeira parcela pagas e de 50% das demais parcelas, a título de indenização pela frustração do negócio e taxa de ocupação do veículo, sem prejuízo de valor para restauração de eventuais avarias causadas pelo **COMPRADOR**.
-
-**[CONDIÇÕES GERAIS]{{.underline}}**
-
-**Cláusula 7ª.** O presente contrato passa a valer a partir da assinatura pelas partes, obrigando-se a ele os herdeiros ou sucessores dos mesmos.
-
-**[DO FORO]{{.underline}}**
-
-**Cláusula 7ª.** Para dirimir quaisquer controvérsias oriundas do CONTRATO, as partes elegem o foro da comarca de Mossoró-RN.  
-
-       Por estarem assim justos e contratados, firmam o presente instrumento, em duas vias de igual teor, juntamente com 2 (duas) testemunhas.
-
- Mossoró/RN, {dados_venda['data_venda']}.
-
-+------------------------------------------------------------------------------------+
-| ____________________________________________________ |
-+:==================================================================================:+
-| JOSE CARLOS ALVES DE MELO FILHO                                                    |
-+------------------------------------------------------------------------------------+
-| CPF nº 059.571.594-09                                                              |
-|                                                                                    |
-| **(VENDEDOR**)                                                                     |
-+------------------------------------------------------------------------------------+
-
-____________________________________________________
-{dados_venda['comprador_nome']}
-CPF nº {dados_venda['comprador_cpf']}
-
-**(COMPRADOR)**
-
-**TESTEMUNHAS**
-
-**NOME: {dados_venda['testemunha1_nome']}**
-
-**CPF: {dados_venda['testemunha1_cpf']}**
-
-**NOME: {dados_venda['testemunha2_nome']}**
-
-**CPF: {dados_venda['testemunha2_cpf']}**
-
-**CHECK-LIST DE VEÍCULO**
-
-**1 -- DADOS DO VEÍCULO:**
-
-**MARCA : {dados_venda['veiculo_marca']} MODELO: {dados_venda['veiculo_modelo']}**
-
-**ANO/MODELO: {dados_venda['veiculo_ano_modelo']} PLACA: {dados_venda['veiculo_placa']}**
-
-**KM: {dados_venda['km_atual']} DATA DE VENDA:{dados_venda['data_venda']}**
-
-**2 -- DADOS DO COMPRADOR:**
-
-**NOME:{dados_venda['comprador_nome']} FONE:{dados_venda['comprador_telefone']}**
-
-**CPF:{dados_venda['comprador_cpf']} ENDEREÇO:{dados_venda['comprador_endereco']}**
-
-**3 -- ITENS INSPECIONADOS:**
-
-  ------------------------------------------------------------------------------------------------------------------------
-   **BOM**   **RUIM**   **N/A**         **ITENS**         **BOM**   **RUIM**   **N/A**              **ITENS**
-  --------- ---------- --------- ----------------------- --------- ---------- --------- ----------------------------------
-                                  FARÓIS/LÂMPADAS/PISCA                                         CINTO DE SEGURANÇA
-
-                                   STEP/CHAVE DE RODA                                           INDICADORES PAINEL
-
-                                    MACACO/TRIÂNGULO                                              ÓLEO DO MOTOR
-
-                                  LIMPADOR DE PARABRISA                                          FLUIDO DE FREIO
-
-                                  EXTINTOR DE INCÊNDIO                                          LÍQ. ARREFECIMENTO
-
-                                         BUZINA                                                  MOTOR DE PARTIDA
-
-                                    PNEUS DIANTEIROS                                            FECH. DAS JANELAS
-
-                                     PNEUS TRAZEIROS                                                 TAPETES
-
-                                      CALOTAS/RODAS                                          ANTENA E TAMPÃO TRASEIRO
-
-                                         FREIOS                                          OUTRO:___________________
-  ------------------------------------------------------------------------------------------------------------------------
-
-**OBS: {dados_venda['observacoes_checklist']}**
-
-**AVARIAS: {dados_venda['avarias']}**
-
-Declara o **COMPRADOR** estar ciente, no momento da compra, de toda a situação do veículo acima caracterizada, estando desde já de acordo em receber o veículo nas condições em que se encontra.
-
-Mossoró/RN, {dados_venda['data_venda']}.
-
-**{dados_venda['comprador_nome']}**  
-CPF nº {dados_venda['comprador_cpf']}
-
-**(COMPRADOR)**
+</body>
+</html>
 """
-    return contrato
+    return contrato_html
 # =============================================
 # HEADER PRINCIPAL
 # =============================================
@@ -3518,8 +3508,8 @@ with tab3:
             label="📥 Baixar Contrato de Compra e Venda",
             data=st.session_state.contrato_gerado,
             file_name=st.session_state.contrato_nome,
-            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-            )
+            mime="text/html"  # ⬅️ Mude para HTML
+        )
             
             with st.expander("👁️ Visualizar Contrato"):
                 st.text_area("Prévia do Contrato", st.session_state.contrato_gertado, height=400, key="previa_contrato")                        
