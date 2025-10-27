@@ -931,8 +931,8 @@ class Database:
                 # ✅ PostgreSQL
                 cursor.execute('''
                     INSERT INTO veiculos 
-                    (modelo, ano, marca, cor, preco_entrada, preco_venda, fornecedor, km, placa, chassi, renavam, combustivel, cambio, portas, observacoes, margem_negociacao)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    (modelo, ano, marca, cor, preco_entrada, preco_venda, fornecedor, km, placa, chassi, renavam, combustivel, cambio, portas, observacoes, margem_negociacao, ano_fabricacao, ano_modelo)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                     RETURNING id
                 ''', (
                     veiculo_data['modelo'], veiculo_data['ano'], veiculo_data['marca'],
@@ -947,8 +947,8 @@ class Database:
                 # ✅ SQLite
                 cursor.execute('''
                     INSERT INTO veiculos 
-                    (modelo, ano, marca, cor, preco_entrada, preco_venda, fornecedor, km, placa, chassi, renavam, combustivel, cambio, portas, observacoes, margem_negociacao)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    (modelo, ano, marca, cor, preco_entrada, preco_venda, fornecedor, km, placa, chassi, renavam, combustivel, cambio, portas, observacoes, margem_negociacao, ano_fabricacao, ano_modelo)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ''', (
                     veiculo_data['modelo'], veiculo_data['ano'], veiculo_data['marca'],
                     veiculo_data['cor'], veiculo_data['preco_entrada'], preco_venda,
