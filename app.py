@@ -3980,8 +3980,8 @@ with tab7:
                 st.error("⚠️ Preencha todos os campos")
 
     
-'''
-    st.markdown("---")
+
+    '''st.markdown("---")
     st.markdown("#### 🗑️ Limpeza do Banco de Dados")
     
     # Usar session_state para controlar a confirmação
@@ -4047,9 +4047,8 @@ with tab7:
         with col_conf2:
             if st.button("❌ CANCELAR", use_container_width=True):
                 st.session_state.confirmar_limpeza = False
-                st.rerun()
+                st.rerun()'''
 
-'''
 # =============================================
 # FOOTER PREMIUM
 # =============================================
