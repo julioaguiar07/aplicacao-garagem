@@ -3980,7 +3980,7 @@ with tab7:
                 st.error("⚠️ Preencha todos os campos")
 
     
-    '''
+
     st.markdown("---")
     st.markdown("#### 🗑️ Limpeza do Banco de Dados")
     
@@ -4048,7 +4048,6 @@ with tab7:
             if st.button("❌ CANCELAR", use_container_width=True):
                 st.session_state.confirmar_limpeza = False
                 st.rerun()
-    '''
 
 
 # =============================================
