@@ -1546,7 +1546,7 @@ class Database:
         conn.commit()
         conn.close()
         return True
-
+    
     def delete_veiculo(self, veiculo_id):
         """Exclui um veículo e seus registros relacionados"""
         conn = self.get_connection()
@@ -1586,45 +1586,45 @@ class Database:
         finally:
             conn.close()    
             
-    def adicionar_coluna_renavam():
-        """Adiciona a coluna renavam na tabela veiculos se não existir"""
-        conn = db.get_connection()
-        cursor = conn.cursor()
+def adicionar_coluna_renavam():
+    """Adiciona a coluna renavam na tabela veiculos se não existir"""
+    conn = db.get_connection()
+    cursor = conn.cursor()
+    
+    try:
+        # Verificar se a coluna renavam existe
+        if os.getenv('DATABASE_URL'):  # PostgreSQL
+            cursor.execute("""
+                SELECT column_name 
+                FROM information_schema.columns 
+                WHERE table_name = 'veiculos' AND column_name = 'renavam'
+            """)
+        else:  # SQLite
+            cursor.execute("PRAGMA table_info(veiculos)")
+            colunas = [col[1] for col in cursor.fetchall()]
         
-        try:
-            # Verificar se a coluna renavam existe
-            if os.getenv('DATABASE_URL'):  # PostgreSQL
-                cursor.execute("""
-                    SELECT column_name 
-                    FROM information_schema.columns 
-                    WHERE table_name = 'veiculos' AND column_name = 'renavam'
-                """)
-            else:  # SQLite
-                cursor.execute("PRAGMA table_info(veiculos)")
-                colunas = [col[1] for col in cursor.fetchall()]
-            
-            # Se não existir, adicionar
-            if os.getenv('DATABASE_URL'):
-                resultado = cursor.fetchone()
-                if not resultado:
-                    cursor.execute('ALTER TABLE veiculos ADD COLUMN renavam TEXT')
-                    print("✅ Coluna 'renavam' adicionada ao PostgreSQL")
-            else:
-                if 'renavam' not in colunas:
-                    cursor.execute('ALTER TABLE veiculos ADD COLUMN renavam TEXT')
-                    print("✅ Coluna 'renavam' adicionada ao SQLite")
-            
-            conn.commit()
-            
-        except Exception as e:
-            print(f"❌ Erro ao adicionar coluna renavam: {e}")
-            conn.rollback()
-        finally:
-            conn.close()
+        # Se não existir, adicionar
+        if os.getenv('DATABASE_URL'):
+            resultado = cursor.fetchone()
+            if not resultado:
+                cursor.execute('ALTER TABLE veiculos ADD COLUMN renavam TEXT')
+                print("✅ Coluna 'renavam' adicionada ao PostgreSQL")
+        else:
+            if 'renavam' not in colunas:
+                cursor.execute('ALTER TABLE veiculos ADD COLUMN renavam TEXT')
+                print("✅ Coluna 'renavam' adicionada ao SQLite")
+        
+        conn.commit()
+        
+    except Exception as e:
+        print(f"❌ Erro ao adicionar coluna renavam: {e}")
+        conn.rollback()
+    finally:
+        conn.close()
 # Instância global do banco
 db = Database()
 adicionar_coluna_renavam()
-db.atualizar_estrutura_banco()  # ← ADICIONAR ESTA LINHA
+db.atualizar_estrutura_banco()  
 
 # =============================================
 # DEBUG - VERIFICAR O QUE ESTÁ ACONTECENDO
