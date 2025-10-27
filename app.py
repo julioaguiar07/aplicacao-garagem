@@ -3005,7 +3005,7 @@ with tab2:
             # NOVOS CAMPOS DE PREÇO
             preco_entrada = st.number_input("Preço de Custo (R$)*", min_value=0.0, value=0.0, 
                                         help="Valor que o veículo custou")
-            margem_negociacao = st.slider("Margem para Negociação (%)", min_value=10, max_value=50, value=30,
+            margem_negociacao = st.slider("Margem para Negociação (%)", min_value=0, max_value=20, value=12,
                                         help="Percentual acrescido para negociação")
             
             # Calcular preço de venda automaticamente
