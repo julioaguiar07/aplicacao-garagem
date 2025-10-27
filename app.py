@@ -2991,15 +2991,15 @@ with tab2:
     with col_veic1:
         st.markdown("#### ➕ Novo Veículo")
         with st.form("novo_veiculo_form", clear_on_submit=True):  # ← CLEAR_ON_SUBMIT ADICIONADO
-            modelo = st.text_input("Modelo*", placeholder="Civic Touring")
-            marca = st.text_input("Marca*", placeholder="Honda")
-            ano = st.number_input("Ano*", min_value=1970, max_value=2030, value=2023)
+            modelo = st.text_input("Modelo*", placeholder="Gol")
+            marca = st.text_input("Marca*", placeholder="Volkswagen")
+            ano = st.number_input("Ano*", min_value=1970, max_value=2030, value=2025)
             cor = st.selectbox("Cor*", ["Prata", "Preto", "Branco", "Vermelho", "Azul", "Cinza", "Verde"])
             st.markdown("#### 📄 Dados para Contrato")
-            renavam = st.text_input("RENAVAM", placeholder="12345678901")
+            renavam = st.text_input("RENAVAM", placeholder="12345678901", key="renavam_input")
             chassi = st.text_input("Chassi", placeholder="9BWZZZ377VT004251")
-            ano_fabricacao = st.number_input("Ano de Fabricação", min_value=1990, max_value=2024, value=2023)
-            ano_modelo = st.number_input("Ano Modelo", min_value=1990, max_value=2024, value=2023)
+            ano_fabricacao = st.number_input("Ano de Fabricação", min_value=1970, max_value=2030, value=2025)
+            ano_modelo = st.number_input("Ano Modelo", min_value=1970, max_value=2030, value=2025)
             # NOVOS CAMPOS DE PREÇO
             preco_entrada = st.number_input("Preço de Custo (R$)*", min_value=0.0, value=0.0, 
                                         help="Valor que o veículo custou")
@@ -3977,6 +3977,8 @@ with tab7:
             else:
                 st.error("⚠️ Preencha todos os campos")
 
+    
+    '''
     st.markdown("---")
     st.markdown("#### 🗑️ Limpeza do Banco de Dados")
     
@@ -4044,6 +4046,8 @@ with tab7:
             if st.button("❌ CANCELAR", use_container_width=True):
                 st.session_state.confirmar_limpeza = False
                 st.rerun()
+    '''
+
 
 # =============================================
 # FOOTER PREMIUM
