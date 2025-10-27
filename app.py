@@ -931,8 +931,8 @@ class Database:
                 # ✅ PostgreSQL
                 cursor.execute('''
                     INSERT INTO veiculos 
-                    (modelo, ano, marca, cor, preco_entrada, preco_venda, fornecedor, km, placa, chassi, renavam, combustivel, cambio, portas, observacoes, margem_negociacao, ano_fabricacao, ano_modelo)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    (modelo, ano, marca, cor, preco_entrada, preco_venda, fornecedor, km, placa, chassi, renavam, combustivel, cambio, portas, observacoes, margem_negociacao)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                     RETURNING id
                 ''', (
                     veiculo_data['modelo'], veiculo_data['ano'], veiculo_data['marca'],
@@ -947,8 +947,8 @@ class Database:
                 # ✅ SQLite
                 cursor.execute('''
                     INSERT INTO veiculos 
-                    (modelo, ano, marca, cor, preco_entrada, preco_venda, fornecedor, km, placa, chassi, renavam, combustivel, cambio, portas, observacoes, margem_negociacao, ano_fabricacao, ano_modelo)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    (modelo, ano, marca, cor, preco_entrada, preco_venda, fornecedor, km, placa, chassi, renavam, combustivel, cambio, portas, observacoes, margem_negociacao)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ''', (
                     veiculo_data['modelo'], veiculo_data['ano'], veiculo_data['marca'],
                     veiculo_data['cor'], veiculo_data['preco_entrada'], preco_venda,
@@ -1586,44 +1586,9 @@ class Database:
         finally:
             conn.close()    
             
-def adicionar_coluna_renavam():
-    """Adiciona a coluna renavam na tabela veiculos se não existir"""
-    conn = db.get_connection()
-    cursor = conn.cursor()
-    
-    try:
-        # Verificar se a coluna renavam existe
-        if os.getenv('DATABASE_URL'):  # PostgreSQL
-            cursor.execute("""
-                SELECT column_name 
-                FROM information_schema.columns 
-                WHERE table_name = 'veiculos' AND column_name = 'renavam'
-            """)
-        else:  # SQLite
-            cursor.execute("PRAGMA table_info(veiculos)")
-            colunas = [col[1] for col in cursor.fetchall()]
-        
-        # Se não existir, adicionar
-        if os.getenv('DATABASE_URL'):
-            resultado = cursor.fetchone()
-            if not resultado:
-                cursor.execute('ALTER TABLE veiculos ADD COLUMN renavam TEXT')
-                print("✅ Coluna 'renavam' adicionada ao PostgreSQL")
-        else:
-            if 'renavam' not in colunas:
-                cursor.execute('ALTER TABLE veiculos ADD COLUMN renavam TEXT')
-                print("✅ Coluna 'renavam' adicionada ao SQLite")
-        
-        conn.commit()
-        
-    except Exception as e:
-        print(f"❌ Erro ao adicionar coluna renavam: {e}")
-        conn.rollback()
-    finally:
-        conn.close()
+
 # Instância global do banco
 db = Database()
-adicionar_coluna_renavam()
 db.atualizar_estrutura_banco()  
 
 # =============================================
