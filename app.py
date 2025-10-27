@@ -884,7 +884,7 @@ class Database:
                     v.km, v.placa, v.chassi, v.combustivel, 
                     v.cambio, v.portas, v.observacoes, 
                     v.data_cadastro, v.status,
-                    COALESCE(v.margem_negociacao, 30) as margem_negociacao
+                    COALESCE(v.margem_negociacao, 30) as margem_negociacao, v.renavam
                 FROM veiculos v
             '''
             
