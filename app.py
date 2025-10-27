@@ -939,6 +939,7 @@ class Database:
                     veiculo_data['cor'], veiculo_data['preco_entrada'], preco_venda,
                     veiculo_data['fornecedor'], veiculo_data['km'], veiculo_data['placa'],
                     veiculo_data['chassi'], veiculo_data['combustivel'], veiculo_data['cambio'],
+                    veiculo_data.get('renavam', ''),
                     veiculo_data['portas'], veiculo_data['observacoes'], margem
                 ))
                 veiculo_id = cursor.fetchone()[0]
