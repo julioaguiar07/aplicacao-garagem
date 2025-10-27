@@ -3976,27 +3976,35 @@ with tab7:
                     st.error("❌ Senha atual incorreta")
             else:
                 st.error("⚠️ Preencha todos os campos")
-    # NA ABA DE CONFIGURAÇÕES, adicione:
+
     st.markdown("---")
     st.markdown("#### 🗑️ Limpeza do Banco de Dados")
     
-    if st.button("⚠️ LIMPAR TODOS OS DADOS", type="secondary"):
+    # Usar session_state para controlar a confirmação
+    if 'confirmar_limpeza' not in st.session_state:
+        st.session_state.confirmar_limpeza = False
+    
+    if not st.session_state.confirmar_limpeza:
+        if st.button("⚠️ LIMPAR TODOS OS DADOS", type="secondary", use_container_width=True):
+            st.session_state.confirmar_limpeza = True
+            st.rerun()
+    else:
         st.warning("🚨 **ATENÇÃO:** Esta ação é IRREVERSÍVEL! Todos os dados serão perdidos!")
         
         col_conf1, col_conf2 = st.columns(2)
         with col_conf1:
-            if st.button("✅ SIM, LIMPAR TUDO", type="primary"):
-                conn = db.get_connection()
-                cursor = conn.cursor()
-                
+            if st.button("✅ SIM, LIMPAR TUDO", type="primary", use_container_width=True):
                 try:
+                    conn = db.get_connection()
+                    cursor = conn.cursor()
+                    
                     # Desativar foreign keys temporariamente
                     if os.getenv('DATABASE_URL'):
                         cursor.execute('SET session_replication_role = replica;')
                     else:
                         cursor.execute('PRAGMA foreign_keys = OFF;')
                     
-                    # Limpar tabelas na ordem correta
+                    # Limpar tabelas na ordem correta (evitando constraints)
                     tables = [
                         'parcelas', 'documentos_financeiros', 'financiamentos', 
                         'vendas', 'gastos', 'documentos', 'fluxo_caixa', 
@@ -4004,10 +4012,14 @@ with tab7:
                     ]
                     
                     for table in tables:
-                        if os.getenv('DATABASE_URL'):
-                            cursor.execute(f'DELETE FROM {table};')
-                        else:
-                            cursor.execute(f'DELETE FROM {table};')
+                        try:
+                            if os.getenv('DATABASE_URL'):
+                                cursor.execute(f'TRUNCATE TABLE {table} CASCADE;')
+                            else:
+                                cursor.execute(f'DELETE FROM {table};')
+                            st.write(f"✅ {table} limpa")
+                        except Exception as e:
+                            st.write(f"⚠️ {table}: {e}")
                     
                     # Reativar foreign keys
                     if os.getenv('DATABASE_URL'):
@@ -4016,18 +4028,22 @@ with tab7:
                         cursor.execute('PRAGMA foreign_keys = ON;')
                     
                     conn.commit()
-                    st.success("✅ Banco de dados limpo com sucesso!")
+                    conn.close()
+                    
+                    st.success("🎉 Banco de dados limpo com sucesso!")
+                    st.session_state.confirmar_limpeza = False
+                    
+                    # Forçar atualização dos caches
+                    forcar_atualizacao_gastos()
                     st.rerun()
                     
                 except Exception as e:
-                    conn.rollback()
                     st.error(f"❌ Erro ao limpar banco: {e}")
-                finally:
-                    conn.close()
         
         with col_conf2:
-            if st.button("❌ CANCELAR"):
-                st.info("Operação cancelada.")
+            if st.button("❌ CANCELAR", use_container_width=True):
+                st.session_state.confirmar_limpeza = False
+                st.rerun()
 
 # =============================================
 # FOOTER PREMIUM
