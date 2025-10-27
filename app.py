@@ -3929,7 +3929,7 @@ with tab7:
         st.markdown("#### 🚪 Sessão")
         if st.button("🔓 Sair do Sistema", use_container_width=True, type="secondary"):
             logout()
-    
+        
     # NOVA SEÇÃO DO PAPEL TIMBRADO
     st.markdown("---")
     seção_papel_timbrado()
@@ -3976,7 +3976,58 @@ with tab7:
                     st.error("❌ Senha atual incorreta")
             else:
                 st.error("⚠️ Preencha todos os campos")
-
+    # NA ABA DE CONFIGURAÇÕES, adicione:
+    st.markdown("---")
+    st.markdown("#### 🗑️ Limpeza do Banco de Dados")
+    
+    if st.button("⚠️ LIMPAR TODOS OS DADOS", type="secondary"):
+        st.warning("🚨 **ATENÇÃO:** Esta ação é IRREVERSÍVEL! Todos os dados serão perdidos!")
+        
+        col_conf1, col_conf2 = st.columns(2)
+        with col_conf1:
+            if st.button("✅ SIM, LIMPAR TUDO", type="primary"):
+                conn = db.get_connection()
+                cursor = conn.cursor()
+                
+                try:
+                    # Desativar foreign keys temporariamente
+                    if os.getenv('DATABASE_URL'):
+                        cursor.execute('SET session_replication_role = replica;')
+                    else:
+                        cursor.execute('PRAGMA foreign_keys = OFF;')
+                    
+                    # Limpar tabelas na ordem correta
+                    tables = [
+                        'parcelas', 'documentos_financeiros', 'financiamentos', 
+                        'vendas', 'gastos', 'documentos', 'fluxo_caixa', 
+                        'contatos', 'veiculos', 'logs_acesso'
+                    ]
+                    
+                    for table in tables:
+                        if os.getenv('DATABASE_URL'):
+                            cursor.execute(f'DELETE FROM {table};')
+                        else:
+                            cursor.execute(f'DELETE FROM {table};')
+                    
+                    # Reativar foreign keys
+                    if os.getenv('DATABASE_URL'):
+                        cursor.execute('SET session_replication_role = DEFAULT;')
+                    else:
+                        cursor.execute('PRAGMA foreign_keys = ON;')
+                    
+                    conn.commit()
+                    st.success("✅ Banco de dados limpo com sucesso!")
+                    st.rerun()
+                    
+                except Exception as e:
+                    conn.rollback()
+                    st.error(f"❌ Erro ao limpar banco: {e}")
+                finally:
+                    conn.close()
+        
+        with col_conf2:
+            if st.button("❌ CANCELAR"):
+                st.info("Operação cancelada.")
 
 # =============================================
 # FOOTER PREMIUM
