@@ -2992,7 +2992,7 @@ with tab2:
 
     with col_veic1:
         st.markdown("#### ➕ Novo Veículo")
-        with st.form("novo_veiculo_form", clear_on_submit=True):  # ← CLEAR_ON_SUBMIT ADICIONADO
+        with st.form("novo_veiculo_form", clear_on_submit=True):
             modelo = st.text_input("Modelo*", placeholder="Gol")
             marca = st.text_input("Marca*", placeholder="Volkswagen")
             ano = st.number_input("Ano*", min_value=1970, max_value=2030, value=2025)
@@ -3002,19 +3002,39 @@ with tab2:
             chassi = st.text_input("Chassi", placeholder="9BWZZZ377VT004251")
             ano_fabricacao = st.number_input("Ano de Fabricação", min_value=1970, max_value=2030, value=2025)
             ano_modelo = st.number_input("Ano Modelo", min_value=1970, max_value=2030, value=2025)
-            # NOVOS CAMPOS DE PREÇO
-            preco_entrada = st.number_input("Preço de Custo (R$)*", min_value=0.0, value=0.0, 
-                                        help="Valor que o veículo custou")
+            
+            # ✅✅✅ SOLUÇÃO DEFINITIVA - Campo de preço BR
+            preco_input = st.text_input(
+                "Preço de Custo (R$)*", 
+                placeholder="Ex: 50.000,00",
+                help="Use ponto para milhares e vírgula para centavos"
+            )
+            
+            # ✅ PRÉ-VISUALIZAÇÃO EM TEMPO REAL
+            if preco_input:
+                try:
+                    # Tentar converter e mostrar prévia
+                    preco_convertido = float(preco_input.replace('.', '').replace(',', '.'))
+                    preco_formatado = f"R$ {preco_convertido:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
+                    st.info(f"💡 **Pré-visualização:** {preco_formatado}")
+                except:
+                    # Se não conseguir converter, mostra aviso
+                    st.warning("⚠️ Digite o valor no formato correto: 50.000,00")
+            
             margem_negociacao = st.slider("Margem para Negociação (%)", min_value=0, max_value=20, value=12,
                                         help="Percentual acrescido para negociação")
             
             # Calcular preço de venda automaticamente
-            if preco_entrada > 0:
-                preco_venda_negociacao = preco_entrada * (1 + margem_negociacao/100)
-                st.info(f"💰 **Preço para Negociação:** R$ {preco_venda_negociacao:,.2f}")
+            if preco_input:
+                try:
+                    preco_convertido = float(preco_input.replace('.', '').replace(',', '.'))
+                    preco_venda_negociacao = preco_convertido * (1 + margem_negociacao/100)
+                    preco_venda_formatado = f"R$ {preco_venda_negociacao:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
+                    st.info(f"💰 **Preço para Negociação:** {preco_venda_formatado}")
+                except:
+                    st.error("❌ Valor inválido no preço de custo")
             
             fornecedor = st.text_input("Fornecedor*", placeholder="Nome do fornecedor")
-            
             km = st.number_input("Quilometragem", value=0)
             placa = st.text_input("Placa", placeholder="ABC1D23")            
             combustivel = st.selectbox("Combustível", ["Gasolina", "Álcool", "Flex", "Diesel", "Elétrico"])
@@ -3025,45 +3045,56 @@ with tab2:
                                help="Faça upload da foto principal do veículo")
             
             submitted = st.form_submit_button("Cadastrar Veículo", use_container_width=True)
+            
             if submitted:
                 if not prevenir_loop_submit():
                     st.stop()
-                    
-                if modelo and marca and fornecedor and preco_entrada > 0:
-                    # Calcular preço de venda com margem
-                    preco_venda_final = preco_entrada * (1 + margem_negociacao/100)
-                    
-                    novo_veiculo = {
-                        'modelo': modelo, 'ano': ano, 'marca': marca, 'cor': cor,
-                        'preco_entrada': preco_entrada, 'preco_venda': preco_venda_final,
-                        'margem_negociacao': margem_negociacao,
-                        'fornecedor': fornecedor, 'km': km, 'placa': placa,
-                        'chassi': chassi, 'combustivel': combustivel, 'cambio': cambio,
-                        'portas': portas, 'observacoes': observacoes,
-                        'renavam': renavam,
-                        'ano_fabricacao': ano_fabricacao,
-                        'ano_modelo': ano_modelo
-                    }
-                    
-                    print("🔄 Tentando cadastrar veículo...")
-                    veiculo_id = db.add_veiculo(novo_veiculo)
-                    
-                    if veiculo_id:
-                        # Salvar foto se foi enviada
-                        if foto_veiculo is not None:
-                            db.salvar_foto_veiculo(veiculo_id, foto_veiculo.getvalue())
-                        
-                        st.success("✅ Veículo cadastrado com sucesso!")
-                        st.balloons()
-                        
-                        # ✅✅✅ CORREÇÃO: NÃO USAR st.rerun() AQUI
-                        # Em vez disso, usamos clear_on_submit=True no form
-                        resetar_formulario()
-                        
-                    else:
-                        st.error("❌ Erro ao cadastrar veículo. Verifique os logs.")
+                
+                # ✅ VALIDAÇÃO DO PREÇO COM CONVERSÃO
+                if not preco_input:
+                    st.error("⚠️ Preço de custo é obrigatório!")
                 else:
-                    st.error("❌ Preencha todos os campos obrigatórios!")
+                    try:
+                        # Converter formato BR para float
+                        preco_entrada = float(preco_input.replace('.', '').replace(',', '.'))
+                        
+                        if preco_entrada <= 0:
+                            st.error("⚠️ Preço de custo deve ser maior que zero!")
+                        elif modelo and marca and fornecedor:
+                            # Calcular preço de venda com margem
+                            preco_venda_final = preco_entrada * (1 + margem_negociacao/100)
+                            
+                            novo_veiculo = {
+                                'modelo': modelo, 'ano': ano, 'marca': marca, 'cor': cor,
+                                'preco_entrada': preco_entrada, 
+                                'preco_venda': preco_venda_final,
+                                'margem_negociacao': margem_negociacao,
+                                'fornecedor': fornecedor, 'km': km, 'placa': placa,
+                                'chassi': chassi, 'combustivel': combustivel, 'cambio': cambio,
+                                'portas': portas, 'observacoes': observacoes,
+                                'renavam': renavam,
+                                'ano_fabricacao': ano_fabricacao,
+                                'ano_modelo': ano_modelo
+                            }
+                            
+                            print("🔄 Tentando cadastrar veículo...")
+                            veiculo_id = db.add_veiculo(novo_veiculo)
+                            
+                            if veiculo_id:
+                                # Salvar foto se foi enviada
+                                if foto_veiculo is not None:
+                                    db.salvar_foto_veiculo(veiculo_id, foto_veiculo.getvalue())
+                                
+                                st.success("✅ Veículo cadastrado com sucesso!")
+                                st.balloons()
+                                resetar_formulario()
+                            else:
+                                st.error("❌ Erro ao cadastrar veículo. Verifique os logs.")
+                        else:
+                            st.error("❌ Preencha todos os campos obrigatórios!")
+                            
+                    except ValueError:
+                        st.error("❌ Formato de preço inválido! Use: 50.000,00 ou 50000,00")
     
     with col_veic2:
         st.markdown("#### 📋 Estoque Atual")
