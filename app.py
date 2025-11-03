@@ -2996,7 +2996,7 @@ with tab2:
             modelo = st.text_input("Modelo*", placeholder="Gol")
             marca = st.text_input("Marca*", placeholder="Volkswagen")
             ano = st.number_input("Ano*", min_value=1970, max_value=2030, value=2025)
-            cor = st.selectbox("Cor*", ["Prata", "Preto", "Branco", "Vermelho", "Azul", "Cinza", "Verde"])
+            cor = st.selectbox("Cor*", ["Prata", "Preto", "Branco", "Vermelho", "Azul", "Cinza", "Verde", "Laranja"])
             st.markdown("#### 📄 Dados para Contrato")
             renavam = st.text_input("RENAVAM", placeholder="12345678901", key="renavam_input")
             chassi = st.text_input("Chassi", placeholder="9BWZZZ377VT004251")
