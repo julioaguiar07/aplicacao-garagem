@@ -2457,7 +2457,7 @@ with tab1:
                 <div><strong>Status Margem</strong></div>
             </div>
             <div style="font-size: 0.8rem; color: #a0a0a0; margin-top: 0.5rem;">
-                ✅ Boa (≥15%) • ⚠️ Média (10-14%) • ❌ Baixa (<10%)
+                ✅ Boa (≥11%) • ⚠️ Média (5-10%) • ❌ Baixa (<5%)
             </div>
         </div>
         """, unsafe_allow_html=True)
@@ -2523,11 +2523,11 @@ with tab1:
             
             # ✅ CRITÉRIOS DE MARGEM AJUSTADOS: 0-20%
             margem = linha['Margem_Media']
-            if margem >= 15:
+            if margem >= 11:
                 cor_margem = "#27AE60"
                 emoji_status = "✅"
                 texto_status = "Boa"
-            elif margem >= 10:
+            elif margem >= 5:
                 cor_margem = "#F39C12" 
                 emoji_status = "⚠️"
                 texto_status = "Média"
