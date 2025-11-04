@@ -2429,6 +2429,7 @@ with tab1:
         total_gastos = sum(g['valor'] for g in gastos_veiculo)
         custo_total = veiculo['preco_entrada'] + total_gastos
         lucro_potencial = veiculo['preco_venda'] - custo_total
+        # ✅ MARGEM AJUSTADA: 0-20% conforme solicitado pelo cliente
         margem_potencial = (lucro_potencial / custo_total * 100) if custo_total > 0 else 0
         
         veiculos_com_custos.append({
@@ -2440,8 +2441,26 @@ with tab1:
         })
     
     if veiculos_com_custos:
-        # ANÁLISE 1: TABELA DETALHADA POR MARCA
+        # ANÁLISE 1: TABELA DETALHADA POR MARCA - COM CABEÇALHO CLARO
         st.markdown("#### 📋 Performance por Marca - Visão Detalhada")
+        
+        # CABEÇALHO EXPLICATIVO DA TABELA
+        st.markdown("""
+        <div style="background: rgba(232, 142, 27, 0.1); padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
+            <h4 style="margin:0; color: #e88e1b;">📖 Legenda da Tabela:</h4>
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr 1fr 1fr; gap: 1rem; margin-top: 0.5rem; font-size: 0.9rem;">
+                <div><strong>Marca</strong></div>
+                <div><strong>Qtd Veículos</strong></div>
+                <div><strong>Investimento Total</strong></div>
+                <div><strong>Margem Média</strong></div>
+                <div><strong>Lucro Potencial</strong></div>
+                <div><strong>Status Margem</strong></div>
+            </div>
+            <div style="font-size: 0.8rem; color: #a0a0a0; margin-top: 0.5rem;">
+                ✅ Boa (≥15%) • ⚠️ Média (10-14%) • ❌ Baixa (<10%)
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
         
         # Agrupar por marca
         dados_marca = {}
@@ -2476,31 +2495,56 @@ with tab1:
             tabela_dados.append({
                 'Marca': marca,
                 'Quantidade': dados['quantidade'],
-                'Investimento Total': f"R$ {dados['investimento_total']:,.2f}",
-                'Compra Total': f"R$ {dados['compra_total']:,.2f}",
-                'Gastos Total': f"R$ {dados['gastos_total']:,.2f}",
-                'Margem Média': f"{dados['margem_media']:.1f}%",
-                'Lucro Potencial': f"R$ {dados['lucro_total']:,.2f}"
+                'Investimento_Total': dados['investimento_total'],
+                'Compra_Total': dados['compra_total'],
+                'Gastos_Total': dados['gastos_total'],
+                'Margem_Media': dados['margem_media'],
+                'Lucro_Potencial': dados['lucro_total']
             })
         
         # Ordenar por investimento total (maior primeiro)
-        tabela_dados.sort(key=lambda x: float(x['Investimento Total'].replace('R$ ', '').replace(',', '')), reverse=True)
+        tabela_dados.sort(key=lambda x: x['Investimento_Total'], reverse=True)
+        
+        # CABEÇALHO DA TABELA
+        st.markdown("""
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr 1fr 1fr; gap: 1rem; padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 8px; margin-bottom: 0.5rem; font-weight: bold;">
+            <div>🚗 MARCA</div>
+            <div>📦 QTD VEÍCULOS</div>
+            <div>💰 INVESTIMENTO TOTAL</div>
+            <div>📊 MARGEM MÉDIA</div>
+            <div>💵 LUCRO POTENCIAL</div>
+            <div>🎯 STATUS</div>
+        </div>
+        """, unsafe_allow_html=True)
         
         # Mostrar tabela estilizada
         for i, linha in enumerate(tabela_dados):
             cor_fundo = "rgba(255,255,255,0.02)" if i % 2 == 0 else "rgba(255,255,255,0.05)"
-            margem = float(linha['Margem Média'].replace('%', ''))
-            cor_margem = "#27AE60" if margem >= 15 else "#F39C12" if margem >= 10 else "#E74C3C"
+            
+            # ✅ CRITÉRIOS DE MARGEM AJUSTADOS: 0-20%
+            margem = linha['Margem_Media']
+            if margem >= 15:
+                cor_margem = "#27AE60"
+                emoji_status = "✅"
+                texto_status = "Boa"
+            elif margem >= 10:
+                cor_margem = "#F39C12" 
+                emoji_status = "⚠️"
+                texto_status = "Média"
+            else:
+                cor_margem = "#E74C3C"
+                emoji_status = "❌"
+                texto_status = "Baixa"
             
             st.markdown(f"""
             <div style="padding: 1rem; margin: 0.5rem 0; background: {cor_fundo}; border-radius: 8px; border-left: 4px solid {cor_margem};">
                 <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr 1fr 1fr; gap: 1rem; align-items: center;">
                     <div><strong>{linha['Marca']}</strong></div>
                     <div>{linha['Quantidade']} veículos</div>
-                    <div>{linha['Investimento Total']}</div>
-                    <div>{linha['Margem Média']}</div>
-                    <div>{linha['Lucro Potencial']}</div>
-                    <div style="color: {cor_margem}; font-weight: bold;">{'✅' if margem >= 15 else '⚠️' if margem >= 10 else '❌'}</div>
+                    <div>R$ {linha['Investimento_Total']:,.2f}</div>
+                    <div style="color: {cor_margem}; font-weight: bold;">{margem:.1f}%</div>
+                    <div>R$ {linha['Lucro_Potencial']:,.2f}</div>
+                    <div style="color: {cor_margem}; font-weight: bold;" title="Margem {texto_status}">{emoji_status} {texto_status}</div>
                 </div>
             </div>
             """, unsafe_allow_html=True)
@@ -2516,7 +2560,6 @@ with tab1:
         nomes_marcas = []
         
         for marca, dados in top_marcas:
-            # ✅ AGORA USANDO DADOS REAIS, NÃO ESTIMATIVAS
             custos_compra.append(dados['compra_total'])
             custos_gastos.append(dados['gastos_total'])
             nomes_marcas.append(marca)
@@ -2539,18 +2582,215 @@ with tab1:
             hovertemplate='<b>%{x}</b><br>Gastos: R$ %{y:,.2f}<extra></extra>'
         ))
         
-        fig.update_layout(
-            barmode='stack',
-            plot_bgcolor='rgba(0,0,0,0)',
-            paper_bgcolor='rgba(0,0,0,0)',
-            font=dict(color='white'),
-            height=500,
-            title="Composição Real de Investimento por Marca (Top 8)",
-            xaxis_title="Marca",
-            yaxis_title="Valor Investido (R$)",
-            showlegend=True
+        # ANÁLISE 3: GRÁFICO INTERATIVO - TOP MODELOS POR RENTABILIDADE
+        st.markdown("#### 📈 Top Modelos por Rentabilidade")
+        
+        # Preparar dados por modelo
+        dados_modelo = {}
+        for veiculo in veiculos_com_custos:
+            modelo_key = f"{veiculo['marca']} {veiculo['modelo']} {veiculo['ano']}"
+            if modelo_key not in dados_modelo:
+                dados_modelo[modelo_key] = {
+                    'marca': veiculo['marca'],
+                    'modelo': veiculo['modelo'],
+                    'ano': veiculo['ano'],
+                    'quantidade': 0,
+                    'investimento_total': 0,
+                    'custo_total': 0,
+                    'preco_venda_total': 0,
+                    'lucro_total': 0,
+                    'margem_media': 0,
+                    'veiculos': []
+                }
+            
+            dados_modelo[modelo_key]['quantidade'] += 1
+            dados_modelo[modelo_key]['investimento_total'] += veiculo['custo_total']
+            dados_modelo[modelo_key]['custo_total'] += veiculo['custo_total']
+            dados_modelo[modelo_key]['preco_venda_total'] += veiculo['preco_venda']
+            dados_modelo[modelo_key]['lucro_total'] += veiculo['lucro_potencial']
+            dados_modelo[modelo_key]['margem_media'] += veiculo['margem_potencial']
+            dados_modelo[modelo_key]['veiculos'].append(veiculo)
+        
+        # Calcular médias
+        for modelo in dados_modelo:
+            dados_modelo[modelo]['margem_media'] /= dados_modelo[modelo]['quantidade']
+        
+        # Converter para lista e ordenar por lucro total
+        modelos_ordenados = sorted(
+            [(modelo, dados) for modelo, dados in dados_modelo.items()], 
+            key=lambda x: x[1]['lucro_total'], 
+            reverse=True
         )
         
+        # Seletor de quantidade
+        col_sel1, col_sel2, col_sel3 = st.columns([2, 1, 1])
+        with col_sel1:
+            num_modelos = st.slider(
+                "**Selecione quantos modelos mostrar:**",
+                min_value=3,
+                max_value=min(15, len(modelos_ordenados)),
+                value=5,
+                step=1,
+                help="Escolha quantos modelos deseja visualizar no gráfico"
+            )
+        
+        with col_sel2:
+            ordenar_por = st.selectbox(
+                "**Ordenar por:**",
+                ["Lucro Total", "Margem Média", "Investimento"],
+                help="Selecione o critério de ordenação"
+            )
+        
+        with col_sel3:
+            tipo_grafico = st.selectbox(
+                "**Tipo de gráfico:**",
+                ["Barras + Linha", "Apenas Barras", "Apenas Linha"],
+                help="Escolha a visualização do gráfico"
+            )
+        
+        # Reordenar conforme seleção
+        if ordenar_por == "Lucro Total":
+            modelos_ordenados = sorted(modelos_ordenados, key=lambda x: x[1]['lucro_total'], reverse=True)
+        elif ordenar_por == "Margem Média":
+            modelos_ordenados = sorted(modelos_ordenados, key=lambda x: x[1]['margem_media'], reverse=True)
+        else:  # Investimento
+            modelos_ordenados = sorted(modelos_ordenados, key=lambda x: x[1]['investimento_total'], reverse=True)
+        
+        # Pegar top N modelos
+        top_modelos = modelos_ordenados[:num_modelos]
+        
+        if top_modelos:
+            # Preparar dados para o gráfico
+            nomes_modelos = [f"{dados['marca']} {dados['modelo']}\n({dados['ano']})" for modelo, dados in top_modelos]
+            valores_investimento = [dados['investimento_total'] for modelo, dados in top_modelos]
+            valores_margem = [dados['margem_media'] for modelo, dados in top_modelos]
+            valores_lucro = [dados['lucro_total'] for modelo, dados in top_modelos]
+            
+            fig = go.Figure()
+            
+            # Adicionar barras de investimento (se selecionado)
+            if tipo_grafico in ["Barras + Linha", "Apenas Barras"]:
+                fig.add_trace(go.Bar(
+                    name='💰 Investimento Total',
+                    x=nomes_modelos,
+                    y=valores_investimento,
+                    marker_color='#e88e1b',
+                    yaxis='y',
+                    opacity=0.8,
+                    hovertemplate='<b>%{x}</b><br>Investimento: R$ %{y:,.2f}<br>Lucro: R$ %{customdata:,.2f}<extra></extra>',
+                    customdata=valores_lucro
+                ))
+            
+            # Adicionar linha de margem (se selecionado)
+            if tipo_grafico in ["Barras + Linha", "Apenas Linha"]:
+                fig.add_trace(go.Scatter(
+                    name='📊 Margem Média (%)',
+                    x=nomes_modelos,
+                    y=valores_margem,
+                    mode='lines+markers+text',
+                    yaxis='y2',
+                    line=dict(color='#27AE60', width=3),
+                    marker=dict(size=10, color='#27AE60'),
+                    text=[f"{margem:.1f}%" for margem in valores_margem],
+                    textposition="top center",
+                    hovertemplate='<b>%{x}</b><br>Margem: %{y:.1f}%<extra></extra>'
+                ))
+            
+            # Configuração do layout
+            fig.update_layout(
+                plot_bgcolor='rgba(0,0,0,0)',
+                paper_bgcolor='rgba(0,0,0,0)',
+                font=dict(color='white'),
+                height=600,
+                title=f"Top {num_modelos} Modelos por {ordenar_por}",
+                xaxis=dict(
+                    title="Modelo",
+                    tickangle=-45
+                ),
+                yaxis=dict(
+                    title="Investimento Total (R$)",
+                    titlefont=dict(color='#e88e1b'),
+                    tickfont=dict(color='#e88e1b'),
+                    showgrid=True,
+                    gridcolor='rgba(255,255,255,0.1)'
+                ),
+                yaxis2=dict(
+                    title="Margem Média (%)",
+                    titlefont=dict(color='#27AE60'),
+                    tickfont=dict(color='#27AE60'),
+                    overlaying='y',
+                    side='right',
+                    range=[0, max(valores_margem) * 1.2 if valores_margem else 20],
+                    showgrid=False
+                ),
+                showlegend=True,
+                legend=dict(
+                    orientation="h",
+                    yanchor="bottom",
+                    y=1.02,
+                    xanchor="right",
+                    x=1
+                )
+            )
+            
+            # Adicionar linhas de referência para margem
+            fig.add_hline(y=15, line_dash="dash", line_color="#27AE60", opacity=0.5, 
+                          annotation_text="Meta 15%", annotation_position="top right")
+            fig.add_hline(y=10, line_dash="dash", line_color="#F39C12", opacity=0.3,
+                          annotation_text="Mínimo 10%", annotation_position="bottom right")
+            
+            st.plotly_chart(fig, use_container_width=True)
+            
+            # Tabela resumo dos modelos
+            st.markdown("#### 📋 Detalhes dos Modelos Selecionados")
+            
+            # Cabeçalho da tabela
+            st.markdown("""
+            <div style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 1fr; gap: 1rem; padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 8px; margin-bottom: 0.5rem; font-weight: bold;">
+                <div>🚗 MODELO</div>
+                <div>💰 INVESTIMENTO</div>
+                <div>💵 LUCRO</div>
+                <div>📊 MARGEM</div>
+                <div>🎯 STATUS</div>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            # Dados da tabela
+            for i, (modelo_nome, dados) in enumerate(top_modelos):
+                cor_fundo = "rgba(255,255,255,0.02)" if i % 2 == 0 else "rgba(255,255,255,0.05)"
+                
+                # Critérios de margem
+                margem = dados['margem_media']
+                if margem >= 15:
+                    cor_margem = "#27AE60"
+                    emoji_status = "✅"
+                    texto_status = "Boa"
+                elif margem >= 10:
+                    cor_margem = "#F39C12" 
+                    emoji_status = "⚠️"
+                    texto_status = "Média"
+                else:
+                    cor_margem = "#E74C3C"
+                    emoji_status = "❌"
+                    texto_status = "Baixa"
+                
+                st.markdown(f"""
+                <div style="padding: 1rem; margin: 0.5rem 0; background: {cor_fundo}; border-radius: 8px; border-left: 4px solid {cor_margem};">
+                    <div style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 1fr; gap: 1rem; align-items: center;">
+                        <div>
+                            <strong>{dados['marca']} {dados['modelo']}</strong><br>
+                            <small style="color: #a0a0a0;">{dados['ano']} • {dados['quantidade']} un.</small>
+                        </div>
+                        <div>R$ {dados['investimento_total']:,.2f}</div>
+                        <div>R$ {dados['lucro_total']:,.2f}</div>
+                        <div style="color: {cor_margem}; font-weight: bold;">{margem:.1f}%</div>
+                        <div style="color: {cor_margem}; font-weight: bold;">{emoji_status} {texto_status}</div>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+        
+        else:
+            st.info("📝 Nenhum modelo encontrado para análise")
         st.plotly_chart(fig, use_container_width=True)
         
         # ANÁLISE 3: GRÁFICO DE BARRAS - MARGEM vs INVESTIMENTO
@@ -2611,9 +2851,11 @@ with tab1:
             showlegend=True
         )
         
-        # Adicionar linha de referência para margem
+        # ✅ LINHAS DE REFERÊNCIA AJUSTADAS: 0-20%
         fig.add_hline(y=15, line_dash="dash", line_color="#27AE60", opacity=0.5, 
                       annotation_text="Meta 15%", annotation_position="top right")
+        fig.add_hline(y=10, line_dash="dash", line_color="#F39C12", opacity=0.3,
+                      annotation_text="Mínimo 10%", annotation_position="bottom right")
         
         st.plotly_chart(fig, use_container_width=True)
         
@@ -2637,7 +2879,16 @@ with tab1:
             st.metric("📈 Lucro Potencial", f"R$ {total_lucro_potencial:,.2f}")
         
         with col_res4:
-            st.metric("📊 Margem Geral", f"{margem_geral:.1f}%")
+            # Cor da métrica baseada na margem geral
+            delta_color = "normal"
+            if margem_geral >= 15:
+                delta_color = "normal"
+            elif margem_geral >= 10:
+                delta_color = "off"
+            else:
+                delta_color = "inverse"
+                
+            st.metric("📊 Margem Geral", f"{margem_geral:.1f}%", delta_color=delta_color)
         
         # Marcas com melhor performance
         marcas_ordenadas_margem = sorted(dados_marca.items(), key=lambda x: x[1]['margem_media'], reverse=True)
@@ -2647,10 +2898,21 @@ with tab1:
         
         for i, (marca, dados) in enumerate(marcas_ordenadas_margem[:3]):
             with [col_top1, col_top2, col_top3][i]:
+                # Cor baseada na margem
+                if dados['margem_media'] >= 15:
+                    cor_fundo = "rgba(39, 174, 96, 0.1)"
+                    cor_texto = "#27AE60"
+                elif dados['margem_media'] >= 10:
+                    cor_fundo = "rgba(243, 156, 18, 0.1)"
+                    cor_texto = "#F39C12"
+                else:
+                    cor_fundo = "rgba(231, 76, 60, 0.1)"
+                    cor_texto = "#E74C3C"
+                    
                 st.markdown(f"""
-                <div style="padding: 1rem; background: rgba(39, 174, 96, 0.1); border-radius: 8px; text-align: center;">
+                <div style="padding: 1rem; background: {cor_fundo}; border-radius: 8px; text-align: center;">
                     <h4>#{i+1} {marca}</h4>
-                    <p style="margin: 0; font-size: 1.2rem; color: #27AE60; font-weight: bold;">
+                    <p style="margin: 0; font-size: 1.2rem; color: {cor_texto}; font-weight: bold;">
                         {dados['margem_media']:.1f}%
                     </p>
                     <p style="margin: 0; color: #a0a0a0; font-size: 0.8rem;">
