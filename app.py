@@ -2791,7 +2791,6 @@ with tab1:
         
         else:
             st.info("📝 Nenhum modelo encontrado para análise")
-        st.plotly_chart(fig, use_container_width=True)
         
         # ANÁLISE 3: GRÁFICO DE BARRAS - MARGEM vs INVESTIMENTO
         st.markdown("#### 📈 Rentabilidade vs Volume de Investimento")
