@@ -2440,160 +2440,103 @@ with tab1:
         })
     
     if veiculos_com_custos:
-        # ANÁLISE 1: MAPA DE CALOR DE MARCAS vs MARGEM
-        st.markdown("#### 🔥 Mapa de Calor - Rentabilidade por Marca")
+        # ANÁLISE 1: TABELA DETALHADA POR MARCA
+        st.markdown("#### 📋 Performance por Marca - Visão Detalhada")
         
         # Agrupar por marca
-        dados_mapa = {}
+        dados_marca = {}
         for veiculo in veiculos_com_custos:
             marca = veiculo['marca']
-            if marca not in dados_mapa:
-                dados_mapa[marca] = {
+            if marca not in dados_marca:
+                dados_marca[marca] = {
                     'quantidade': 0,
                     'investimento_total': 0,
+                    'gastos_total': 0,
+                    'compra_total': 0,
                     'margem_media': 0,
-                    'lucro_total': 0
+                    'lucro_total': 0,
+                    'veiculos': []
                 }
             
-            dados_mapa[marca]['quantidade'] += 1
-            dados_mapa[marca]['investimento_total'] += veiculo['custo_total']
-            dados_mapa[marca]['margem_media'] += veiculo['margem_potencial']
-            dados_mapa[marca]['lucro_total'] += veiculo['lucro_potencial']
+            dados_marca[marca]['quantidade'] += 1
+            dados_marca[marca]['investimento_total'] += veiculo['custo_total']
+            dados_marca[marca]['gastos_total'] += veiculo['total_gastos']
+            dados_marca[marca]['compra_total'] += veiculo['preco_entrada']
+            dados_marca[marca]['margem_media'] += veiculo['margem_potencial']
+            dados_marca[marca]['lucro_total'] += veiculo['lucro_potencial']
+            dados_marca[marca]['veiculos'].append(veiculo)
         
         # Calcular médias
-        for marca in dados_mapa:
-            dados_mapa[marca]['margem_media'] /= dados_mapa[marca]['quantidade']
+        for marca in dados_marca:
+            dados_marca[marca]['margem_media'] /= dados_marca[marca]['quantidade']
         
-        # Criar matriz para heatmap
-        marcas = list(dados_mapa.keys())
-        metricas = ['Quantidade', 'Investimento (R$)', 'Margem Média (%)', 'Lucro Total (R$)']
-        
-        valores = []
-        for metrica in metricas:
-            linha = []
-            for marca in marcas:
-                if metrica == 'Quantidade':
-                    linha.append(dados_mapa[marca]['quantidade'])
-                elif metrica == 'Investimento (R$)':
-                    linha.append(dados_mapa[marca]['investimento_total'])
-                elif metrica == 'Margem Média (%)':
-                    linha.append(dados_mapa[marca]['margem_media'])
-                elif metrica == 'Lucro Total (R$)':
-                    linha.append(dados_mapa[marca]['lucro_total'])
-            valores.append(linha)
-        
-        fig = px.imshow(
-            valores,
-            x=marcas,
-            y=metricas,
-            aspect="auto",
-            color_continuous_scale="RdYlGn",
-            title="Mapa de Calor - Performance por Marca"
-        )
-        
-        fig.update_layout(
-            plot_bgcolor='rgba(0,0,0,0)',
-            paper_bgcolor='rgba(0,0,0,0)',
-            font=dict(color='white'),
-            height=500
-        )
-        
-        # Adicionar anotações com valores
-        for i in range(len(metricas)):
-            for j in range(len(marcas)):
-                valor = valores[i][j]
-                if metricas[i] in ['Investimento (R$)', 'Lucro Total (R$)']:
-                    texto = f"R$ {valor/1000:.0f}K" if valor >= 1000 else f"R$ {valor:.0f}"
-                elif metricas[i] == 'Margem Média (%)':
-                    texto = f"{valor:.1f}%"
-                else:
-                    texto = f"{valor:.0f}"
-                
-                fig.add_annotation(
-                    x=j, y=i,
-                    text=texto,
-                    showarrow=False,
-                    font=dict(color="white" if valor < np.percentile(valores, 70) else "black")
-                )
-        
-        st.plotly_chart(fig, use_container_width=True)
-        
-        # ANÁLISE 2: BUBBLE CHART - INVESTIMENTO vs MARGEM vs QUANTIDADE
-        st.markdown("#### 💰 Bubble Chart - Estratégia de Investimento")
-        
-        # Preparar dados para bubble chart
-        bubble_data = []
-        for marca, dados in dados_mapa.items():
-            bubble_data.append({
+        # Criar DataFrame para tabela
+        tabela_dados = []
+        for marca, dados in dados_marca.items():
+            tabela_dados.append({
                 'Marca': marca,
-                'Investimento Total (R$)': dados['investimento_total'],
-                'Margem Média (%)': dados['margem_media'],
                 'Quantidade': dados['quantidade'],
-                'Lucro Total (R$)': dados['lucro_total']
+                'Investimento Total': f"R$ {dados['investimento_total']:,.2f}",
+                'Compra Total': f"R$ {dados['compra_total']:,.2f}",
+                'Gastos Total': f"R$ {dados['gastos_total']:,.2f}",
+                'Margem Média': f"{dados['margem_media']:.1f}%",
+                'Lucro Potencial': f"R$ {dados['lucro_total']:,.2f}"
             })
         
-        df_bubble = pd.DataFrame(bubble_data)
+        # Ordenar por investimento total (maior primeiro)
+        tabela_dados.sort(key=lambda x: float(x['Investimento Total'].replace('R$ ', '').replace(',', '')), reverse=True)
         
-        fig = px.scatter(
-            df_bubble,
-            x="Investimento Total (R$)",
-            y="Margem Média (%)",
-            size="Quantidade",
-            color="Lucro Total (R$)",
-            hover_name="Marca",
-            size_max=60,
-            color_continuous_scale="viridis",
-            title="Relação: Investimento vs Margem vs Quantidade"
-        )
+        # Mostrar tabela estilizada
+        for i, linha in enumerate(tabela_dados):
+            cor_fundo = "rgba(255,255,255,0.02)" if i % 2 == 0 else "rgba(255,255,255,0.05)"
+            margem = float(linha['Margem Média'].replace('%', ''))
+            cor_margem = "#27AE60" if margem >= 15 else "#F39C12" if margem >= 10 else "#E74C3C"
+            
+            st.markdown(f"""
+            <div style="padding: 1rem; margin: 0.5rem 0; background: {cor_fundo}; border-radius: 8px; border-left: 4px solid {cor_margem};">
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr 1fr 1fr; gap: 1rem; align-items: center;">
+                    <div><strong>{linha['Marca']}</strong></div>
+                    <div>{linha['Quantidade']} veículos</div>
+                    <div>{linha['Investimento Total']}</div>
+                    <div>{linha['Margem Média']}</div>
+                    <div>{linha['Lucro Potencial']}</div>
+                    <div style="color: {cor_margem}; font-weight: bold;">{'✅' if margem >= 15 else '⚠️' if margem >= 10 else '❌'}</div>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
         
-        fig.update_layout(
-            plot_bgcolor='rgba(0,0,0,0)',
-            paper_bgcolor='rgba(0,0,0,0)',
-            font=dict(color='white'),
-            height=500
-        )
-        
-        # Adicionar linhas de referência
-        fig.add_hline(y=15, line_dash="dash", line_color="yellow", annotation_text="Margem Mínima 15%")
-        fig.add_vline(x=df_bubble['Investimento Total (R$)'].median(), line_dash="dash", line_color="orange", 
-                      annotation_text="Mediana Investimento")
-        
-        st.plotly_chart(fig, use_container_width=True)
-        
-        # ANÁLISE 3: GRÁFICO DE BARRAS EMPILHADAS - COMPOSIÇÃO DE CUSTOS
-        st.markdown("#### 🏗️ Composição de Custos por Marca")
+        # ANÁLISE 2: GRÁFICO DE BARRAS EMPILHADAS - COMPOSIÇÃO REAL DE CUSTOS
+        st.markdown("#### 🏗️ Composição Real de Custos por Marca")
         
         # Top 8 marcas por investimento
-        top_marcas = sorted(dados_mapa.items(), key=lambda x: x[1]['investimento_total'], reverse=True)[:8]
+        top_marcas = sorted(dados_marca.items(), key=lambda x: x[1]['investimento_total'], reverse=True)[:8]
         
         custos_compra = []
         custos_gastos = []
         nomes_marcas = []
         
         for marca, dados in top_marcas:
-            # Estimar custo de compra vs gastos (precisaria buscar dados reais)
-            # Vamos fazer uma estimativa baseada no padrão do negócio
-            custo_compra_estimado = dados['investimento_total'] * 0.85  # 85% custo compra
-            custo_gastos_estimado = dados['investimento_total'] * 0.15  # 15% gastos
-            
-            custos_compra.append(custo_compra_estimado)
-            custos_gastos.append(custo_gastos_estimado)
+            # ✅ AGORA USANDO DADOS REAIS, NÃO ESTIMATIVAS
+            custos_compra.append(dados['compra_total'])
+            custos_gastos.append(dados['gastos_total'])
             nomes_marcas.append(marca)
         
         fig = go.Figure()
         
         fig.add_trace(go.Bar(
-            name='Custo de Compra',
+            name='💰 Custo de Compra',
             x=nomes_marcas,
             y=custos_compra,
-            marker_color='#e88e1b'
+            marker_color='#e88e1b',
+            hovertemplate='<b>%{x}</b><br>Custo Compra: R$ %{y:,.2f}<extra></extra>'
         ))
         
         fig.add_trace(go.Bar(
-            name='Gastos Adicionais',
+            name='🔧 Gastos com Preparação',
             x=nomes_marcas,
             y=custos_gastos,
-            marker_color='#3498db'
+            marker_color='#3498db',
+            hovertemplate='<b>%{x}</b><br>Gastos: R$ %{y:,.2f}<extra></extra>'
         ))
         
         fig.update_layout(
@@ -2602,7 +2545,7 @@ with tab1:
             paper_bgcolor='rgba(0,0,0,0)',
             font=dict(color='white'),
             height=500,
-            title="Composição de Investimento por Marca (Top 8)",
+            title="Composição Real de Investimento por Marca (Top 8)",
             xaxis_title="Marca",
             yaxis_title="Valor Investido (R$)",
             showlegend=True
@@ -2610,53 +2553,111 @@ with tab1:
         
         st.plotly_chart(fig, use_container_width=True)
         
-        # ANÁLISE 4: TREEMAP INTERATIVO - VISÃO HIERÁRQUICA
-        st.markdown("#### 🌳 Visão Hierárquica do Estoque")
+        # ANÁLISE 3: GRÁFICO DE BARRAS - MARGEM vs INVESTIMENTO
+        st.markdown("#### 📈 Rentabilidade vs Volume de Investimento")
         
-        # Preparar dados para treemap
-        labels = []
-        parents = []
-        valores_treemap = []
-        cores = []
+        # Preparar dados
+        marcas_investimento = []
+        valores_investimento = []
+        valores_margem = []
         
-        for veiculo in veiculos_com_custos[:20]:  # Limitar para não ficar poluído
-            marca = veiculo['marca']
-            modelo = f"{marca} - {veiculo['modelo']} {veiculo['ano']}"
-            
-            # Adicionar marca (se não existir)
-            if marca not in labels:
-                labels.append(marca)
-                parents.append("")
-                valores_treemap.append(sum(v['custo_total'] for v in veiculos_com_custos if v['marca'] == marca))
-                cores.append(np.random.randint(50, 200))
-            
-            # Adicionar modelo
-            labels.append(modelo)
-            parents.append(marca)
-            valores_treemap.append(veiculo['custo_total'])
-            cores.append(veiculo['margem_potencial'])
+        for marca, dados in top_marcas:
+            marcas_investimento.append(marca)
+            valores_investimento.append(dados['investimento_total'])
+            valores_margem.append(dados['margem_media'])
         
-        fig = px.treemap(
-            names=labels,
-            parents=parents,
-            values=valores_treemap,
-            color=cores,
-            color_continuous_scale='RdYlGn',
-            title="Distribuição de Investimento no Estoque (Top 20 veículos)"
-        )
+        fig = go.Figure()
+        
+        # Barras de investimento
+        fig.add_trace(go.Bar(
+            name='📦 Investimento Total',
+            x=marcas_investimento,
+            y=valores_investimento,
+            marker_color='#e88e1b',
+            yaxis='y',
+            opacity=0.7
+        ))
+        
+        # Linha de margem
+        fig.add_trace(go.Scatter(
+            name='📊 Margem Média (%)',
+            x=marcas_investimento,
+            y=valores_margem,
+            mode='lines+markers',
+            yaxis='y2',
+            line=dict(color='#27AE60', width=3),
+            marker=dict(size=8, color='#27AE60')
+        ))
         
         fig.update_layout(
             plot_bgcolor='rgba(0,0,0,0)',
             paper_bgcolor='rgba(0,0,0,0)',
             font=dict(color='white'),
-            height=600
+            height=500,
+            title="Relação: Investimento vs Margem por Marca",
+            xaxis_title="Marca",
+            yaxis=dict(
+                title="Investimento Total (R$)",
+                titlefont=dict(color='#e88e1b'),
+                tickfont=dict(color='#e88e1b')
+            ),
+            yaxis2=dict(
+                title="Margem Média (%)",
+                titlefont=dict(color='#27AE60'),
+                tickfont=dict(color='#27AE60'),
+                overlaying='y',
+                side='right'
+            ),
+            showlegend=True
         )
         
-        fig.update_traces(
-            hovertemplate='<b>%{label}</b><br>Investimento: R$ %{value:,.2f}<br>Margem: %{color:.1f}%<extra></extra>'
-        )
+        # Adicionar linha de referência para margem
+        fig.add_hline(y=15, line_dash="dash", line_color="#27AE60", opacity=0.5, 
+                      annotation_text="Meta 15%", annotation_position="top right")
         
         st.plotly_chart(fig, use_container_width=True)
+        
+        # ANÁLISE 4: RESUMO EXECUTIVO
+        st.markdown("#### 🎯 Resumo Executivo do Estoque")
+        
+        total_investido = sum(dados['investimento_total'] for dados in dados_marca.values())
+        total_lucro_potencial = sum(dados['lucro_total'] for dados in dados_marca.values())
+        margem_geral = (total_lucro_potencial / total_investido * 100) if total_investido > 0 else 0
+        total_veiculos = len(veiculos_com_custos)
+        
+        col_res1, col_res2, col_res3, col_res4 = st.columns(4)
+        
+        with col_res1:
+            st.metric("🚗 Veículos em Estoque", total_veiculos)
+        
+        with col_res2:
+            st.metric("🏦 Total Investido", f"R$ {total_investido:,.2f}")
+        
+        with col_res3:
+            st.metric("📈 Lucro Potencial", f"R$ {total_lucro_potencial:,.2f}")
+        
+        with col_res4:
+            st.metric("📊 Margem Geral", f"{margem_geral:.1f}%")
+        
+        # Marcas com melhor performance
+        marcas_ordenadas_margem = sorted(dados_marca.items(), key=lambda x: x[1]['margem_media'], reverse=True)
+        
+        st.markdown("**🏆 Top 3 Marcas por Rentabilidade:**")
+        col_top1, col_top2, col_top3 = st.columns(3)
+        
+        for i, (marca, dados) in enumerate(marcas_ordenadas_margem[:3]):
+            with [col_top1, col_top2, col_top3][i]:
+                st.markdown(f"""
+                <div style="padding: 1rem; background: rgba(39, 174, 96, 0.1); border-radius: 8px; text-align: center;">
+                    <h4>#{i+1} {marca}</h4>
+                    <p style="margin: 0; font-size: 1.2rem; color: #27AE60; font-weight: bold;">
+                        {dados['margem_media']:.1f}%
+                    </p>
+                    <p style="margin: 0; color: #a0a0a0; font-size: 0.8rem;">
+                        {dados['quantidade']} veículos • R$ {dados['lucro_total']:,.0f}
+                    </p>
+                </div>
+                """, unsafe_allow_html=True)
     
     else:
         st.info("📝 Nenhum veículo em estoque para análise")
