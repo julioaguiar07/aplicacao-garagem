@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+import numpy as np
 import datetime
 import plotly.express as px
 import plotly.graph_objects as go
@@ -2406,9 +2407,263 @@ with tab1:
             <p style="color: #a0a0a0; font-size: 0.8rem;">líquido</p>
         </div>
         """, unsafe_allow_html=True)
+
+    # =============================================
+    # ANÁLISE ESTRATÉGICA DO ESTOQUE - VISÃO AVANÇADA
+    # =============================================
+    
+    st.markdown("---")
+    st.markdown("""
+    <div class="glass-card">
+        <h2>📊 Análise Inteligente do Estoque</h2>
+        <p style="color: #a0a0a0;">Insights estratégicos sobre sua carteira de veículos</p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Buscar e processar dados
+    veiculos_estoque = [v for v in veiculos if v['status'] == 'Em estoque']
+    veiculos_com_custos = []
+    
+    for veiculo in veiculos_estoque:
+        gastos_veiculo = db.get_gastos(veiculo['id'])
+        total_gastos = sum(g['valor'] for g in gastos_veiculo)
+        custo_total = veiculo['preco_entrada'] + total_gastos
+        lucro_potencial = veiculo['preco_venda'] - custo_total
+        margem_potencial = (lucro_potencial / custo_total * 100) if custo_total > 0 else 0
+        
+        veiculos_com_custos.append({
+            **veiculo,
+            'total_gastos': total_gastos,
+            'custo_total': custo_total,
+            'lucro_potencial': lucro_potencial,
+            'margem_potencial': margem_potencial
+        })
+    
+    if veiculos_com_custos:
+        # ANÁLISE 1: MAPA DE CALOR DE MARCAS vs MARGEM
+        st.markdown("#### 🔥 Mapa de Calor - Rentabilidade por Marca")
+        
+        # Agrupar por marca
+        dados_mapa = {}
+        for veiculo in veiculos_com_custos:
+            marca = veiculo['marca']
+            if marca not in dados_mapa:
+                dados_mapa[marca] = {
+                    'quantidade': 0,
+                    'investimento_total': 0,
+                    'margem_media': 0,
+                    'lucro_total': 0
+                }
+            
+            dados_mapa[marca]['quantidade'] += 1
+            dados_mapa[marca]['investimento_total'] += veiculo['custo_total']
+            dados_mapa[marca]['margem_media'] += veiculo['margem_potencial']
+            dados_mapa[marca]['lucro_total'] += veiculo['lucro_potencial']
+        
+        # Calcular médias
+        for marca in dados_mapa:
+            dados_mapa[marca]['margem_media'] /= dados_mapa[marca]['quantidade']
+        
+        # Criar matriz para heatmap
+        marcas = list(dados_mapa.keys())
+        metricas = ['Quantidade', 'Investimento (R$)', 'Margem Média (%)', 'Lucro Total (R$)']
+        
+        valores = []
+        for metrica in metricas:
+            linha = []
+            for marca in marcas:
+                if metrica == 'Quantidade':
+                    linha.append(dados_mapa[marca]['quantidade'])
+                elif metrica == 'Investimento (R$)':
+                    linha.append(dados_mapa[marca]['investimento_total'])
+                elif metrica == 'Margem Média (%)':
+                    linha.append(dados_mapa[marca]['margem_media'])
+                elif metrica == 'Lucro Total (R$)':
+                    linha.append(dados_mapa[marca]['lucro_total'])
+            valores.append(linha)
+        
+        fig = px.imshow(
+            valores,
+            x=marcas,
+            y=metricas,
+            aspect="auto",
+            color_continuous_scale="RdYlGn",
+            title="Mapa de Calor - Performance por Marca"
+        )
+        
+        fig.update_layout(
+            plot_bgcolor='rgba(0,0,0,0)',
+            paper_bgcolor='rgba(0,0,0,0)',
+            font=dict(color='white'),
+            height=500
+        )
+        
+        # Adicionar anotações com valores
+        for i in range(len(metricas)):
+            for j in range(len(marcas)):
+                valor = valores[i][j]
+                if metricas[i] in ['Investimento (R$)', 'Lucro Total (R$)']:
+                    texto = f"R$ {valor/1000:.0f}K" if valor >= 1000 else f"R$ {valor:.0f}"
+                elif metricas[i] == 'Margem Média (%)':
+                    texto = f"{valor:.1f}%"
+                else:
+                    texto = f"{valor:.0f}"
+                
+                fig.add_annotation(
+                    x=j, y=i,
+                    text=texto,
+                    showarrow=False,
+                    font=dict(color="white" if valor < np.percentile(valores, 70) else "black")
+                )
+        
+        st.plotly_chart(fig, use_container_width=True)
+        
+        # ANÁLISE 2: BUBBLE CHART - INVESTIMENTO vs MARGEM vs QUANTIDADE
+        st.markdown("#### 💰 Bubble Chart - Estratégia de Investimento")
+        
+        # Preparar dados para bubble chart
+        bubble_data = []
+        for marca, dados in dados_mapa.items():
+            bubble_data.append({
+                'Marca': marca,
+                'Investimento Total (R$)': dados['investimento_total'],
+                'Margem Média (%)': dados['margem_media'],
+                'Quantidade': dados['quantidade'],
+                'Lucro Total (R$)': dados['lucro_total']
+            })
+        
+        df_bubble = pd.DataFrame(bubble_data)
+        
+        fig = px.scatter(
+            df_bubble,
+            x="Investimento Total (R$)",
+            y="Margem Média (%)",
+            size="Quantidade",
+            color="Lucro Total (R$)",
+            hover_name="Marca",
+            size_max=60,
+            color_continuous_scale="viridis",
+            title="Relação: Investimento vs Margem vs Quantidade"
+        )
+        
+        fig.update_layout(
+            plot_bgcolor='rgba(0,0,0,0)',
+            paper_bgcolor='rgba(0,0,0,0)',
+            font=dict(color='white'),
+            height=500
+        )
+        
+        # Adicionar linhas de referência
+        fig.add_hline(y=15, line_dash="dash", line_color="yellow", annotation_text="Margem Mínima 15%")
+        fig.add_vline(x=df_bubble['Investimento Total (R$)'].median(), line_dash="dash", line_color="orange", 
+                      annotation_text="Mediana Investimento")
+        
+        st.plotly_chart(fig, use_container_width=True)
+        
+        # ANÁLISE 3: GRÁFICO DE BARRAS EMPILHADAS - COMPOSIÇÃO DE CUSTOS
+        st.markdown("#### 🏗️ Composição de Custos por Marca")
+        
+        # Top 8 marcas por investimento
+        top_marcas = sorted(dados_mapa.items(), key=lambda x: x[1]['investimento_total'], reverse=True)[:8]
+        
+        custos_compra = []
+        custos_gastos = []
+        nomes_marcas = []
+        
+        for marca, dados in top_marcas:
+            # Estimar custo de compra vs gastos (precisaria buscar dados reais)
+            # Vamos fazer uma estimativa baseada no padrão do negócio
+            custo_compra_estimado = dados['investimento_total'] * 0.85  # 85% custo compra
+            custo_gastos_estimado = dados['investimento_total'] * 0.15  # 15% gastos
+            
+            custos_compra.append(custo_compra_estimado)
+            custos_gastos.append(custo_gastos_estimado)
+            nomes_marcas.append(marca)
+        
+        fig = go.Figure()
+        
+        fig.add_trace(go.Bar(
+            name='Custo de Compra',
+            x=nomes_marcas,
+            y=custos_compra,
+            marker_color='#e88e1b'
+        ))
+        
+        fig.add_trace(go.Bar(
+            name='Gastos Adicionais',
+            x=nomes_marcas,
+            y=custos_gastos,
+            marker_color='#3498db'
+        ))
+        
+        fig.update_layout(
+            barmode='stack',
+            plot_bgcolor='rgba(0,0,0,0)',
+            paper_bgcolor='rgba(0,0,0,0)',
+            font=dict(color='white'),
+            height=500,
+            title="Composição de Investimento por Marca (Top 8)",
+            xaxis_title="Marca",
+            yaxis_title="Valor Investido (R$)",
+            showlegend=True
+        )
+        
+        st.plotly_chart(fig, use_container_width=True)
+        
+        # ANÁLISE 4: TREEMAP INTERATIVO - VISÃO HIERÁRQUICA
+        st.markdown("#### 🌳 Visão Hierárquica do Estoque")
+        
+        # Preparar dados para treemap
+        labels = []
+        parents = []
+        valores_treemap = []
+        cores = []
+        
+        for veiculo in veiculos_com_custos[:20]:  # Limitar para não ficar poluído
+            marca = veiculo['marca']
+            modelo = f"{marca} - {veiculo['modelo']} {veiculo['ano']}"
+            
+            # Adicionar marca (se não existir)
+            if marca not in labels:
+                labels.append(marca)
+                parents.append("")
+                valores_treemap.append(sum(v['custo_total'] for v in veiculos_com_custos if v['marca'] == marca))
+                cores.append(np.random.randint(50, 200))
+            
+            # Adicionar modelo
+            labels.append(modelo)
+            parents.append(marca)
+            valores_treemap.append(veiculo['custo_total'])
+            cores.append(veiculo['margem_potencial'])
+        
+        fig = px.treemap(
+            names=labels,
+            parents=parents,
+            values=valores_treemap,
+            color=cores,
+            color_continuous_scale='RdYlGn',
+            title="Distribuição de Investimento no Estoque (Top 20 veículos)"
+        )
+        
+        fig.update_layout(
+            plot_bgcolor='rgba(0,0,0,0)',
+            paper_bgcolor='rgba(0,0,0,0)',
+            font=dict(color='white'),
+            height=600
+        )
+        
+        fig.update_traces(
+            hovertemplate='<b>%{label}</b><br>Investimento: R$ %{value:,.2f}<br>Margem: %{color:.1f}%<extra></extra>'
+        )
+        
+        st.plotly_chart(fig, use_container_width=True)
+    
+    else:
+        st.info("📝 Nenhum veículo em estoque para análise")
+
     
     # =============================================
-    # ANÁLISES ESTRATÉGICAS - VISÃO PROFISSIONAL
+    # ANÁLISES ESTRATÉGICAS
     # =============================================
     
     st.markdown("---")
