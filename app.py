@@ -2761,11 +2761,11 @@ with tab1:
                 
                 # Critérios de margem
                 margem = dados['margem_media']
-                if margem >= 15:
+                if margem >= 11:
                     cor_margem = "#27AE60"
                     emoji_status = "✅"
                     texto_status = "Boa"
-                elif margem >= 10:
+                elif margem >= 5:
                     cor_margem = "#F39C12" 
                     emoji_status = "⚠️"
                     texto_status = "Média"
