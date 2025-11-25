@@ -416,7 +416,7 @@ def render_vehicle_modal(veiculo):
         <div class="modal-content">
             <div style="padding: 2rem;">
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 3rem; align-items: start;">
-                    {/* Lado esquerdo - Imagem e preço */}
+                    <!-- Lado esquerdo - Imagem e preço -->
                     <div>
                         <img src="{image_url}" style="width: 100%; border-radius: 10px; margin-bottom: 1.5rem;">
                         
@@ -436,14 +436,14 @@ def render_vehicle_modal(veiculo):
                         </div>
                     </div>
                     
-                    {/* Lado direito - Detalhes */}
+                    <!-- Lado direito - Detalhes -->
                     <div>
                         <h1 style="margin: 0 0 0.5rem 0; color: #1a1a1a; font-size: 2rem;">{veiculo['marca']} {veiculo['modelo']} {veiculo['ano']}</h1>
                         <div style="color: #666; margin-bottom: 2rem; font-size: 1.1rem;">
                             📅 {datetime.now().year - veiculo['ano']} ano(s) • 🛣️ {veiculo['km']:,} km • 🎨 {veiculo['cor']}
                         </div>
                         
-                        {/* Especificações */}
+                        <!-- Especificações -->
                         <div style="margin-bottom: 2rem;">
                             <h3 style="color: #1a1a1a; margin-bottom: 1rem;">📊 Especificações Técnicas</h3>
                             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
@@ -465,18 +465,21 @@ def render_vehicle_modal(veiculo):
                                 </div>
                             </div>
                         </div>
-                        
-                        {/* Descrição */}
-                        {veiculo['observacoes'] and f'''
+    ''', unsafe_allow_html=True)
+    
+    # Descrição (condicional)
+    if veiculo['observacoes']:
+        st.markdown(f'''
                         <div style="margin-bottom: 2rem;">
                             <h3 style="color: #1a1a1a; margin-bottom: 1rem;">📝 Descrição do Veículo</h3>
                             <div style="background: #f8f9fa; padding: 1.5rem; border-radius: 8px; line-height: 1.6; color: #555;">
                                 {veiculo['observacoes']}
                             </div>
                         </div>
-                        ''' or ''}
-                        
-                        {/* Simulador de financiamento */}
+        ''', unsafe_allow_html=True)
+    
+    # Simulador de financiamento
+    st.markdown(f'''
                         <div>
                             <h3 style="color: #1a1a1a; margin-bottom: 1rem;">💰 Simular Financiamento</h3>
                             <div style="background: linear-gradient(135deg, #e3f2fd, #bbdefb); padding: 1.5rem; border-radius: 8px;">
