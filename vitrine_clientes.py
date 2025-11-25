@@ -8,149 +8,281 @@ import os
 import base64
 from PIL import Image
 import io
+import math
 
 # =============================================
 # CONFIGURAÇÃO DA PÁGINA
 # =============================================
 
 st.set_page_config(
-    page_title="Garagem Multimarcas - Veículos em Mossoró",
+    page_title="Garagem Multimarcas - Veículos Novos e Seminovos em Mossoró",
     page_icon="🚗",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
 # =============================================
-# CSS PREMIUM PROFISSIONAL
+# CSS PROFISSIONAL - ESTILO WEBSITE REAL
 # =============================================
 
 st.markdown("""
 <style>
+    /* Reset e configurações gerais */
     .stApp {
-        background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 50%, #2a2a2a 100%);
-        color: #ffffff;
-        font-family: 'Inter', sans-serif;
+        background: #ffffff;
+        color: #333333;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        line-height: 1.6;
     }
     
     /* Header profissional */
     .main-header {
-        background: rgba(255, 255, 255, 0.05);
-        backdrop-filter: blur(20px);
-        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+        color: white;
         padding: 2rem 0;
-        margin-bottom: 2rem;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
     }
     
-    /* Cards de veículo - estilo concessionária */
+    .logo-container {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+    
+    .contact-info {
+        display: flex;
+        justify-content: center;
+        gap: 2rem;
+        flex-wrap: wrap;
+        margin-top: 1rem;
+    }
+    
+    .contact-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: #e88e1b;
+        font-weight: 500;
+    }
+    
+    /* Sistema de grid profissional */
+    .vehicle-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 1.5rem;
+        margin: 2rem 0;
+    }
+    
+    /* Card de veículo - estilo WebMotors */
     .vehicle-card {
-        background: linear-gradient(135deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02));
-        backdrop-filter: blur(20px);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 15px;
-        padding: 1.5rem;
-        margin: 1rem 0;
-        transition: all 0.4s ease;
-        position: relative;
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.1);
         overflow: hidden;
+        transition: all 0.3s ease;
+        border: 1px solid #e1e1e1;
     }
     
     .vehicle-card:hover {
         transform: translateY(-5px);
-        border-color: rgba(232, 142, 27, 0.4);
-        box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3);
+        box-shadow: 0 8px 30px rgba(0,0,0,0.15);
     }
     
     .vehicle-image {
         width: 100%;
-        height: 180px;
-        border-radius: 12px;
+        height: 200px;
         object-fit: cover;
-        margin-bottom: 1rem;
-        border: 2px solid rgba(255, 255, 255, 0.1);
+        background: #f8f9fa;
     }
     
-    .price-badge {
-        background: linear-gradient(135deg, #e88e1b, #f4c220);
-        color: white;
-        padding: 0.8rem 1.2rem;
-        border-radius: 20px;
-        font-weight: bold;
+    .vehicle-content {
+        padding: 1.5rem;
+    }
+    
+    .vehicle-title {
         font-size: 1.2rem;
-        text-align: center;
-        margin-top: 1rem;
+        font-weight: 700;
+        color: #1a1a1a;
+        margin-bottom: 0.5rem;
+        line-height: 1.3;
     }
     
-    .feature-chip {
-        background: rgba(255, 255, 255, 0.08);
-        border: 1px solid rgba(255, 255, 255, 0.15);
-        border-radius: 15px;
-        padding: 0.4rem 0.8rem;
-        font-size: 0.8rem;
-        margin: 0.2rem;
-        display: inline-block;
+    .vehicle-subtitle {
+        color: #666;
+        font-size: 0.9rem;
+        margin-bottom: 1rem;
     }
     
-    .status-badge {
-        position: absolute;
-        top: 1rem;
-        right: 1rem;
-        background: linear-gradient(135deg, #27AE60, #2ECC71);
-        color: white;
+    .vehicle-features {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+    }
+    
+    .feature-tag {
+        background: #f8f9fa;
+        color: #555;
         padding: 0.3rem 0.8rem;
-        border-radius: 12px;
-        font-size: 0.7rem;
-        font-weight: bold;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        border: 1px solid #e1e1e1;
+    }
+    
+    .price-container {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 1rem;
+        padding-top: 1rem;
+        border-top: 1px solid #e1e1e1;
+    }
+    
+    .vehicle-price {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #e88e1b;
+    }
+    
+    .price-label {
+        font-size: 0.8rem;
+        color: #666;
     }
     
     /* Botões profissionais */
     .btn-primary {
         background: linear-gradient(135deg, #e88e1b, #f4c220);
-        border: none;
-        border-radius: 10px;
-        padding: 10px 20px;
         color: white;
-        font-weight: bold;
+        border: none;
+        padding: 0.8rem 1.5rem;
+        border-radius: 8px;
+        font-weight: 600;
         cursor: pointer;
         transition: all 0.3s ease;
-        width: 100%;
-        margin: 0.3rem 0;
         text-decoration: none;
         display: inline-block;
         text-align: center;
     }
     
     .btn-primary:hover {
+        background: linear-gradient(135deg, #d87e0b, #e4b210);
         transform: translateY(-2px);
-        box-shadow: 0 5px 15px rgba(232, 142, 27, 0.4);
+        box-shadow: 0 4px 15px rgba(232, 142, 27, 0.3);
     }
     
     .btn-whatsapp {
         background: linear-gradient(135deg, #25D366, #128C7E);
-        border: none;
-        border-radius: 10px;
-        padding: 10px 20px;
         color: white;
-        font-weight: bold;
+        border: none;
+        padding: 0.8rem 1.5rem;
+        border-radius: 8px;
+        font-weight: 600;
         cursor: pointer;
         transition: all 0.3s ease;
-        width: 100%;
-        margin: 0.3rem 0;
         text-decoration: none;
         display: inline-block;
         text-align: center;
     }
     
     .btn-whatsapp:hover {
+        background: linear-gradient(135deg, #20bd5c, #0f7a61);
         transform: translateY(-2px);
-        box-shadow: 0 5px 15px rgba(37, 211, 102, 0.4);
+        box-shadow: 0 4px 15px rgba(37, 211, 102, 0.3);
     }
     
     /* Filtros sidebar */
-    .sidebar-filter {
-        background: rgba(255, 255, 255, 0.03);
+    .filter-section {
+        background: white;
         border-radius: 10px;
-        padding: 1rem;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        border: 1px solid #e1e1e1;
+    }
+    
+    .filter-title {
+        font-size: 1.1rem;
+        font-weight: 600;
         margin-bottom: 1rem;
+        color: #1a1a1a;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    /* Destaques e badges */
+    .badge-new {
+        background: #e74c3c;
+        color: white;
+        padding: 0.3rem 0.8rem;
+        border-radius: 15px;
+        font-size: 0.7rem;
+        font-weight: 600;
+        position: absolute;
+        top: 1rem;
+        left: 1rem;
+    }
+    
+    .badge-lowkm {
+        background: #27ae60;
+        color: white;
+        padding: 0.3rem 0.8rem;
+        border-radius: 15px;
+        font-size: 0.7rem;
+        font-weight: 600;
+        position: absolute;
+        top: 1rem;
+        left: 1rem;
+    }
+    
+    /* Modal de detalhes */
+    .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0,0,0,0.8);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+        padding: 2rem;
+    }
+    
+    .modal-content {
+        background: white;
+        border-radius: 15px;
+        max-width: 1000px;
+        width: 100%;
+        max-height: 90vh;
+        overflow-y: auto;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+    
+    /* Responsividade */
+    @media (max-width: 768px) {
+        .vehicle-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .contact-info {
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+        }
+    }
+    
+    /* Animações */
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .fade-in {
+        animation: fadeIn 0.5s ease-out;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -159,7 +291,7 @@ st.markdown("""
 # BANCO DE DADOS
 # =============================================
 
-class VitrineDatabase:
+class WebsiteDatabase:
     def __init__(self):
         self.database_url = os.getenv('DATABASE_URL')
     
@@ -171,17 +303,18 @@ class VitrineDatabase:
         return None
     
     def get_veiculos_estoque(self):
-        """Busca veículos em estoque com fotos"""
+        """Busca veículos em estoque - CORRIGIDO sem coluna foto"""
         conn = self.get_connection()
         if not conn:
             return []
         
         try:
             cursor = conn.cursor()
+            # ✅ QUERY CORRIGIDA - sem a coluna 'foto' que não existe ainda
             cursor.execute('''
                 SELECT id, modelo, ano, marca, cor, preco_venda, 
                        km, placa, combustivel, cambio, portas, observacoes,
-                       data_cadastro, foto
+                       data_cadastro
                 FROM veiculos 
                 WHERE status = 'Em estoque'
                 ORDER BY data_cadastro DESC
@@ -202,76 +335,62 @@ class VitrineDatabase:
             return []
         finally:
             conn.close()
-    
-    def registrar_interesse(self, nome, telefone, email, veiculo_id, mensagem):
-        """Registra interesse do cliente"""
-        conn = self.get_connection()
-        if not conn:
-            return False
-        
-        try:
-            cursor = conn.cursor()
-            cursor.execute('''
-                INSERT INTO contatos (nome, telefone, email, tipo, veiculo_interesse, data_contato, observacoes, status)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-            ''', (nome, telefone, email, 'Lead Cliente', f"Veículo ID: {veiculo_id}", datetime.now().date(), mensagem, 'Novo'))
-            
-            conn.commit()
-            return True
-            
-        except Exception as e:
-            st.error(f"❌ Erro ao registrar interesse: {e}")
-            return False
-        finally:
-            conn.close()
 
 # =============================================
-# COMPONENTES
+# COMPONENTES PROFISSIONAIS
 # =============================================
 
-def bytes_to_base64(image_bytes):
-    """Converte bytes da imagem para base64"""
-    if image_bytes:
-        return base64.b64encode(image_bytes).decode()
-    return None
-
-def get_vehicle_image(veiculo):
-    """Obtém a imagem do veículo (foto real ou placeholder)"""
-    if veiculo.get('foto'):
-        # Usa foto real do banco
-        image_base64 = bytes_to_base64(veiculo['foto'])
-        if image_base64:
-            return f"data:image/jpeg;base64,{image_base64}"
-    
-    # Placeholder personalizado baseado na cor
-    colors = {
-        'Prata': 'C0C0C0', 'Preto': '000000', 'Branco': 'FFFFFF', 
-        'Vermelho': 'FF0000', 'Azul': '0000FF', 'Cinza': '808080',
-        'Verde': '008000', 'Laranja': 'FFA500'
+def generate_vehicle_image(veiculo):
+    """Gera imagem realista do veículo"""
+    # Cores realistas para diferentes marcas/cores
+    color_map = {
+        'Prata': 'c0c0c0', 'Preto': '000000', 'Branco': 'ffffff',
+        'Vermelho': 'ff0000', 'Azul': '0066cc', 'Cinza': '666666',
+        'Verde': '008000', 'Laranja': 'ff6600', 'Marrom': '8b4513'
     }
-    color_hex = colors.get(veiculo['cor'], '2d2d2d')
     
+    color_hex = color_map.get(veiculo['cor'], '2d2d2d')
+    
+    # Imagem placeholder profissional
     return f"https://via.placeholder.com/400x250/{color_hex}/ffffff?text={veiculo['marca']}+{veiculo['modelo']}"
 
-def vehicle_card(veiculo, index):
-    """Card individual do veículo"""
-    foto_url = get_vehicle_image(veiculo)
+def render_vehicle_card(veiculo, index):
+    """Renderiza card profissional do veículo"""
+    image_url = generate_vehicle_image(veiculo)
+    idade = datetime.now().year - veiculo['ano']
+    
+    # Determinar badges
+    badges = []
+    if idade <= 2:
+        badges.append(('🆕 SEMI-NOVO', 'badge-new'))
+    if veiculo['km'] < 50000:
+        badges.append(('🛣️ BAIXA KM', 'badge-lowkm'))
     
     st.markdown(f'''
-    <div class="vehicle-card">
-        <div class="status-badge">DISPONÍVEL</div>
-        <img src="{foto_url}" class="vehicle-image" alt="{veiculo['marca']} {veiculo['modelo']}">
-        
-        <h4 style="margin: 0.5rem 0; color: white; font-size: 1.1rem;">{veiculo['marca']} {veiculo['modelo']}</h4>
-        <p style="margin: 0.3rem 0; color: #a0a0a0; font-size: 0.9rem;">{veiculo['ano']} • {veiculo['km']:,} km</p>
-        
-        <div style="margin: 0.8rem 0;">
-            <span class="feature-chip">⚙️ {veiculo['cambio']}</span>
-            <span class="feature-chip">⛽ {veiculo['combustivel']}</span>
+    <div class="vehicle-card fade-in">
+        <div style="position: relative;">
+            <img src="{image_url}" class="vehicle-image" alt="{veiculo['marca']} {veiculo['modelo']}">
+            {''.join([f'<div class="{badge_class}" style="top: {1 + i*2}rem;">{text}</div>' for i, (text, badge_class) in enumerate(badges)])}
         </div>
         
-        <div class="price-badge">
-            R$ {veiculo['preco_venda']:,.2f}
+        <div class="vehicle-content">
+            <div class="vehicle-title">{veiculo['marca']} {veiculo['modelo']}</div>
+            <div class="vehicle-subtitle">
+                📅 {veiculo['ano']} • 🛣️ {veiculo['km']:,} km • 🎨 {veiculo['cor']}
+            </div>
+            
+            <div class="vehicle-features">
+                <span class="feature-tag">⚙️ {veiculo['cambio']}</span>
+                <span class="feature-tag">⛽ {veiculo['combustivel']}</span>
+                <span class="feature-tag">🚪 {veiculo['portas']} portas</span>
+            </div>
+            
+            <div class="price-container">
+                <div>
+                    <div class="price-label">PREÇO À VISTA</div>
+                    <div class="vehicle-price">R$ {veiculo['preco_venda']:,.2f}</div>
+                </div>
+            </div>
         </div>
     </div>
     ''', unsafe_allow_html=True)
@@ -280,130 +399,178 @@ def vehicle_card(veiculo, index):
     col1, col2 = st.columns(2)
     
     with col1:
-        if st.button("🔍 Ver Detalhes", key=f"view_{veiculo['id']}_{index}", use_container_width=True):
-            st.session_state[f"selected_vehicle_{veiculo['id']}"] = True
+        if st.button("🔍 Ver Detalhes", key=f"details_{veiculo['id']}_{index}", use_container_width=True):
+            st.session_state[f"modal_{veiculo['id']}"] = True
     
     with col2:
         whatsapp_msg = f"Olá! Gostaria de mais informações sobre o {veiculo['marca']} {veiculo['modelo']} {veiculo['ano']} - R$ {veiculo['preco_venda']:,.2f}"
-        whatsapp_url = f"https://wa.me/5584981885353?text={whatsapp_msg}"
+        whatsapp_url = f"https://wa.me/5584981885353?text={whatsapp_msg.replace(' ', '%20')}"
         st.markdown(f'<a href="{whatsapp_url}" target="_blank" class="btn-whatsapp">💬 WhatsApp</a>', unsafe_allow_html=True)
 
-def vehicle_detail_view(veiculo):
-    """Visualização detalhada do veículo"""
-    foto_url = get_vehicle_image(veiculo)
+def render_vehicle_modal(veiculo):
+    """Modal profissional de detalhes do veículo"""
+    image_url = generate_vehicle_image(veiculo)
     
-    st.markdown("---")
-    st.markdown(f"## 🚗 {veiculo['marca']} {veiculo['modelo']} {veiculo['ano']}")
-    
-    col1, col2 = st.columns([1, 1])
-    
-    with col1:
-        st.image(foto_url, use_column_width=True)
-        
-        # Preço em destaque
-        st.markdown(f'''
-        <div style="text-align: center; margin: 1rem 0;">
-            <div class="price-badge" style="font-size: 1.5rem; display: inline-block;">
-                R$ {veiculo['preco_venda']:,.2f}
+    st.markdown(f'''
+    <div class="modal-overlay">
+        <div class="modal-content">
+            <div style="padding: 2rem;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 3rem; align-items: start;">
+                    {/* Lado esquerdo - Imagem e preço */}
+                    <div>
+                        <img src="{image_url}" style="width: 100%; border-radius: 10px; margin-bottom: 1.5rem;">
+                        
+                        <div style="background: linear-gradient(135deg, #f8f9fa, #e9ecef); padding: 1.5rem; border-radius: 10px; text-align: center;">
+                            <div style="font-size: 0.9rem; color: #666; margin-bottom: 0.5rem;">PREÇO À VISTA</div>
+                            <div style="font-size: 2rem; font-weight: 700; color: #e88e1b;">R$ {veiculo['preco_venda']:,.2f}</div>
+                        </div>
+                        
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1.5rem;">
+                            <a href="https://wa.me/5584981885353?text=Olá! Tenho interesse no {veiculo['marca']} {veiculo['modelo']} {veiculo['ano']} - R$ {veiculo['preco_venda']:,.2f}" 
+                               target="_blank" class="btn-whatsapp" style="text-align: center;">
+                                💬 Falar no WhatsApp
+                            </a>
+                            <button onclick="window.closeModal()" class="btn-primary" style="background: #6c757d;">
+                                📞 Ligar Agora
+                            </button>
+                        </div>
+                    </div>
+                    
+                    {/* Lado direito - Detalhes */}
+                    <div>
+                        <h1 style="margin: 0 0 0.5rem 0; color: #1a1a1a; font-size: 2rem;">{veiculo['marca']} {veiculo['modelo']} {veiculo['ano']}</h1>
+                        <div style="color: #666; margin-bottom: 2rem; font-size: 1.1rem;">
+                            📅 {datetime.now().year - veiculo['ano']} ano(s) • 🛣️ {veiculo['km']:,} km • 🎨 {veiculo['cor']}
+                        </div>
+                        
+                        {/* Especificações */}
+                        <div style="margin-bottom: 2rem;">
+                            <h3 style="color: #1a1a1a; margin-bottom: 1rem;">📊 Especificações Técnicas</h3>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                                <div style="background: #f8f9fa; padding: 1rem; border-radius: 8px;">
+                                    <div style="font-weight: 600; color: #333;">Combustível</div>
+                                    <div style="color: #666;">{veiculo['combustivel']}</div>
+                                </div>
+                                <div style="background: #f8f9fa; padding: 1rem; border-radius: 8px;">
+                                    <div style="font-weight: 600; color: #333;">Câmbio</div>
+                                    <div style="color: #666;">{veiculo['cambio']}</div>
+                                </div>
+                                <div style="background: #f8f9fa; padding: 1rem; border-radius: 8px;">
+                                    <div style="font-weight: 600; color: #333;">Portas</div>
+                                    <div style="color: #666;">{veiculo['portas']}</div>
+                                </div>
+                                <div style="background: #f8f9fa; padding: 1rem; border-radius: 8px;">
+                                    <div style="font-weight: 600; color: #333;">Placa</div>
+                                    <div style="color: #666;">{veiculo['placa'] or 'Não informada'}</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        {/* Descrição */}
+                        {veiculo['observacoes'] and f'''
+                        <div style="margin-bottom: 2rem;">
+                            <h3 style="color: #1a1a1a; margin-bottom: 1rem;">📝 Descrição do Veículo</h3>
+                            <div style="background: #f8f9fa; padding: 1.5rem; border-radius: 8px; line-height: 1.6; color: #555;">
+                                {veiculo['observacoes']}
+                            </div>
+                        </div>
+                        ''' or ''}
+                        
+                        {/* Simulador de financiamento */}
+                        <div>
+                            <h3 style="color: #1a1a1a; margin-bottom: 1rem;">💰 Simular Financiamento</h3>
+                            <div style="background: linear-gradient(135deg, #e3f2fd, #bbdefb); padding: 1.5rem; border-radius: 8px;">
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                                    <div>
+                                        <div style="font-weight: 600; margin-bottom: 0.5rem;">Entrada</div>
+                                        <div style="font-size: 1.2rem; color: #e88e1b;">R$ {(veiculo['preco_venda'] * 0.2):,.2f}</div>
+                                    </div>
+                                    <div>
+                                        <div style="font-weight: 600; margin-bottom: 0.5rem;">48x de</div>
+                                        <div style="font-size: 1.2rem; color: #e88e1b;">R$ {(veiculo['preco_venda'] * 0.8 / 48):,.2f}</div>
+                                    </div>
+                                </div>
+                                <div style="color: #666; font-size: 0.9rem;">
+                                    *Consulte condições especiais na loja
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
-        ''', unsafe_allow_html=True)
-        
-        # Botões de ação
-        whatsapp_msg = f"Olá! Tenho interesse no {veiculo['marca']} {veiculo['modelo']} {veiculo['ano']} - R$ {veiculo['preco_venda']:,.2f}"
-        whatsapp_url = f"https://wa.me/5584981885353?text={whatsapp_msg}"
-        
-        st.markdown(f'<a href="{whatsapp_url}" target="_blank" class="btn-whatsapp" style="margin-bottom: 0.5rem;">💬 Falar no WhatsApp</a>', unsafe_allow_html=True)
-        
-        if st.button("⬅️ Voltar para a lista", key=f"back_{veiculo['id']}", use_container_width=True):
-            st.session_state[f"selected_vehicle_{veiculo['id']}"] = False
-            st.rerun()
-    
-    with col2:
-        st.markdown("### 📋 Especificações")
-        
-        # Características principais
-        col_spec1, col_spec2 = st.columns(2)
-        with col_spec1:
-            st.metric("🎨 Cor", veiculo['cor'])
-            st.metric("⛽ Combustível", veiculo['combustivel'])
-            st.metric("🛣️ Quilometragem", f"{veiculo['km']:,} km")
-        
-        with col_spec2:
-            st.metric("⚙️ Câmbio", veiculo['cambio'])
-            st.metric("🚪 Portas", veiculo['portas'])
-            st.metric("🏷️ Placa", veiculo['placa'] or "Não informada")
-        
-        # Descrição
-        if veiculo['observacoes']:
-            st.markdown("### 📝 Descrição")
-            st.info(veiculo['observacoes'])
-        
-        # Simulador simples
-        st.markdown("### 💰 Simular Parcelas")
-        col_sim1, col_sim2 = st.columns(2)
-        
-        with col_sim1:
-            entrada = st.number_input("Entrada (R$)", min_value=0, value=int(veiculo['preco_venda'] * 0.2), step=1000, key=f"entrada_{veiculo['id']}")
-            parcelas = st.selectbox("Parcelas", [12, 24, 36, 48, 60], key=f"parcelas_{veiculo['id']}")
-        
-        with col_sim2:
-            valor_financiado = veiculo['preco_venda'] - entrada
-            if parcelas > 0:
-                parcela = valor_financiado / parcelas
-                st.metric("Valor da Parcela", f"R$ {parcela:,.2f}")
-                st.metric("Total Financiado", f"R$ {valor_financiado:,.2f}")
+    </div>
+    ''', unsafe_allow_html=True)
 
 # =============================================
-# PÁGINA PRINCIPAL
+# PÁGINA PRINCIPAL - WEBSITE PROFISSIONAL
 # =============================================
 
 def main():
-    # Header profissional com logo
+    # Header profissional
     st.markdown("""
     <div class="main-header">
-        <div style="text-align: center;">
-            <h1 style="margin:0; font-size: 2.8rem; background: linear-gradient(135deg, #e88e1b, #f4c220); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; font-weight: 800;">
-                GARAGEM MULTIMARCAS
-            </h1>
-            <p style="margin:0; color: #a0a0a0; font-size: 1.2rem; font-weight: 300;">Sua concessionária de confiança em Mossoró</p>
-            <p style="margin:1rem 0 0 0; color: #666; font-size: 1rem;">
-                📞 (84) 98188-5353 • 📍 Mossoró/RN • ⏰ Segunda a Sexta: 8h-18h
+        <div style="max-width: 1200px; margin: 0 auto; padding: 0 2rem;">
+            <div class="logo-container">
+                <h1 style="margin: 0; font-size: 2.5rem; font-weight: 800; color: #e88e1b;">
+                    GARAGEM MULTIMARCAS
+                </h1>
+            </div>
+            <p style="text-align: center; margin: 0; color: #ccc; font-size: 1.2rem;">
+                Veículos Novos e Seminovos em Mossoró
             </p>
+            <div class="contact-info">
+                <div class="contact-item">
+                    📞 (84) 98188-5353
+                </div>
+                <div class="contact-item">
+                    📍 Mossoró/RN
+                </div>
+                <div class="contact-item">
+                    ⏰ Segunda a Sexta: 8h-18h
+                </div>
+            </div>
         </div>
     </div>
     """, unsafe_allow_html=True)
     
-    # Inicializar banco
-    db = VitrineDatabase()
+    # Conteúdo principal
+    st.markdown("""
+    <div style="max-width: 1200px; margin: 0 auto; padding: 2rem;">
+    """, unsafe_allow_html=True)
+    
+    # Buscar dados
+    db = WebsiteDatabase()
     veiculos = db.get_veiculos_estoque()
     
-    # Sidebar de filtros
-    st.sidebar.markdown("### 🔍 Buscar Veículos")
-    
+    # Sidebar de filtros profissionais
     with st.sidebar:
-        with st.container():
-            st.markdown('<div class="sidebar-filter">', unsafe_allow_html=True)
-            
-            # Filtro por marca
-            marcas = list(set([v['marca'] for v in veiculos]))
-            marca_selecionada = st.selectbox("Marca", ["Todas as marcas"] + sorted(marcas))
-            
-            # Filtro por preço
-            if veiculos:
-                preco_max = max(v['preco_venda'] for v in veiculos)
-                preco_range = st.slider("Faixa de Preço (R$)", 0, int(preco_max * 1.1), 
-                                      (0, int(preco_max)), 5000)
-            
-            # Filtro por ano
-            anos = sorted(list(set([v['ano'] for v in veiculos])), reverse=True)
-            ano_selecionado = st.selectbox("Ano", ["Todos os anos"] + anos)
-            
-            # Filtro por combustível
-            combustiveis = list(set([v['combustivel'] for v in veiculos]))
-            combustivel_selecionado = st.multiselect("Combustível", combustiveis, default=combustiveis)
-            
-            st.markdown('</div>', unsafe_allow_html=True)
+        st.markdown('<div class="filter-section">', unsafe_allow_html=True)
+        st.markdown('<div class="filter-title">🔍 Filtros Avançados</div>', unsafe_allow_html=True)
+        
+        # Filtros
+        marcas = list(set([v['marca'] for v in veiculos]))
+        marca_selecionada = st.selectbox("Marca", ["Todas as marcas"] + sorted(marcas))
+        
+        if veiculos:
+            preco_max = max(v['preco_venda'] for v in veiculos)
+            preco_range = st.slider("Faixa de Preço (R$)", 0, int(preco_max * 1.1), 
+                                  (0, int(preco_max)), 5000)
+        
+        anos = sorted(list(set([v['ano'] for v in veiculos])), reverse=True)
+        ano_selecionado = st.selectbox("Ano", ["Todos os anos"] + anos)
+        
+        combustiveis = list(set([v['combustivel'] for v in veiculos]))
+        combustivel_selecionado = st.multiselect("Combustível", combustiveis, default=combustiveis)
+        
+        st.markdown('</div>', unsafe_allow_html=True)
+        
+        # Filtro de quilometragem
+        st.markdown('<div class="filter-section">', unsafe_allow_html=True)
+        st.markdown('<div class="filter-title">🛣️ Quilometragem</div>', unsafe_allow_html=True)
+        km_options = ["Qualquer KM", "Até 50.000 km", "50.000 - 100.000 km", "Acima de 100.000 km"]
+        km_selecionado = st.selectbox("Faixa de KM", km_options)
+        st.markdown('</div>', unsafe_allow_html=True)
     
     # Aplicar filtros
     veiculos_filtrados = veiculos.copy()
@@ -420,62 +587,91 @@ def main():
     if combustivel_selecionado:
         veiculos_filtrados = [v for v in veiculos_filtrados if v['combustivel'] in combustivel_selecionado]
     
-    # Verificar se há veículo selecionado para detalhes
-    veiculo_detalhe = None
-    for veiculo in veiculos_filtrados:
-        if st.session_state.get(f"selected_vehicle_{veiculo['id']}"):
-            veiculo_detalhe = veiculo
-            break
+    # Filtro de KM
+    if km_selecionado == "Até 50.000 km":
+        veiculos_filtrados = [v for v in veiculos_filtrados if v['km'] <= 50000]
+    elif km_selecionado == "50.000 - 100.000 km":
+        veiculos_filtrados = [v for v in veiculos_filtrados if 50000 < v['km'] <= 100000]
+    elif km_selecionado == "Acima de 100.000 km":
+        veiculos_filtrados = [v for v in veiculos_filtrados if v['km'] > 100000]
     
-    if veiculo_detalhe:
-        # Mostrar detalhes do veículo
-        vehicle_detail_view(veiculo_detalhe)
+    # Header do catálogo
+    col1, col2 = st.columns([3, 1])
+    
+    with col1:
+        st.markdown(f"## 🚗 Veículos Disponíveis ({len(veiculos_filtrados)})")
+    
+    with col2:
+        ordenacao = st.selectbox("Ordenar por", 
+                               ["Mais recentes", "Menor preço", "Maior preço", "Mais novo", "Menor KM"])
+    
+    # Aplicar ordenação
+    if ordenacao == "Menor preço":
+        veiculos_filtrados.sort(key=lambda x: x['preco_venda'])
+    elif ordenacao == "Maior preço":
+        veiculos_filtrados.sort(key=lambda x: x['preco_venda'], reverse=True)
+    elif ordenacao == "Mais novo":
+        veiculos_filtrados.sort(key=lambda x: x['ano'], reverse=True)
+    elif ordenacao == "Menor KM":
+        veiculos_filtrados.sort(key=lambda x: x['km'])
     else:
-        # Mostrar catálogo
-        st.markdown(f"### 🚗 Veículos Disponíveis ({len(veiculos_filtrados)})")
+        veiculos_filtrados.sort(key=lambda x: x['data_cadastro'], reverse=True)
+    
+    # Grid de veículos
+    if not veiculos_filtrados:
+        st.info("""
+        ## 🔍 Nenhum veículo encontrado
+        *Tente ajustar os filtros para encontrar o veículo ideal para você!*
         
-        if not veiculos_filtrados:
-            st.info("""
-            ## 🔍 Nenhum veículo encontrado
-            *Tente ajustar os filtros para encontrar o veículo ideal para você!*
-            
-            **📞 Entre em contato:** (84) 98188-5353
-            """)
-        else:
-            # Ordenação
-            col_sort1, col_sort2 = st.columns([3, 1])
-            with col_sort2:
-                ordenacao = st.selectbox("Ordenar por", 
-                                       ["Mais recentes", "Menor preço", "Maior preço", "Mais novo", "Menor KM"])
-            
-            # Aplicar ordenação
-            if ordenacao == "Menor preço":
-                veiculos_filtrados.sort(key=lambda x: x['preco_venda'])
-            elif ordenacao == "Maior preço":
-                veiculos_filtrados.sort(key=lambda x: x['preco_venda'], reverse=True)
-            elif ordenacao == "Mais novo":
-                veiculos_filtrados.sort(key=lambda x: x['ano'], reverse=True)
-            elif ordenacao == "Menor KM":
-                veiculos_filtrados.sort(key=lambda x: x['km'])
-            else:
-                veiculos_filtrados.sort(key=lambda x: x['data_cadastro'], reverse=True)
-            
-            # Grid de veículos
-            cols = st.columns(3)
-            for i, veiculo in enumerate(veiculos_filtrados):
-                with cols[i % 3]:
-                    vehicle_card(veiculo, i)
+        **📞 Entre em contato conosco:** (84) 98188-5353
+        """)
+    else:
+        # Renderizar grid profissional
+        st.markdown('<div class="vehicle-grid">', unsafe_allow_html=True)
+        
+        cols = st.columns(3)
+        for i, veiculo in enumerate(veiculos_filtrados):
+            with cols[i % 3]:
+                render_vehicle_card(veiculo, i)
+                
+                # Modal de detalhes
+                if st.session_state.get(f"modal_{veiculo['id']}"):
+                    render_vehicle_modal(veiculo)
+                    if st.button("✕ Fechar", key=f"close_{veiculo['id']}", use_container_width=True):
+                        st.session_state[f"modal_{veiculo['id']}"] = False
+                        st.rerun()
+        
+        st.markdown('</div>', unsafe_allow_html=True)
     
     # Footer profissional
-    st.markdown("---")
     st.markdown("""
-    <div style="text-align: center; color: #666; padding: 2rem 1rem;">
-        <h4 style="color: #e88e1b; margin-bottom: 1rem;">Garagem Multimarcas</h4>
-        <p style="margin: 0.5rem 0;">📞 (84) 98188-5353 | 📍 Mossoró - RN</p>
-        <p style="margin: 0.5rem 0;">⏰ Segunda a Sexta: 8h-18h | Sábado: 8h-12h</p>
-        <p style="margin: 1rem 0; font-size: 0.9rem; color: #888;">
-            Todos os veículos com garantia • Financiamento facilitado • Melhores condições
-        </p>
+    </div>
+    
+    <div style="background: #1a1a1a; color: white; padding: 3rem 0; margin-top: 4rem;">
+        <div style="max-width: 1200px; margin: 0 auto; padding: 0 2rem; text-align: center;">
+            <h3 style="color: #e88e1b; margin-bottom: 1.5rem;">Garagem Multimarcas</h3>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 2rem; margin-bottom: 2rem;">
+                <div>
+                    <h4 style="color: #ccc; margin-bottom: 1rem;">📞 Contato</h4>
+                    <p>(84) 98188-5353</p>
+                    <p>Mossoró - RN</p>
+                </div>
+                <div>
+                    <h4 style="color: #ccc; margin-bottom: 1rem;">⏰ Horário</h4>
+                    <p>Segunda a Sexta: 8h-18h</p>
+                    <p>Sábado: 8h-12h</p>
+                </div>
+                <div>
+                    <h4 style="color: #ccc; margin-bottom: 1rem;">💎 Serviços</h4>
+                    <p>Venda de Veículos</p>
+                    <p>Financiamento</p>
+                    <p>Consórcio</p>
+                </div>
+            </div>
+            <p style="color: #666; font-size: 0.9rem; border-top: 1px solid #333; padding-top: 2rem;">
+                © 2024 Garagem Multimarcas - Todos os direitos reservados
+            </p>
+        </div>
     </div>
     """, unsafe_allow_html=True)
 
