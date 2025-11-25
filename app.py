@@ -872,12 +872,11 @@ class Database:
             conn.close()
         
     def get_veiculos(self, filtro_status=None):
-        """Busca veículos - CORRIGIDO PARA COLUNAS DUPLICADAS"""
-        import sqlalchemy
-        engine = sqlalchemy.create_engine(self.get_sqlalchemy_connection())
+        """Busca veículos - VERSÃO CORRIGIDA"""
+        conn = self.get_connection()
+        cursor = conn.cursor()
         
         try:
-            # ✅ CORREÇÃO: Query mais específica para evitar colunas duplicadas
             query = '''
                 SELECT 
                     v.id, v.modelo, v.ano, v.marca, v.cor, 
@@ -885,29 +884,32 @@ class Database:
                     v.km, v.placa, v.chassi, v.combustivel, 
                     v.cambio, v.portas, v.observacoes, 
                     v.data_cadastro, v.status,
-                    COALESCE(v.margem_negociacao, 30) as margem_negociacao, v.renavam
+                    COALESCE(v.margem_negociacao, 30) as margem_negociacao
                 FROM veiculos v
             '''
             
-            # Aplicar filtro de status
             if filtro_status and filtro_status != 'Todos':
                 query += f" WHERE v.status = '{filtro_status}'"
             
             query += ' ORDER BY v.data_cadastro DESC'
             
-            # ✅ CORREÇÃO: Usar pandas com nomes de colunas explícitos
-            df = pd.read_sql(query, engine)
+            cursor.execute(query)
+            colunas = [desc[0] for desc in cursor.description]
+            resultados = cursor.fetchall()
             
-            # ✅ CORREÇÃO: Remover colunas duplicadas se existirem
-            df = df.loc[:, ~df.columns.duplicated()]
+            # Converter para dicionários
+            veiculos = []
+            for row in resultados:
+                veiculo = dict(zip(colunas, row))
+                veiculos.append(veiculo)
             
-            return df.to_dict('records')
+            return veiculos
             
         except Exception as e:
             print(f"❌ Erro ao buscar veículos: {e}")
             return []
         finally:
-            engine.dispose()
+            conn.close()
     
     def add_veiculo(self, veiculo_data):
         """Adiciona veículo com tratamento robusto de erros"""
@@ -987,9 +989,9 @@ class Database:
     
     # Métodos para gastos
     def get_gastos(self, veiculo_id=None):
-        """Busca gastos com SQLAlchemy"""
-        import sqlalchemy
-        engine = sqlalchemy.create_engine(self.get_sqlalchemy_connection())
+        """Busca gastos - VERSÃO CORRIGIDA"""
+        conn = self.get_connection()
+        cursor = conn.cursor()
         
         try:
             query = '''
@@ -1003,15 +1005,22 @@ class Database:
             
             query += ' ORDER BY g.data DESC'
             
-            # ✅ CORREÇÃO: Usar SQLAlchemy
-            df = pd.read_sql(query, engine)
-            return df.to_dict('records')
+            cursor.execute(query)
+            colunas = [desc[0] for desc in cursor.description]
+            resultados = cursor.fetchall()
+            
+            gastos = []
+            for row in resultados:
+                gasto = dict(zip(colunas, row))
+                gastos.append(gasto)
+            
+            return gastos
             
         except Exception as e:
             print(f"❌ Erro ao buscar gastos: {e}")
             return []
         finally:
-            engine.dispose()
+            conn.close()
     
     def add_gasto(self, gasto_data):
         conn = self.get_connection()
@@ -1040,12 +1049,11 @@ class Database:
     
     # Métodos para vendas
     def get_vendas(self):
-        """Busca vendas - CORRIGIDO PARA POSTGRESQL"""
-        import sqlalchemy
-        engine = sqlalchemy.create_engine(self.get_sqlalchemy_connection())
+        """Busca vendas - VERSÃO CORRIGIDA"""
+        conn = self.get_connection()
+        cursor = conn.cursor()
         
         try:
-            # ✅ CORREÇÃO: Query com aliases explícitos e nomes consistentes
             query = '''
                 SELECT 
                     v.id,
@@ -1066,16 +1074,22 @@ class Database:
                 ORDER BY v.data_venda DESC
             '''
             
-            df = pd.read_sql(query, engine)
-            df = df.loc[:, ~df.columns.duplicated()]
+            cursor.execute(query)
+            colunas = [desc[0] for desc in cursor.description]
+            resultados = cursor.fetchall()
             
-            return df.to_dict('records')
+            vendas = []
+            for row in resultados:
+                venda = dict(zip(colunas, row))
+                vendas.append(venda)
+            
+            return vendas
             
         except Exception as e:
             print(f"❌ Erro ao buscar vendas: {e}")
             return []
         finally:
-            engine.dispose()
+            conn.close()
     
     def add_venda(self, venda_data):
         conn = self.get_connection()
@@ -1117,9 +1131,9 @@ class Database:
     
     # Métodos para documentos
     def get_documentos(self, veiculo_id=None):
-        """Busca documentos com SQLAlchemy"""
-        import sqlalchemy
-        engine = sqlalchemy.create_engine(self.get_sqlalchemy_connection())
+        """Busca documentos - VERSÃO CORRIGIDA"""
+        conn = self.get_connection()
+        cursor = conn.cursor()
         
         try:
             query = '''
@@ -1131,15 +1145,22 @@ class Database:
                 query += f' WHERE d.veiculo_id = {veiculo_id}'
             query += ' ORDER BY d.data_upload DESC'
             
-            # ✅ CORREÇÃO: Usar SQLAlchemy
-            df = pd.read_sql(query, engine)
-            return df.to_dict('records')
+            cursor.execute(query)
+            colunas = [desc[0] for desc in cursor.description]
+            resultados = cursor.fetchall()
+            
+            documentos = []
+            for row in resultados:
+                documento = dict(zip(colunas, row))
+                documentos.append(documento)
+            
+            return documentos
             
         except Exception as e:
             print(f"❌ Erro ao buscar documentos: {e}")
             return []
         finally:
-            engine.dispose()
+            conn.close()
     
     def add_documento(self, documento_data):
         conn = self.get_connection()
@@ -1170,9 +1191,9 @@ class Database:
     
     # Métodos para fluxo de caixa
     def get_fluxo_caixa(self, data_inicio=None, data_fim=None):
-        """Busca fluxo de caixa com SQLAlchemy"""
-        import sqlalchemy
-        engine = sqlalchemy.create_engine(self.get_sqlalchemy_connection())
+        """Busca fluxo de caixa - VERSÃO CORRIGIDA"""
+        conn = self.get_connection()
+        cursor = conn.cursor()
         
         try:
             query = '''
@@ -1191,15 +1212,22 @@ class Database:
             
             query += ' ORDER BY fc.data DESC'
             
-            # ✅ CORREÇÃO: Usar SQLAlchemy
-            df = pd.read_sql(query, engine)
-            return df.to_dict('records')
+            cursor.execute(query)
+            colunas = [desc[0] for desc in cursor.description]
+            resultados = cursor.fetchall()
+            
+            fluxo = []
+            for row in resultados:
+                item = dict(zip(colunas, row))
+                fluxo.append(item)
+            
+            return fluxo
             
         except Exception as e:
             print(f"❌ Erro ao buscar fluxo de caixa: {e}")
             return []
         finally:
-            engine.dispose()
+            conn.close()
     
     def add_fluxo_caixa(self, fluxo_data):
         conn = self.get_connection()
@@ -1230,22 +1258,29 @@ class Database:
     
     # Métodos para contatos
     def get_contatos(self):
-        """Busca contatos com SQLAlchemy"""
-        import sqlalchemy
-        engine = sqlalchemy.create_engine(self.get_sqlalchemy_connection())
+        """Busca contatos - VERSÃO CORRIGIDA"""
+        conn = self.get_connection()
+        cursor = conn.cursor()
         
         try:
             query = 'SELECT * FROM contatos ORDER BY data_contato DESC'
             
-            # ✅ CORREÇÃO: Usar SQLAlchemy
-            df = pd.read_sql(query, engine)
-            return df.to_dict('records')
+            cursor.execute(query)
+            colunas = [desc[0] for desc in cursor.description]
+            resultados = cursor.fetchall()
+            
+            contatos = []
+            for row in resultados:
+                contato = dict(zip(colunas, row))
+                contatos.append(contato)
+            
+            return contatos
             
         except Exception as e:
             print(f"❌ Erro ao buscar contatos: {e}")
             return []
         finally:
-            engine.dispose()
+            conn.close()
     
     def add_contato(self, contato_data):
         conn = self.get_connection()
@@ -1276,6 +1311,7 @@ class Database:
     
     # Métodos para usuários
     def verificar_login(self, username, password):
+        """Verifica login - VERSÃO CORRIGIDA"""
         conn = self.get_connection()
         cursor = conn.cursor()
         
@@ -1288,10 +1324,8 @@ class Database:
         
         try:
             if usando_postgres:
-                # ✅ PostgreSQL - usar %s
                 cursor.execute('SELECT * FROM usuarios WHERE username = %s', (username,))
             else:
-                # ✅ SQLite - usar ?
                 cursor.execute('SELECT * FROM usuarios WHERE username = ?', (username,))
             
             usuario = cursor.fetchone()
@@ -1399,9 +1433,9 @@ class Database:
             conn.close()
 
     def get_financiamentos(self, veiculo_id=None):
-        """Busca financiamentos com SQLAlchemy"""
-        import sqlalchemy
-        engine = sqlalchemy.create_engine(self.get_sqlalchemy_connection())
+        """Busca financiamentos - VERSÃO CORRIGIDA"""
+        conn = self.get_connection()
+        cursor = conn.cursor()
         
         try:
             # Verificar se estamos usando PostgreSQL
@@ -1432,20 +1466,27 @@ class Database:
             
             query += ' ORDER BY f.data_contrato DESC'
             
-            # ✅ CORREÇÃO: Usar SQLAlchemy
-            df = pd.read_sql(query, engine)
-            return df.to_dict('records')
+            cursor.execute(query)
+            colunas = [desc[0] for desc in cursor.description]
+            resultados = cursor.fetchall()
+            
+            financiamentos = []
+            for row in resultados:
+                financiamento = dict(zip(colunas, row))
+                financiamentos.append(financiamento)
+            
+            return financiamentos
             
         except Exception as e:
             print(f"❌ Erro ao buscar financiamentos: {e}")
             return []
         finally:
-            engine.dispose()
+            conn.close()
             
     def get_parcelas(self, financiamento_id=None, status=None):
-        """Busca parcelas com SQLAlchemy"""
-        import sqlalchemy
-        engine = sqlalchemy.create_engine(self.get_sqlalchemy_connection())
+        """Busca parcelas - VERSÃO CORRIGIDA"""
+        conn = self.get_connection()
+        cursor = conn.cursor()
         
         try:
             # Verificar se estamos usando PostgreSQL
@@ -1472,15 +1513,22 @@ class Database:
             
             query += ' ORDER BY p.data_vencimento ASC'
             
-            # ✅ CORREÇÃO: Usar SQLAlchemy
-            df = pd.read_sql(query, engine)
-            return df.to_dict('records')
+            cursor.execute(query)
+            colunas = [desc[0] for desc in cursor.description]
+            resultados = cursor.fetchall()
+            
+            parcelas = []
+            for row in resultados:
+                parcela = dict(zip(colunas, row))
+                parcelas.append(parcela)
+            
+            return parcelas
             
         except Exception as e:
             print(f"❌ Erro ao buscar parcelas: {e}")
             return []
         finally:
-            engine.dispose()
+            conn.close()
 
     def update_parcela_status(self, parcela_id, status, data_pagamento=None, forma_pagamento=None):
         conn = self.get_connection()
