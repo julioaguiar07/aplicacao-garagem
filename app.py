@@ -824,7 +824,6 @@ class Database:
             ''', ('admin', hash_password('admin123'), 'Administrador', 'admin'))
 
     def salvar_foto_veiculo(self, veiculo_id, foto_bytes):
-        """Salva a foto do veículo no banco"""
         conn = self.get_connection()
         cursor = conn.cursor()
         
@@ -860,6 +859,25 @@ class Database:
         except Exception as e:
             print(f"Erro ao salvar foto: {e}")
             return False
+        finally:
+            conn.close()
+
+    def get_foto_veiculo(self, veiculo_id):
+        """Busca a foto do veículo"""
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        
+        try:
+            if os.getenv('DATABASE_URL'):
+                cursor.execute('SELECT foto FROM veiculos WHERE id = %s', (veiculo_id,))
+            else:
+                cursor.execute('SELECT foto FROM veiculos WHERE id = ?', (veiculo_id,))
+            
+            resultado = cursor.fetchone()
+            return resultado[0] if resultado and resultado[0] else None
+        except Exception as e:
+            print(f"Erro ao buscar foto: {e}")
+            return None
         finally:
             conn.close()
             
@@ -1308,64 +1326,8 @@ class Database:
         conn.commit()
         conn.close()
         return True
-    def salvar_foto_veiculo(self, veiculo_id, foto_bytes):
-    """Salva a foto do veículo no banco"""
-    conn = self.get_connection()
-    cursor = conn.cursor()
+        
     
-    try:
-        # Primeiro verificar se a coluna 'foto' existe
-        if os.getenv('DATABASE_URL'):
-            cursor.execute("""
-                SELECT column_name 
-                FROM information_schema.columns 
-                WHERE table_name = 'veiculos' AND column_name = 'foto'
-            """)
-        else:
-            cursor.execute("PRAGMA table_info(veiculos)")
-        
-        colunas = [col[1] if os.getenv('DATABASE_URL') else col[1] for col in cursor.fetchall()]
-        
-        # Se a coluna não existir, adicionar
-        if 'foto' not in colunas:
-            if os.getenv('DATABASE_URL'):
-                cursor.execute('ALTER TABLE veiculos ADD COLUMN foto BYTEA')
-            else:
-                cursor.execute('ALTER TABLE veiculos ADD COLUMN foto BLOB')
-            conn.commit()
-        
-        # Agora salvar a foto
-        if os.getenv('DATABASE_URL'):
-            cursor.execute('UPDATE veiculos SET foto = %s WHERE id = %s', (foto_bytes, veiculo_id))
-        else:
-            cursor.execute('UPDATE veiculos SET foto = ? WHERE id = ?', (foto_bytes, veiculo_id))
-        
-        conn.commit()
-        return True
-    except Exception as e:
-        print(f"Erro ao salvar foto: {e}")
-        return False
-    finally:
-        conn.close()
-
-    def get_foto_veiculo(self, veiculo_id):
-        """Busca a foto do veículo"""
-        conn = self.get_connection()
-        cursor = conn.cursor()
-        
-        try:
-            if os.getenv('DATABASE_URL'):
-                cursor.execute('SELECT foto FROM veiculos WHERE id = %s', (veiculo_id,))
-            else:
-                cursor.execute('SELECT foto FROM veiculos WHERE id = ?', (veiculo_id,))
-            
-            resultado = cursor.fetchone()
-            return resultado[0] if resultado and resultado[0] else None
-        except Exception as e:
-            print(f"Erro ao buscar foto: {e}")
-            return None
-        finally:
-            conn.close()
     # Métodos para usuários
     def verificar_login(self, username, password):
         """Verifica login - VERSÃO CORRIGIDA"""
