@@ -389,6 +389,7 @@ class Database:
     def __init__(self):
         self.db_path = "canal_automotivo.db"
         self.init_db()
+        self.criar_coluna_foto()
         
     def atualizar_estrutura_banco(self):
         """Atualiza a estrutura do banco se necessário - CORRIGIDO PARA POSTGRESQL"""
@@ -880,7 +881,38 @@ class Database:
             return None
         finally:
             conn.close()
+    def criar_coluna_foto(self):
+        """Cria a coluna foto se não existir"""
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        
+        try:
+            if os.getenv('DATABASE_URL'):
+                # PostgreSQL
+                cursor.execute("""
+                    SELECT column_name 
+                    FROM information_schema.columns 
+                    WHERE table_name = 'veiculos' AND column_name = 'foto'
+                """)
+            else:
+                # SQLite
+                cursor.execute("PRAGMA table_info(veiculos)")
             
+            colunas = [col[1] if os.getenv('DATABASE_URL') else col[1] for col in cursor.fetchall()]
+            
+            if 'foto' not in colunas:
+                print("🔄 Criando coluna 'foto'...")
+                if os.getenv('DATABASE_URL'):
+                    cursor.execute('ALTER TABLE veiculos ADD COLUMN foto BYTEA')
+                else:
+                    cursor.execute('ALTER TABLE veiculos ADD COLUMN foto BLOB')
+                conn.commit()
+                print("✅ Coluna 'foto' criada!")
+                
+        except Exception as e:
+            print(f"❌ Erro ao criar coluna foto: {e}")
+        finally:
+            conn.close()      
         conn.commit()
         conn.close()
         print("✅ Todas as tabelas criadas/verificadas com sucesso!")
