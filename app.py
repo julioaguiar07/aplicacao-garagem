@@ -881,6 +881,7 @@ class Database:
             return None
         finally:
             conn.close()
+
     def criar_coluna_foto(self):
         """Cria a coluna foto se não existir"""
         conn = self.get_connection()
@@ -906,13 +907,17 @@ class Database:
                     cursor.execute('ALTER TABLE veiculos ADD COLUMN foto BYTEA')
                 else:
                     cursor.execute('ALTER TABLE veiculos ADD COLUMN foto BLOB')
-                conn.commit()
+                conn.commit()  # ⬅️ COMMIT ANTES de fechar
                 print("✅ Coluna 'foto' criada!")
+            else:
+                print("✅ Coluna 'foto' já existe")
                 
         except Exception as e:
             print(f"❌ Erro ao criar coluna foto: {e}")
+            conn.rollback()  # ⬅️ Rollback em caso de erro
         finally:
-            conn.close()      
+            conn.close()  # ⬅️ Fechar conexão APÓS commit/rollback      
+            
         conn.commit()
         conn.close()
         print("✅ Todas as tabelas criadas/verificadas com sucesso!")
