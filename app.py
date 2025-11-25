@@ -1308,7 +1308,64 @@ class Database:
         conn.commit()
         conn.close()
         return True
+    def salvar_foto_veiculo(self, veiculo_id, foto_bytes):
+    """Salva a foto do veículo no banco"""
+    conn = self.get_connection()
+    cursor = conn.cursor()
     
+    try:
+        # Primeiro verificar se a coluna 'foto' existe
+        if os.getenv('DATABASE_URL'):
+            cursor.execute("""
+                SELECT column_name 
+                FROM information_schema.columns 
+                WHERE table_name = 'veiculos' AND column_name = 'foto'
+            """)
+        else:
+            cursor.execute("PRAGMA table_info(veiculos)")
+        
+        colunas = [col[1] if os.getenv('DATABASE_URL') else col[1] for col in cursor.fetchall()]
+        
+        # Se a coluna não existir, adicionar
+        if 'foto' not in colunas:
+            if os.getenv('DATABASE_URL'):
+                cursor.execute('ALTER TABLE veiculos ADD COLUMN foto BYTEA')
+            else:
+                cursor.execute('ALTER TABLE veiculos ADD COLUMN foto BLOB')
+            conn.commit()
+        
+        # Agora salvar a foto
+        if os.getenv('DATABASE_URL'):
+            cursor.execute('UPDATE veiculos SET foto = %s WHERE id = %s', (foto_bytes, veiculo_id))
+        else:
+            cursor.execute('UPDATE veiculos SET foto = ? WHERE id = ?', (foto_bytes, veiculo_id))
+        
+        conn.commit()
+        return True
+    except Exception as e:
+        print(f"Erro ao salvar foto: {e}")
+        return False
+    finally:
+        conn.close()
+
+    def get_foto_veiculo(self, veiculo_id):
+        """Busca a foto do veículo"""
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        
+        try:
+            if os.getenv('DATABASE_URL'):
+                cursor.execute('SELECT foto FROM veiculos WHERE id = %s', (veiculo_id,))
+            else:
+                cursor.execute('SELECT foto FROM veiculos WHERE id = ?', (veiculo_id,))
+            
+            resultado = cursor.fetchone()
+            return resultado[0] if resultado and resultado[0] else None
+        except Exception as e:
+            print(f"Erro ao buscar foto: {e}")
+            return None
+        finally:
+            conn.close()
     # Métodos para usuários
     def verificar_login(self, username, password):
         """Verifica login - VERSÃO CORRIGIDA"""
@@ -3562,29 +3619,19 @@ with tab2:
             marca = st.text_input("Marca*", placeholder="Volkswagen")
             ano = st.number_input("Ano*", min_value=1970, max_value=2030, value=2025)
             cor = st.selectbox("Cor*", ["Prata", "Preto", "Branco", "Vermelho", "Azul", "Cinza", "Verde", "Laranja"])
+            
             st.markdown("#### 📄 Dados para Contrato")
             renavam = st.text_input("RENAVAM", placeholder="12345678901", key="renavam_input")
             chassi = st.text_input("Chassi", placeholder="9BWZZZ377VT004251")
             ano_fabricacao = st.number_input("Ano de Fabricação", min_value=1970, max_value=2030, value=2025)
             ano_modelo = st.number_input("Ano Modelo", min_value=1970, max_value=2030, value=2025)
             
-            # ✅✅✅ SOLUÇÃO DEFINITIVA - Campo de preço BR
+            # ✅ CAMPO DE PREÇO (JÁ EXISTE)
             preco_input = st.text_input(
                 "Preço de Custo (R$)*", 
                 placeholder="Ex: 50.000,00",
                 help="Use ponto para milhares e vírgula para centavos"
             )
-            
-            # ✅ PRÉ-VISUALIZAÇÃO EM TEMPO REAL
-            if preco_input:
-                try:
-                    # Tentar converter e mostrar prévia
-                    preco_convertido = float(preco_input.replace('.', '').replace(',', '.'))
-                    preco_formatado = f"R$ {preco_convertido:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
-                    st.info(f"💡 **Pré-visualização:** {preco_formatado}")
-                except:
-                    # Se não conseguir converter, mostra aviso
-                    st.warning("⚠️ Digite o valor no formato correto: 50.000,00")
             
             margem_negociacao = st.slider("Margem para Negociação (%)", min_value=0, max_value=20, value=12,
                                         help="Percentual acrescido para negociação")
@@ -3606,8 +3653,20 @@ with tab2:
             cambio = st.selectbox("Câmbio", ["Automático", "Manual", "CVT"])
             portas = st.selectbox("Portas", [2, 4, 5])
             observacoes = st.text_area("Observações")
-            foto_veiculo = st.file_uploader("Foto do Veículo", type=['jpg', 'jpeg', 'png'], 
-                               help="Faça upload da foto principal do veículo")
+            
+            # ✅✅✅ ADICIONE ESTE CAMPO DE FOTO AQUI:
+            st.markdown("#### 📸 Foto do Veículo")
+            foto_veiculo = st.file_uploader(
+                "Faça upload da foto principal do veículo", 
+                type=['jpg', 'jpeg', 'png'],
+                help="Selecione uma imagem clara do veículo"
+            )
+            
+            # ✅✅✅ MOSTRAR PRÉVIA DA FOTO
+            if foto_veiculo is not None:
+                # Mostrar prévia da imagem
+                image = Image.open(foto_veiculo)
+                st.image(image, caption="Prévia da Foto", width=300)
             
             submitted = st.form_submit_button("Cadastrar Veículo", use_container_width=True)
             
@@ -3646,9 +3705,13 @@ with tab2:
                             veiculo_id = db.add_veiculo(novo_veiculo)
                             
                             if veiculo_id:
-                                # Salvar foto se foi enviada
+                                # ✅✅✅ SALVAR FOTO SE FOI ENVIADA
                                 if foto_veiculo is not None:
-                                    db.salvar_foto_veiculo(veiculo_id, foto_veiculo.getvalue())
+                                    success_foto = db.salvar_foto_veiculo(veiculo_id, foto_veiculo.getvalue())
+                                    if success_foto:
+                                        st.success("✅ Foto salva com sucesso!")
+                                    else:
+                                        st.warning("⚠️ Veículo cadastrado, mas houve erro ao salvar a foto")
                                 
                                 st.success("✅ Veículo cadastrado com sucesso!")
                                 st.balloons()
