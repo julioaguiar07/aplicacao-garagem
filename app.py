@@ -862,7 +862,7 @@ class Database:
             return False
         finally:
             conn.close()
-
+    
     def get_foto_veiculo(self, veiculo_id):
         """Busca a foto do veículo"""
         conn = self.get_connection()
@@ -881,13 +881,15 @@ class Database:
             return None
         finally:
             conn.close()
-
+    
     def criar_coluna_foto(self):
-        """Cria a coluna foto se não existir"""
-        conn = self.get_connection()
-        cursor = conn.cursor()
-        
+        """Cria a coluna foto se não existir - VERSÃO CORRIGIDA"""
+        conn = None
         try:
+            conn = self.get_connection()
+            cursor = conn.cursor()
+            
+            # Verificar se a coluna 'foto' existe
             if os.getenv('DATABASE_URL'):
                 # PostgreSQL
                 cursor.execute("""
@@ -907,16 +909,18 @@ class Database:
                     cursor.execute('ALTER TABLE veiculos ADD COLUMN foto BYTEA')
                 else:
                     cursor.execute('ALTER TABLE veiculos ADD COLUMN foto BLOB')
-                conn.commit()  # ⬅️ COMMIT ANTES de fechar
+                conn.commit()
                 print("✅ Coluna 'foto' criada!")
             else:
                 print("✅ Coluna 'foto' já existe")
                 
         except Exception as e:
             print(f"❌ Erro ao criar coluna foto: {e}")
-            conn.rollback()  # ⬅️ Rollback em caso de erro
+            if conn:
+                conn.rollback()
         finally:
-            conn.close()  # ⬅️ Fechar conexão APÓS commit/rollback      
+            if conn:
+                conn.close()     
             
         conn.commit()
         conn.close()
