@@ -822,15 +822,7 @@ class Database:
                 INSERT OR IGNORE INTO usuarios (username, password_hash, nome, nivel_acesso)
                 VALUES (?, ?, ?, ?)
             ''', ('admin', hash_password('admin123'), 'Administrador', 'admin'))
-    
-        conn.commit()
-        conn.close()
-        print("✅ Todas as tabelas criadas/verificadas com sucesso!")
 
-    # =============================================
-    # MÉTODOS ORIGINAIS - ADAPTADOS PARA AMBOS OS BANCOS
-    # =============================================
-        
     def salvar_foto_veiculo(self, veiculo_id, foto_bytes):
         """Salva a foto do veículo no banco"""
         conn = self.get_connection()
@@ -870,6 +862,14 @@ class Database:
             return False
         finally:
             conn.close()
+            
+        conn.commit()
+        conn.close()
+        print("✅ Todas as tabelas criadas/verificadas com sucesso!")
+
+    # =============================================
+    # MÉTODOS ORIGINAIS - ADAPTADOS PARA AMBOS OS BANCOS
+    # =============================================
         
     def get_veiculos(self, filtro_status=None):
         """Busca veículos - VERSÃO CORRIGIDA"""
