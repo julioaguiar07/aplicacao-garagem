@@ -47,17 +47,6 @@ st.markdown('''
         overflow: hidden;
     }
     
-    .luxury-header::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="50" cy="50" r="0.5" fill="%23ffffff" opacity="0.02"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
-        opacity: 0.3;
-    }
-    
     .contact-bar {
         background: linear-gradient(90deg, #d4af37, #f4c220);
         color: #1a1a1a;
@@ -68,109 +57,65 @@ st.markdown('''
         letter-spacing: 0.5px;
     }
     
-    /* Hero Section Impactante */
+    /* Hero Section */
     .hero-section {
         background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 50%, #2d1a0f 100%);
-        padding: 80px 0 60px;
+        padding: 40px 0 30px;
         text-align: center;
         position: relative;
-        overflow: hidden;
     }
     
-    .hero-section::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: radial-gradient(circle at 50% 50%, rgba(212, 175, 55, 0.1) 0%, transparent 70%);
-    }
-    
-    /* Container principal */
-    .main-container {
-        max-width: 1400px;
-        margin: 0 auto;
-        padding: 0 20px;
-    }
-    
-    /* Grid de veículos - Design de galeria */
-    .vehicles-gallery {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-        gap: 30px;
-        margin: 40px 0;
-    }
-    
-    /* Card premium com efeitos sofisticados */
-    .luxury-card {
+    /* Cards de veículos */
+    .vehicle-card {
         background: linear-gradient(145deg, #1a1a1a, #0f0f0f);
-        border-radius: 20px;
+        border-radius: 15px;
         padding: 0;
         border: 1px solid #333;
-        position: relative;
+        transition: all 0.3s ease;
+        margin-bottom: 25px;
         overflow: hidden;
-        transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
     }
     
-    .luxury-card::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: -100%;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(90deg, transparent, rgba(212, 175, 55, 0.1), transparent);
-        transition: left 0.6s ease;
-    }
-    
-    .luxury-card:hover {
-        transform: translateY(-12px) scale(1.02);
+    .vehicle-card:hover {
+        transform: translateY(-5px);
         border-color: #d4af37;
-        box-shadow: 0 25px 50px rgba(212, 175, 55, 0.2);
+        box-shadow: 0 10px 25px rgba(212, 175, 55, 0.2);
     }
     
-    .luxury-card:hover::before {
-        left: 100%;
-    }
-    
-    .card-header {
+    .vehicle-image-container {
         position: relative;
+        height: 200px;
         overflow: hidden;
-        border-radius: 20px 20px 0 0;
     }
     
     .vehicle-image {
         width: 100%;
-        height: 220px;
+        height: 100%;
         object-fit: cover;
-        transition: transform 0.6s ease;
+        transition: transform 0.3s ease;
     }
     
-    .luxury-card:hover .vehicle-image {
-        transform: scale(1.1);
+    .vehicle-card:hover .vehicle-image {
+        transform: scale(1.05);
     }
     
-    .card-badges {
+    .vehicle-badges {
         position: absolute;
-        top: 15px;
-        left: 15px;
+        top: 10px;
+        left: 10px;
         display: flex;
         flex-direction: column;
-        gap: 8px;
-        z-index: 2;
+        gap: 5px;
     }
     
     .luxury-badge {
-        padding: 8px 16px;
-        border-radius: 25px;
-        font-size: 11px;
+        padding: 6px 12px;
+        border-radius: 15px;
+        font-size: 10px;
         font-weight: 800;
         text-transform: uppercase;
-        letter-spacing: 1px;
+        letter-spacing: 0.5px;
         backdrop-filter: blur(10px);
-        border: 1px solid rgba(255, 255, 255, 0.2);
     }
     
     .badge-new {
@@ -183,30 +128,21 @@ st.markdown('''
         color: #1a1a1a;
     }
     
-    .badge-promo {
-        background: linear-gradient(135deg, #e74c3c, #c0392b);
-        color: white;
-    }
-    
     .card-content {
-        padding: 25px;
+        padding: 20px;
     }
     
     .vehicle-title {
-        font-size: 20px;
+        font-size: 18px;
         font-weight: 700;
-        color: #ffffff;
-        margin: 0 0 12px 0;
+        color: #d4af37;
+        margin: 0 0 10px 0;
         line-height: 1.3;
-        background: linear-gradient(135deg, #ffffff, #d4af37);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
     }
     
     .vehicle-specs {
         color: #b0b0b0;
-        font-size: 14px;
+        font-size: 13px;
         margin-bottom: 15px;
         line-height: 1.5;
     }
@@ -215,106 +151,83 @@ st.markdown('''
         display: flex;
         align-items: center;
         gap: 8px;
-        margin-bottom: 6px;
+        margin-bottom: 4px;
     }
     
     .price-section {
         border-top: 1px solid #333;
-        padding-top: 20px;
-        margin-top: 15px;
+        padding-top: 15px;
+        margin-top: 10px;
     }
     
     .vehicle-price {
-        font-size: 28px;
+        font-size: 22px;
         font-weight: 800;
         color: #d4af37;
-        margin: 0 0 8px 0;
-        text-shadow: 0 2px 4px rgba(212, 175, 55, 0.3);
+        margin: 0 0 5px 0;
     }
     
     .vehicle-financing {
         color: #888;
-        font-size: 13px;
-        margin-bottom: 20px;
+        font-size: 12px;
+        margin-bottom: 15px;
         line-height: 1.4;
     }
     
     .btn-container {
         display: grid;
         grid-template-columns: 1fr 1fr;
-        gap: 12px;
-        margin-top: 20px;
+        gap: 10px;
+    }
+    
+    .stButton>button {
+        width: 100%;
+        border: none;
+        border-radius: 8px;
+        padding: 10px;
+        font-weight: 600;
+        font-size: 12px;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 5px;
     }
     
     .btn-details {
         background: linear-gradient(135deg, #333, #555);
         color: white;
-        border: none;
-        padding: 14px;
-        border-radius: 12px;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        text-align: center;
-        text-decoration: none;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
-        font-size: 14px;
     }
     
     .btn-details:hover {
         background: linear-gradient(135deg, #444, #666);
         transform: translateY(-2px);
-        box-shadow: 0 5px 15px rgba(255, 255, 255, 0.1);
     }
     
     .btn-whatsapp {
         background: linear-gradient(135deg, #25D366, #128C7E);
         color: white;
-        border: none;
-        padding: 14px;
-        border-radius: 12px;
-        font-weight: 600;
-        text-decoration: none;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
-        transition: all 0.3s ease;
-        font-size: 14px;
     }
     
     .btn-whatsapp:hover {
         background: linear-gradient(135deg, #20bd5c, #0f7a61);
         transform: translateY(-2px);
-        box-shadow: 0 5px 15px rgba(37, 211, 102, 0.3);
     }
     
-    /* Filtros premium */
+    /* Filtros */
     .filters-section {
         background: linear-gradient(135deg, #1a1a1a, #0f0f0f);
-        padding: 30px;
-        border-radius: 20px;
-        margin: 40px 0;
+        padding: 25px;
+        border-radius: 15px;
+        margin: 30px 0;
         border: 1px solid #333;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
     }
     
-    .filter-title {
-        font-size: 24px;
-        font-weight: 700;
-        color: #d4af37;
-        margin-bottom: 25px;
-        text-align: center;
-    }
-    
-    /* Footer luxuoso */
+    /* Footer */
     .luxury-footer {
         background: linear-gradient(135deg, #1a1a1a, #0f0f0f);
-        padding: 50px 0 30px;
-        margin-top: 60px;
+        padding: 40px 0 20px;
+        margin-top: 50px;
         border-top: 1px solid #333;
         position: relative;
     }
@@ -329,54 +242,35 @@ st.markdown('''
         background: linear-gradient(90deg, #d4af37, #f4c220, #d4af37);
     }
     
-    /* Contador de veículos */
     .vehicle-counter {
         background: linear-gradient(135deg, #d4af37, #f4c220);
         color: #1a1a1a;
-        padding: 8px 20px;
-        border-radius: 25px;
+        padding: 8px 16px;
+        border-radius: 20px;
         font-weight: 700;
-        font-size: 14px;
+        font-size: 12px;
         display: inline-block;
-        margin-bottom: 20px;
+        margin-bottom: 15px;
     }
     
-    /* Loading animado */
-    .loading-spinner {
-        display: inline-block;
-        width: 20px;
-        height: 20px;
-        border: 3px solid rgba(212, 175, 55, 0.3);
-        border-radius: 50%;
-        border-top-color: #d4af37;
-        animation: spin 1s ease-in-out infinite;
+    /* Grid responsivo */
+    .vehicles-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 20px;
+        margin: 20px 0;
     }
     
-    @keyframes spin {
-        to { transform: rotate(360deg); }
+    /* Melhorias nos componentes Streamlit */
+    .stSelectbox > div > div {
+        background: #1a1a1a;
+        border: 1px solid #333;
+        border-radius: 8px;
+        color: white;
     }
     
-    /* Responsividade aprimorada */
-    @media (max-width: 1200px) {
-        .vehicles-gallery {
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 25px;
-        }
-    }
-    
-    @media (max-width: 768px) {
-        .vehicles-gallery {
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 20px;
-        }
-        
-        .btn-container {
-            grid-template-columns: 1fr;
-        }
-        
-        .hero-section {
-            padding: 60px 0 40px;
-        }
+    .stSlider > div > div > div {
+        color: #d4af37;
     }
     
     /* Esconde elementos Streamlit */
@@ -384,23 +278,11 @@ st.markdown('''
     footer {visibility: hidden;}
     header {visibility: hidden;}
     .stDeployButton {display: none;}
-    
-    /* Melhorias nos selects do Streamlit */
-    .stSelectbox > div > div {
-        background: #1a1a1a;
-        border: 1px solid #333;
-        border-radius: 10px;
-        color: white;
-    }
-    
-    .stSlider > div > div > div {
-        color: #d4af37;
-    }
 </style>
 ''', unsafe_allow_html=True)
 
 # =============================================
-# BANCO DE DADOS - CONEXÃO COM POSTGRES
+# BANCO DE DADOS
 # =============================================
 
 class LuxuryDatabase:
@@ -410,7 +292,6 @@ class LuxuryDatabase:
     def get_connection(self):
         """Conecta ao PostgreSQL do Railway"""
         if self.database_url:
-            # Corrigir URL se necessário
             if self.database_url.startswith('postgres://'):
                 self.database_url = self.database_url.replace('postgres://', 'postgresql://', 1)
             try:
@@ -464,7 +345,6 @@ class LuxuryDatabase:
                 # Processar foto se existir
                 if tem_foto and veiculo.get('foto'):
                     try:
-                        # Converter bytes para base64
                         if isinstance(veiculo['foto'], bytes):
                             veiculo['foto_base64'] = base64.b64encode(veiculo['foto']).decode()
                         else:
@@ -486,7 +366,7 @@ class LuxuryDatabase:
                 conn.close()
 
 # =============================================
-# COMPONENTES PREMIUM
+# FUNÇÕES AUXILIARES
 # =============================================
 
 def generate_placeholder_image(veiculo):
@@ -502,26 +382,36 @@ def generate_placeholder_image(veiculo):
     color_hex = color_map.get(veiculo['cor'], '3498db')
     texto = f"{veiculo['marca']}+{veiculo['modelo']}".replace(' ', '+')
     
-    return f"https://via.placeholder.com/600x400/{color_hex}/ffffff?text={texto}"
+    return f"https://via.placeholder.com/400x250/{color_hex}/ffffff?text={texto}"
 
-def create_luxury_card(veiculo):
-    """Cria card premium para o veículo"""
+def load_logo():
+    """Carrega a logo do repositório"""
+    try:
+        logo = Image.open("logoca.png")
+        return logo
+    except:
+        return None
+
+def create_vehicle_card(veiculo):
+    """Cria um card de veículo usando componentes Streamlit"""
     
     # Usar foto real se disponível, senão placeholder
     if veiculo.get('foto_base64'):
-        image_src = f"data:image/jpeg;base64,{veiculo['foto_base64']}"
+        image_data = base64.b64decode(veiculo['foto_base64'])
+        image = Image.open(io.BytesIO(image_data))
     else:
-        image_src = generate_placeholder_image(veiculo)
+        # Para placeholder, vamos usar uma imagem genérica
+        image = None
     
     # Determinar badges
     idade = datetime.now().year - veiculo['ano']
-    badges_html = ""
+    badges = []
     if idade <= 1:
-        badges_html += '<div class="luxury-badge badge-new">🆕 NOVO</div>'
+        badges.append(("🆕 NOVO", "badge-new"))
     if veiculo['km'] < 20000:
-        badges_html += '<div class="luxury-badge badge-lowkm">⭐ BAIXA KM</div>'
+        badges.append(("⭐ BAIXA KM", "badge-lowkm"))
     elif veiculo['km'] < 50000:
-        badges_html += '<div class="luxury-badge badge-lowkm">🛣️ POUCA KM</div>'
+        badges.append(("🛣️ POUCA KM", "badge-lowkm"))
     
     # Cálculo de financiamento
     entrada = veiculo['preco_venda'] * 0.2
@@ -533,20 +423,30 @@ def create_luxury_card(veiculo):
     parcela_formatada = f"R$ {parcela:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
     km_formatado = f"{veiculo['km']:,}".replace(',', '.')
     
-    # Criar HTML do card
-    card_html = f'''
-    <div class="luxury-card">
-        <div class="card-header">
-            <img src="{image_src}" class="vehicle-image" alt="{veiculo['marca']} {veiculo['modelo']}" 
-                 onerror="this.src='{generate_placeholder_image(veiculo)}'">
-            <div class="card-badges">
-                {badges_html}
-            </div>
-        </div>
+    # Criar card usando columns
+    with st.container():
+        col1, col2 = st.columns([1, 2])
         
-        <div class="card-content">
-            <div class="vehicle-title">{veiculo['marca']} {veiculo['modelo']}</div>
+        with col1:
+            # Imagem do veículo
+            if image:
+                st.image(image, use_column_width=True)
+            else:
+                st.image(generate_placeholder_image(veiculo), use_column_width=True)
             
+            # Badges
+            if badges:
+                badge_cols = st.columns(len(badges))
+                for i, (badge_text, badge_class) in enumerate(badges):
+                    with badge_cols[i]:
+                        st.markdown(f'<div class="luxury-badge {badge_class}">{badge_text}</div>', unsafe_allow_html=True)
+        
+        with col2:
+            # Informações do veículo
+            st.markdown(f'<div class="vehicle-title">{veiculo["marca"]} {veiculo["modelo"]}</div>', unsafe_allow_html=True)
+            
+            # Especificações
+            st.markdown(f'''
             <div class="vehicle-specs">
                 <div class="spec-item">📅 <strong>Ano:</strong> {veiculo['ano']}</div>
                 <div class="spec-item">🛣️ <strong>KM:</strong> {km_formatado}</div>
@@ -555,7 +455,10 @@ def create_luxury_card(veiculo):
                 <div class="spec-item">⛽ <strong>Combustível:</strong> {veiculo['combustivel']}</div>
                 <div class="spec-item">🚪 <strong>Portas:</strong> {veiculo['portas']}</div>
             </div>
+            ''', unsafe_allow_html=True)
             
+            # Preço e financiamento
+            st.markdown(f'''
             <div class="price-section">
                 <div class="vehicle-price">{preco_formatado}</div>
                 <div class="vehicle-financing">
@@ -563,109 +466,104 @@ def create_luxury_card(veiculo):
                     📅 <strong>48x de:</strong> {parcela_formatada}
                 </div>
             </div>
+            ''', unsafe_allow_html=True)
             
-            <div class="btn-container">
-                <button class="btn-details" onclick="showVehicleDetails({veiculo['id']})">
-                    🔍 Detalhes Completos
-                </button>
-                <a href="https://wa.me/5584981885353?text=Olá! Gostaria de informações sobre o {veiculo['marca']} {veiculo['modelo']} {veiculo['ano']} - {preco_formatado}" 
-                   target="_blank" class="btn-whatsapp">
-                    💬 Falar no WhatsApp
-                </a>
-            </div>
-        </div>
-    </div>
-    '''
-    return card_html
+            # Botões de ação
+            col_btn1, col_btn2 = st.columns(2)
+            with col_btn1:
+                if st.button("🔍 Detalhes", key=f"details_{veiculo['id']}", use_container_width=True):
+                    show_vehicle_details(veiculo)
+            with col_btn2:
+                whatsapp_url = f"https://wa.me/5584981885353?text=Olá! Gostaria de informações sobre o {veiculo['marca']} {veiculo['modelo']} {veiculo['ano']} - {preco_formatado}"
+                st.markdown(f'<a href="{whatsapp_url}" target="_blank"><button class="btn-whatsapp" style="width:100%">💬 WhatsApp</button></a>', unsafe_allow_html=True)
+        
+        st.markdown("---")
 
-def render_vehicle_gallery(veiculos):
-    """Renderiza galeria completa de veículos"""
-    if not veiculos:
-        return '''
-        <div style="text-align: center; padding: 80px 20px; color: #888;">
-            <div style="font-size: 48px; margin-bottom: 20px;">🚫</div>
-            <h3 style="color: #d4af37; margin-bottom: 10px;">Nenhum veículo encontrado</h3>
-            <p style="color: #666; font-size: 16px;">Tente ajustar os filtros para encontrar mais opções!</p>
-        </div>
-        '''
+def show_vehicle_details(veiculo):
+    """Mostra detalhes completos do veículo em um modal"""
+    st.session_state[f"show_details_{veiculo['id']}"] = True
     
-    gallery_html = '<div class="vehicles-gallery">'
-    for veiculo in veiculos:
-        gallery_html += create_luxury_card(veiculo)
-    gallery_html += '</div>'
-    
-    return gallery_html
+    with st.expander(f"🚗 Detalhes Completos - {veiculo['marca']} {veiculo['modelo']}", expanded=True):
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            if veiculo.get('foto_base64'):
+                image_data = base64.b64decode(veiculo['foto_base64'])
+                image = Image.open(io.BytesIO(image_data))
+                st.image(image, use_column_width=True)
+            else:
+                st.image(generate_placeholder_image(veiculo), use_column_width=True)
+        
+        with col2:
+            st.subheader("📋 Informações Técnicas")
+            st.write(f"**Marca:** {veiculo['marca']}")
+            st.write(f"**Modelo:** {veiculo['modelo']}")
+            st.write(f"**Ano:** {veiculo['ano']}")
+            st.write(f"**Cor:** {veiculo['cor']}")
+            st.write(f"**KM:** {veiculo['km']:,}")
+            st.write(f"**Placa:** {veiculo['placa'] or 'Não informada'}")
+            st.write(f"**Combustível:** {veiculo['combustivel']}")
+            st.write(f"**Câmbio:** {veiculo['cambio']}")
+            st.write(f"**Portas:** {veiculo['portas']}")
+            
+            if veiculo.get('observacoes'):
+                st.subheader("📝 Observações")
+                st.write(veiculo['observacoes'])
 
 # =============================================
-# PÁGINA PRINCIPAL - CATÁLOGO LUXUOSO
+# PÁGINA PRINCIPAL
 # =============================================
 
 def main():
-    # Header Premium
+    # Header com logo
+    logo = load_logo()
+    
+    st.markdown('<div class="contact-bar">⭐ CONDIÇÕES ESPECIAIS • 📞 (84) 98188-5353 • 📍 Mossoró/RN • ⏰ Seg-Sex: 8h-18h | Sáb: 8h-12h</div>', unsafe_allow_html=True)
+    
+    col_logo, col_title = st.columns([1, 3])
+    with col_logo:
+        if logo:
+            st.image(logo, width=100)
+        else:
+            st.markdown('<div style="font-size: 48px;">🚗</div>', unsafe_allow_html=True)
+    
+    with col_title:
+        st.markdown('<div style="font-size: 32px; font-weight: 800; color: #d4af37; margin-top: 10px;">GARAGEM MULTIMARCAS</div>', unsafe_allow_html=True)
+    
+    # Hero Section
     st.markdown('''
-    <div class="contact-bar">
-        ⭐ CONDIÇÕES ESPECIAIS • 📞 (84) 98188-5353 • 📍 Mossoró/RN • ⏰ Seg-Sex: 8h-18h | Sáb: 8h-12h
-    </div>
-    
-    <div class="luxury-header">
-        <div class="main-container">
-            <div style="display: flex; align-items: center; justify-content: space-between; position: relative; z-index: 2;">
-                <div style="display: flex; align-items: center; gap: 20px;">
-                    <div style="font-size: 32px; font-weight: 800; background: linear-gradient(135deg, #d4af37, #f4c220); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
-                        🚗 GARAGEM MULTIMARCAS
-                    </div>
-                </div>
-                <div style="color: #d4af37; font-size: 18px; font-weight: 600; text-align: right;">
-                    Excelência Automotiva<br><span style="color: #ccc; font-size: 14px;">Desde 2024</span>
-                </div>
-            </div>
-        </div>
-    </div>
-    
     <div class="hero-section">
-        <div class="main-container">
-            <h1 style="margin: 0; color: white; font-size: 52px; font-weight: 800; margin-bottom: 20px; line-height: 1.1;">
-                CATÁLOGO <span style="background: linear-gradient(135deg, #d4af37, #f4c220); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">PREMIUM</span>
-            </h1>
-            <p style="color: #ccc; font-size: 22px; margin: 0 auto 30px; max-width: 600px; line-height: 1.4;">
-                Descubra nossa seleção exclusiva de veículos novos e seminovos com as melhores condições do mercado
-            </p>
-            <div class="vehicle-counter">
-                🚗 Veículos Selecionados • ⭐ Condições Especiais
-            </div>
-        </div>
+        <h1 style="color: white; font-size: 36px; font-weight: 800; margin-bottom: 10px;">
+            CATÁLOGO PREMIUM
+        </h1>
+        <p style="color: #ccc; font-size: 18px; margin-bottom: 20px;">
+            Os melhores veículos novos e seminovos com condições especiais
+        </p>
     </div>
     ''', unsafe_allow_html=True)
     
-    # Container principal
-    st.markdown('<div class="main-container">', unsafe_allow_html=True)
-    
     # Buscar dados do banco
-    with st.spinner('🔄 Carregando veículos premium...'):
+    with st.spinner('🔄 Carregando veículos...'):
         db = LuxuryDatabase()
         veiculos = db.get_veiculos_estoque()
     
-    # Seção de Filtros Premium
-    st.markdown('''
-    <div class="filters-section">
-        <div class="filter-title">🎯 ENCONTRE SEU VEÍCULO IDEAL</div>
-    </div>
-    ''', unsafe_allow_html=True)
+    # Filtros
+    st.markdown('<div class="filters-section">', unsafe_allow_html=True)
+    st.subheader("🎯 Filtros")
     
-    # Filtros em colunas
     col1, col2, col3, col4 = st.columns([2, 2, 2, 1])
     
     with col1:
         if veiculos:
             marcas = ["Todas as marcas"] + sorted(list(set([v['marca'] for v in veiculos])))
-            marca_filtro = st.selectbox("**🏷️ Marca**", marcas, key="marca_filter")
+            marca_filtro = st.selectbox("🏷️ Marca", marcas, key="marca_filter")
         else:
             marca_filtro = "Todas as marcas"
     
     with col2:
         if veiculos:
             anos = ["Todos os anos"] + sorted(list(set([v['ano'] for v in veiculos])), reverse=True)
-            ano_filtro = st.selectbox("**📅 Ano**", anos, key="ano_filter")
+            ano_filtro = st.selectbox("📅 Ano", anos, key="ano_filter")
         else:
             ano_filtro = "Todos os anos"
     
@@ -673,14 +571,16 @@ def main():
         if veiculos:
             preco_min = int(min(v['preco_venda'] for v in veiculos)) if veiculos else 0
             preco_max = int(max(v['preco_venda'] for v in veiculos)) if veiculos else 200000
-            preco_filtro = st.slider("**💰 Preço Máximo**", preco_min, preco_max, preco_max, 1000, key="preco_filter")
+            preco_filtro = st.slider("💰 Preço Máximo (R$)", preco_min, preco_max, preco_max, 1000, key="preco_filter")
         else:
             preco_filtro = 100000
     
     with col4:
-        ordenacao = st.selectbox("**🔃 Ordenar**", 
+        ordenacao = st.selectbox("🔃 Ordenar", 
                                ["Mais recentes", "Menor preço", "Maior preço", "Mais novo", "Menor KM"],
                                key="ordenacao_filter")
+    
+    st.markdown('</div>', unsafe_allow_html=True)
     
     # Aplicar filtros
     veiculos_filtrados = []
@@ -706,81 +606,34 @@ def main():
         else:  # Mais recentes
             veiculos_filtrados.sort(key=lambda x: x['data_cadastro'], reverse=True)
     
-    # Exibir contador e resultados
-    st.markdown(f'''
-    <div style="display: flex; justify-content: space-between; align-items: center; margin: 30px 0 20px 0;">
-        <h2 style="color: white; margin: 0;">🚗 VEÍCULOS DISPONÍVEIS</h2>
-        <div style="background: linear-gradient(135deg, #d4af37, #f4c220); color: #1a1a1a; padding: 8px 20px; border-radius: 20px; font-weight: 700;">
-            {len(veiculos_filtrados)} ENCONTRADOS
-        </div>
-    </div>
-    ''', unsafe_allow_html=True)
+    # Exibir resultados
+    st.markdown(f'<div class="vehicle-counter">🚗 {len(veiculos_filtrados)} VEÍCULOS ENCONTRADOS</div>', unsafe_allow_html=True)
     
-    # Renderizar galeria de veículos
-    gallery_html = render_vehicle_gallery(veiculos_filtrados)
+    # Exibir veículos
+    if veiculos_filtrados:
+        for veiculo in veiculos_filtrados:
+            create_vehicle_card(veiculo)
+    else:
+        st.info("📝 Nenhum veículo encontrado com os filtros selecionados.")
     
-    # Usar components.html para renderizar HTML corretamente
-    try:
-        from streamlit.components.v1 import html
-        html(gallery_html, height=800, scrolling=True)
-    except:
-        # Fallback se components não estiver disponível
-        st.markdown(gallery_html, unsafe_allow_html=True)
-    
-    # Footer Luxuoso
+    # Footer
     st.markdown('''
     <div class="luxury-footer">
-        <div class="main-container">
-            <div style="text-align: center;">
-                <div style="font-size: 28px; font-weight: 800; background: linear-gradient(135deg, #d4af37, #f4c220); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; margin-bottom: 10px;">
-                    GARAGEM MULTIMARCAS
-                </div>
-                <div style="color: #ccc; margin-bottom: 20px; font-size: 16px;">
-                    ⭐ Sua jornada automotiva premium começa aqui ⭐
-                </div>
-                <div style="color: #888; margin-bottom: 30px;">
-                    📞 (84) 98188-5353 • 📍 Mossoró/RN • ✉️ contato@garagemmultimarcas.com
-                </div>
-                <div style="color: #666; font-size: 14px; border-top: 1px solid #333; padding-top: 20px;">
-                    © 2024 Garagem Multimarcas - Todos os direitos reservados<br>
-                    <small>Catálogo premium desenvolvido com excelência</small>
-                </div>
+        <div style="text-align: center;">
+            <div style="font-size: 24px; font-weight: 800; color: #d4af37; margin-bottom: 10px;">
+                GARAGEM MULTIMARCAS
+            </div>
+            <div style="color: #ccc; margin-bottom: 15px;">
+                ⭐ Sua escolha premium em veículos ⭐
+            </div>
+            <div style="color: #888; margin-bottom: 20px;">
+                📞 (84) 98188-5353 • 📍 Mossoró/RN
+            </div>
+            <div style="color: #666; font-size: 12px;">
+                © 2024 Garagem Multimarcas - Todos os direitos reservados
             </div>
         </div>
     </div>
-    ''', unsafe_allow_html=True)
-    
-    st.markdown('</div>', unsafe_allow_html=True)  # Fecha main-container
-    
-    # JavaScript para interações avançadas
-    st.markdown('''
-    <script>
-    function showVehicleDetails(vehicleId) {
-        // Aqui você pode implementar um modal com detalhes completos
-        const message = `🔍 Detalhes completos do veículo ID: ${vehicleId}\\n\\nEm breve: Modal com fotos ampliadas, histórico completo e mais informações!`;
-        alert(message);
-    }
-    
-    // Efeitos de hover melhorados
-    document.addEventListener('DOMContentLoaded', function() {
-        const cards = document.querySelectorAll('.luxury-card');
-        cards.forEach(card => {
-            card.addEventListener('mouseenter', function() {
-                this.style.transform = 'translateY(-12px) scale(1.02)';
-            });
-            card.addEventListener('mouseleave', function() {
-                this.style.transform = 'translateY(0) scale(1)';
-            });
-        });
-    });
-    
-    // Smooth scroll para filtros
-    function scrollToFilters() {
-        document.querySelector('.filters-section').scrollIntoView({ 
-            behavior: 'smooth' 
-        });
-    }
-    </script>
     ''', unsafe_allow_html=True)
 
 if __name__ == "__main__":
