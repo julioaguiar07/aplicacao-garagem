@@ -164,25 +164,6 @@ def create_vehicle_card_html(veiculo):
     parcela_formatada = f"R$ {parcela:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
     km_formatado = f"{veiculo['km']:,} km".replace(',', '.')
     
-    # Preparar dados para o modal de detalhes
-    detalhes_info = {
-        'id': veiculo['id'],
-        'marca': veiculo['marca'],
-        'modelo': veiculo['modelo'],
-        'ano': veiculo['ano'],
-        'cor': veiculo['cor'],
-        'km': km_formatado,
-        'cambio': veiculo['cambio'],
-        'combustivel': veiculo['combustivel'],
-        'portas': veiculo['portas'],
-        'preco': preco_formatado,
-        'placa': veiculo['placa'] or 'Não informada',
-        'observacoes': veiculo.get('observacoes', ''),
-        'entrada': f"R$ {entrada:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.'),
-        'parcela': parcela_formatada,
-        'foto_base64': veiculo.get('foto_base64')
-    }
-    
     card_html = f'''
     <div class="vehicle-card">
         <div class="image-container">
@@ -222,12 +203,6 @@ def create_vehicle_card_html(veiculo):
             </div>
         </div>
     </div>
-    
-    <script>
-        // Armazenar dados do veículo para o modal
-        if (!window.vehicleData) window.vehicleData = {{}};
-        window.vehicleData[{veiculo['id']}] = {detalhes_info};
-    </script>
     '''
     return card_html
 
@@ -265,6 +240,38 @@ def get_full_html_page(veiculos_filtrados, filtros_html):
             logo_html = '<div class="logo-placeholder">🚗</div>'
     
     vehicles_grid_html = render_vehicle_grid_html(veiculos_filtrados)
+    
+    # ✅ CORREÇÃO: Criar dados JavaScript para todos os veículos
+    vehicle_data_js = "window.vehicleData = {};"
+    for veiculo in veiculos_filtrados:
+        # Preparar dados para o modal de detalhes
+        entrada = veiculo['preco_venda'] * 0.2
+        parcela = (veiculo['preco_venda'] - entrada) / 48
+        
+        # Formatar dados
+        preco_formatado = f"R$ {veiculo['preco_venda']:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
+        parcela_formatada = f"R$ {parcela:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
+        km_formatado = f"{veiculo['km']:,} km".replace(',', '.')
+        
+        detalhes_info = {
+            'id': veiculo['id'],
+            'marca': veiculo['marca'],
+            'modelo': veiculo['modelo'],
+            'ano': veiculo['ano'],
+            'cor': veiculo['cor'],
+            'km': km_formatado,
+            'cambio': veiculo['cambio'],
+            'combustivel': veiculo['combustivel'],
+            'portas': veiculo['portas'],
+            'preco': preco_formatado,
+            'placa': veiculo['placa'] or 'Não informada',
+            'observacoes': veiculo.get('observacoes', ''),
+            'entrada': f"R$ {entrada:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.'),
+            'parcela': parcela_formatada,
+            'foto_base64': veiculo.get('foto_base64')
+        }
+        
+        vehicle_data_js += f"window.vehicleData[{veiculo['id']}] = {detalhes_info};"
     
     full_html = f'''
     <!DOCTYPE html>
@@ -961,9 +968,15 @@ def get_full_html_page(veiculos_filtrados, filtros_html):
         </div>
         
         <script>
+            // ✅ CORREÇÃO: Inicializar dados dos veículos
+            {vehicle_data_js}
+            
             function showVehicleDetails(vehicleId) {{
                 const vehicle = window.vehicleData[vehicleId];
-                if (!vehicle) return;
+                if (!vehicle) {{
+                    console.error('Veículo não encontrado:', vehicleId);
+                    return;
+                }}
                 
                 // Atualizar título e subtítulo
                 document.getElementById('modalTitle').textContent = vehicle.marca + ' ' + vehicle.modelo;
