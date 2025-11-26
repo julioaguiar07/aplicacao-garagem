@@ -23,7 +23,7 @@ st.set_page_config(
 )
 
 # =============================================
-# CSS PROFISSIONAL - ESTILO APP.PY
+# CSS PROFISSIONAL
 # =============================================
 
 st.markdown("""
@@ -41,39 +41,11 @@ st.markdown("""
         background: transparent;
     }
     
-    .header-premium {
-        background: rgba(255, 255, 255, 0.05);
-        backdrop-filter: blur(20px);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 16px;
-        padding: 1.5rem 2rem;
-        margin: 1rem 0 2rem 0;
-        position: relative;
-    }
-    
-    .header-premium::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: 4px;
-        background: linear-gradient(90deg, #e88e1b, #f4c220, #ffca02);
-    }
-    
-    .glass-card {
-        background: rgba(255, 255, 255, 0.05);
-        backdrop-filter: blur(20px);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 16px;
-        padding: 2rem;
-        margin: 1rem 0;
-        transition: all 0.3s ease;
-    }
-    
-    .glass-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    .vehicle-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+        gap: 2rem;
+        margin: 2rem 0;
     }
     
     .vehicle-card {
@@ -82,7 +54,6 @@ st.markdown("""
         border: 1px solid rgba(255, 255, 255, 0.1);
         border-radius: 16px;
         padding: 1.5rem;
-        margin: 1rem 0;
         transition: all 0.3s ease;
         height: 100%;
     }
@@ -232,26 +203,20 @@ st.markdown("""
         margin-bottom: 1.5rem;
     }
     
-    .filter-title {
-        font-size: 1.1rem;
-        font-weight: 600;
-        margin-bottom: 1rem;
-        color: #ffffff;
-    }
-    
     .hero-section {
         background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
-        padding: 4rem 0;
+        padding: 3rem 2rem;
         text-align: center;
-        margin-bottom: 3rem;
-        border-radius: 0 0 20px 20px;
+        margin-bottom: 2rem;
+        border-radius: 16px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
     }
     
     .contact-info {
         display: flex;
         justify-content: center;
         gap: 2rem;
-        margin-top: 1.5rem;
+        margin-top: 1rem;
         flex-wrap: wrap;
     }
     
@@ -266,22 +231,6 @@ st.markdown("""
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     header {visibility: hidden;}
-    
-    /* Animações */
-    @keyframes fadeInUp {
-        from {
-            opacity: 0;
-            transform: translateY(30px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
-    
-    .fade-in {
-        animation: fadeInUp 0.6s ease-out;
-    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -311,7 +260,7 @@ class WebsiteDatabase:
             cursor.execute('''
                 SELECT id, modelo, ano, marca, cor, preco_venda, 
                        km, placa, combustivel, cambio, portas, observacoes,
-                       data_cadastro, preco_entrada
+                       data_cadastro
                 FROM veiculos 
                 WHERE status = 'Em estoque'
                 ORDER BY data_cadastro DESC
@@ -323,26 +272,18 @@ class WebsiteDatabase:
             veiculos = []
             for row in resultados:
                 veiculo = dict(zip(colunas, row))
-                veiculo['idade'] = datetime.now().year - veiculo['ano']
-                if veiculo['preco_entrada']:
-                    margem = ((veiculo['preco_venda'] - veiculo['preco_entrada']) / veiculo['preco_entrada']) * 100
-                    veiculo['margem'] = margem
-                else:
-                    veiculo['margem'] = 0
-                    
                 veiculos.append(veiculo)
             
             return veiculos
             
         except Exception as e:
-            st.error(f"❌ Erro ao buscar veículos: {e}")
             return []
         finally:
             if conn:
                 conn.close()
 
 # =============================================
-# COMPONENTES DA VITRINE
+# COMPONENTES SIMPLIFICADOS
 # =============================================
 
 def generate_vehicle_image(veiculo):
@@ -350,8 +291,7 @@ def generate_vehicle_image(veiculo):
     color_map = {
         'Prata': 'c0c0c0', 'Preto': '1a1a1a', 'Branco': 'ffffff',
         'Vermelho': 'e74c3c', 'Azul': '3498db', 'Cinza': '7f8c8d',
-        'Verde': '27ae60', 'Laranja': 'e67e22', 'Marrom': '8b4513',
-        'Bege': 'f5deb3', 'Dourado': 'd4af37', 'Vinho': '722f37'
+        'Verde': '27ae60', 'Laranja': 'e67e22', 'Marrom': '8b4513'
     }
     
     color_hex = color_map.get(veiculo['cor'], '3498db')
@@ -359,73 +299,72 @@ def generate_vehicle_image(veiculo):
     
     return f"https://via.placeholder.com/400x250/{color_hex}/ffffff?text={texto}"
 
-def render_vehicle_card(veiculo, index):
-    """Renderiza card do veículo"""
+def render_vehicle_card_html(veiculo, index):
+    """Renderiza card completo em HTML puro"""
     image_url = generate_vehicle_image(veiculo)
     
     # Determinar badges
-    badges = []
-    if veiculo['idade'] <= 1:
-        badges.append(('🆕 NOVO', 'badge-new'))
-    elif veiculo['km'] < 30000:
-        badges.append(('🛣️ BAIXA KM', 'badge-lowkm'))
-    
-    if veiculo.get('margem', 0) > 25:
-        badges.append(('💎 PROMOÇÃO', 'badge-promo'))
+    badges_html = ""
+    idade = datetime.now().year - veiculo['ano']
+    if idade <= 1:
+        badges_html += '<div class="badge badge-new">🆕 NOVO</div>'
+    if veiculo['km'] < 30000:
+        badges_html += '<div class="badge badge-lowkm">🛣️ BAIXA KM</div>'
     
     # Calcular parcelas
     entrada = veiculo['preco_venda'] * 0.2
     parcelas = (veiculo['preco_venda'] - entrada) / 48
     
-    # Usar container do Streamlit em vez de HTML para evitar nesting
-    with st.container():
-        col1, col2 = st.columns([2, 1])
+    # Gerar HTML completo
+    html = f'''
+    <div class="vehicle-card">
+        <img src="{image_url}" class="vehicle-image" alt="{veiculo['marca']} {veiculo['modelo']}">
+        {badges_html}
+        <div class="vehicle-title">{veiculo['marca']} {veiculo['modelo']}</div>
+        <div class="vehicle-subtitle">
+            📅 {veiculo['ano']} • 🛣️ {veiculo['km']:,} km • 🎨 {veiculo['cor']}
+        </div>
         
-        with col1:
-            st.markdown(f'<img src="{image_url}" class="vehicle-image" alt="{veiculo["marca"]} {veiculo["modelo"]}">', unsafe_allow_html=True)
+        <div class="vehicle-features">
+            <span class="feature-tag">⚙️ {veiculo['cambio']}</span>
+            <span class="feature-tag">⛽ {veiculo['combustivel']}</span>
+            <span class="feature-tag">🚪 {veiculo['portas']} portas</span>
+        </div>
         
-        with col2:
-            for text, badge_class in badges:
-                st.markdown(f'<div class="badge {badge_class}">{text}</div>', unsafe_allow_html=True)
+        <div class="price-section">
+            <div class="price-label">PREÇO À VISTA</div>
+            <div class="vehicle-price">R$ {veiculo['preco_venda']:,.2f}</div>
+            <div class="financing-info">Ou R$ {entrada:,.2f} + 48x de R$ {parcelas:,.2f}</div>
+        </div>
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-top: 1rem;">
+            <button onclick="document.getElementById('details_{index}').click()" style="
+                background: linear-gradient(135deg, #e88e1b, #f4c220);
+                border: none;
+                border-radius: 10px;
+                padding: 12px;
+                font-weight: 600;
+                color: white;
+                cursor: pointer;
+                transition: all 0.3s ease;
+            " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 5px 15px rgba(232, 142, 27, 0.4)';" 
+            onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">
+                🔍 Ver Detalhes
+            </button>
             
-            st.markdown(f'<div class="vehicle-title">{veiculo["marca"]} {veiculo["modelo"]}</div>', unsafe_allow_html=True)
-            st.markdown(f'<div class="vehicle-subtitle">📅 {veiculo["ano"]} • 🛣️ {veiculo["km"]:,} km • 🎨 {veiculo["cor"]}</div>', unsafe_allow_html=True)
-            
-            # Features
-            col_feat1, col_feat2, col_feat3 = st.columns(3)
-            with col_feat1:
-                st.markdown(f'<div class="feature-tag">⚙️ {veiculo["cambio"]}</div>', unsafe_allow_html=True)
-            with col_feat2:
-                st.markdown(f'<div class="feature-tag">⛽ {veiculo["combustivel"]}</div>', unsafe_allow_html=True)
-            with col_feat3:
-                st.markdown(f'<div class="feature-tag">🚪 {veiculo["portas"]}</div>', unsafe_allow_html=True)
-    
-    # Preço e botões
-    st.markdown(f'''
-    <div class="price-section">
-        <div class="price-label">PREÇO À VISTA</div>
-        <div class="vehicle-price">R$ {veiculo["preco_venda"]:,.2f}</div>
-        <div class="financing-info">Ou R$ {entrada:,.2f} + 48x de R$ {parcelas:,.2f}</div>
+            <a href="https://wa.me/5584981885353?text=Olá! Gostaria de mais informações sobre o {veiculo['marca']} {veiculo['modelo']} {veiculo['ano']} - R$ {veiculo['preco_venda']:,.2f}" 
+               target="_blank" class="btn-whatsapp">
+                💬 WhatsApp
+            </a>
+        </div>
     </div>
-    ''', unsafe_allow_html=True)
-    
-    # Botões - usando columns do Streamlit corretamente
-    btn_col1, btn_col2 = st.columns(2)
-    
-    with btn_col1:
-        if st.button("🔍 Ver Detalhes", key=f"details_{veiculo['id']}_{index}", use_container_width=True):
-            st.session_state[f"modal_{veiculo['id']}"] = True
-    
-    with btn_col2:
-        whatsapp_msg = f"Olá! Gostaria de mais informações sobre o {veiculo['marca']} {veiculo['modelo']} {veiculo['ano']} - R$ {veiculo['preco_venda']:,.2f}"
-        whatsapp_url = f"https://wa.me/5584981885353?text={whatsapp_msg.replace(' ', '%20')}"
-        st.markdown(f'<a href="{whatsapp_url}" target="_blank" class="btn-whatsapp">💬 WhatsApp</a>', unsafe_allow_html=True)
+    '''
+    return html
 
 def render_filters(veiculos):
     """Renderiza filtros na sidebar"""
     with st.sidebar:
-        st.markdown('<div class="filter-section">', unsafe_allow_html=True)
-        st.markdown('<div class="filter-title">🔍 Filtros</div>', unsafe_allow_html=True)
+        st.markdown("### 🔍 Filtros")
         
         # Busca
         busca = st.text_input("Buscar veículo", placeholder="Marca, modelo...")
@@ -440,20 +379,16 @@ def render_filters(veiculos):
             
             preco_min = min(v['preco_venda'] for v in veiculos)
             preco_max = max(v['preco_venda'] for v in veiculos)
-            preco_range = st.slider("Faixa de Preço", int(preco_min), int(preco_max), 
+            preco_range = st.slider("Faixa de Preço (R$)", int(preco_min), int(preco_max), 
                                   (int(preco_min), int(preco_max)))
-        
-        combustiveis = list(set([v['combustivel'] for v in veiculos]))
-        combustivel = st.multiselect("Combustível", combustiveis, default=combustiveis)
-        
-        st.markdown('</div>', unsafe_allow_html=True)
+        else:
+            preco_range = (0, 100000)
         
         return {
             'busca': busca,
             'marca': marca,
             'ano': ano,
-            'preco_range': preco_range if veiculos else (0, 100000),
-            'combustivel': combustivel
+            'preco_range': preco_range
         }
 
 # =============================================
@@ -461,32 +396,25 @@ def render_filters(veiculos):
 # =============================================
 
 def main():
-    # Header com logo
-    col_logo, col_title, col_contact = st.columns([1, 2, 1])
+    # Header
+    col1, col2, col3 = st.columns([1, 2, 1])
     
-    with col_logo:
+    with col1:
         try:
-            # Tenta carregar a logo
             logo = Image.open("logoca.png")
-            st.image(logo, width=120)
+            st.image(logo, width=100)
         except:
-            st.markdown("""
-            <div style="font-size: 3rem; text-align: center;">
-                🚗
-            </div>
-            """, unsafe_allow_html=True)
+            st.markdown("<div style='text-align: center; font-size: 2rem;'>🚗</div>", unsafe_allow_html=True)
     
-    with col_title:
+    with col2:
         st.markdown("""
         <div style="text-align: center;">
-            <h1 style="margin:0; font-size: 2.2rem; background: linear-gradient(135deg, #ffffff, #e0e0e0); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; font-weight: 800;">
-                Garagem Multimarcas
-            </h1>
-            <p style="margin:0; color: #a0a0a0; font-size: 1rem;">Veículos Premium em Mossoró</p>
+            <h1 style="margin:0; color: #e88e1b; font-weight: 800;">GARAGEM MULTIMARCAS</h1>
+            <p style="margin:0; color: #a0a0a0;">Veículos Premium em Mossoró</p>
         </div>
         """, unsafe_allow_html=True)
     
-    with col_contact:
+    with col3:
         st.markdown("""
         <div style="text-align: right;">
             <p style="margin:0; font-weight: 600; color: #e88e1b;">(84) 98188-5353</p>
@@ -494,14 +422,12 @@ def main():
         </div>
         """, unsafe_allow_html=True)
     
-    st.markdown("---")
-    
     # Hero Section
     st.markdown("""
     <div class="hero-section">
-        <h1 style="color: white; font-size: 3rem; margin-bottom: 1rem;">Encontre Seu Carro dos Sonhos</h1>
-        <p style="color: #ccc; font-size: 1.2rem; max-width: 600px; margin: 0 auto;">
-            Os melhores veículos novos e seminovos com condições especiais de pagamento
+        <h1 style="color: white; margin-bottom: 1rem;">Encontre Seu Carro dos Sonhos</h1>
+        <p style="color: #ccc; margin-bottom: 1.5rem;">
+            Os melhores veículos novos e seminovos com condições especiais
         </p>
         <div class="contact-info">
             <div class="contact-item">📞 (84) 98188-5353</div>
@@ -525,12 +451,7 @@ def main():
             filtros = {}
     
     with col_main:
-        st.markdown("""
-        <div class="glass-card">
-            <h2>🚗 Veículos Disponíveis</h2>
-            <p style="color: #a0a0a0;">Confira nosso estoque selecionado</p>
-        </div>
-        """, unsafe_allow_html=True)
+        st.markdown("### 🚗 Veículos Disponíveis")
         
         # Aplicar filtros
         if veiculos and filtros:
@@ -548,57 +469,39 @@ def main():
             if filtros['ano'] != "Todos":
                 veiculos_filtrados = [v for v in veiculos_filtrados if v['ano'] == filtros['ano']]
             
-            if 'preco_range' in filtros:
-                veiculos_filtrados = [v for v in veiculos_filtrados 
-                                    if filtros['preco_range'][0] <= v['preco_venda'] <= filtros['preco_range'][1]]
-            
-            if filtros['combustivel']:
-                veiculos_filtrados = [v for v in veiculos_filtrados if v['combustivel'] in filtros['combustivel']]
+            veiculos_filtrados = [v for v in veiculos_filtrados 
+                                if filtros['preco_range'][0] <= v['preco_venda'] <= filtros['preco_range'][1]]
         else:
             veiculos_filtrados = veiculos
-        
-        # Ordenação
-        if veiculos_filtrados:
-            ordenacao = st.selectbox("Ordenar por", 
-                                   ["Mais recentes", "Menor preço", "Maior preço", "Mais novo", "Menor KM"])
-            
-            if ordenacao == "Menor preço":
-                veiculos_filtrados.sort(key=lambda x: x['preco_venda'])
-            elif ordenacao == "Maior preço":
-                veiculos_filtrados.sort(key=lambda x: x['preco_venda'], reverse=True)
-            elif ordenacao == "Mais novo":
-                veiculos_filtrados.sort(key=lambda x: x['ano'], reverse=True)
-            elif ordenacao == "Menor KM":
-                veiculos_filtrados.sort(key=lambda x: x['km'])
-            else:
-                veiculos_filtrados.sort(key=lambda x: x['data_cadastro'], reverse=True)
         
         # Exibir veículos
         if not veiculos_filtrados:
             st.info("""
-            ## 🔍 Nenhum veículo encontrado
-            *Tente ajustar os filtros para encontrar o veículo ideal!*
+            **🔍 Nenhum veículo encontrado**
+            
+            Tente ajustar os filtros para encontrar o veículo ideal!
             
             **📞 Entre em contato:** (84) 98188-5353
             """)
         else:
-            st.markdown(f'<div style="color: #a0a0a0; margin-bottom: 2rem;">Encontramos {len(veiculos_filtrados)} veículo(s)</div>', unsafe_allow_html=True)
+            st.markdown(f"**Encontramos {len(veiculos_filtrados)} veículo(s)**")
             
-            # Grid de veículos
+            # Grid de veículos usando HTML puro
+            html_grid = '<div class="vehicle-grid">'
             for i, veiculo in enumerate(veiculos_filtrados):
-                with st.container():
-                    st.markdown('<div class="vehicle-card fade-in">', unsafe_allow_html=True)
-                    render_vehicle_card(veiculo, i)
-                    st.markdown('</div>', unsafe_allow_html=True)
+                html_grid += render_vehicle_card_html(veiculo, i)
+            html_grid += '</div>'
+            
+            st.markdown(html_grid, unsafe_allow_html=True)
     
     # Footer
     st.markdown("---")
     st.markdown("""
     <div style="text-align: center; color: #a0a0a0; padding: 2rem;">
-        <p style="margin: 0; font-size: 0.9rem; font-weight: 600; color: #e88e1b;">Garagem Multimarcas</p>
-        <p style="margin: 0; font-size: 0.8rem;">Seu parceiro automotivo em Mossoró</p>
-        <p style="margin: 0.5rem 0 0 0; font-size: 0.7rem; color: #666;">
-            © 2024 Garagem Multimarcas - Todos os direitos reservados
+        <p style="margin: 0; font-weight: 600; color: #e88e1b;">Garagem Multimarcas</p>
+        <p style="margin: 0; font-size: 0.9rem;">Seu parceiro automotivo em Mossoró</p>
+        <p style="margin: 0.5rem 0 0 0; font-size: 0.8rem;">
+            © 2024 - Todos os direitos reservados
         </p>
     </div>
     """, unsafe_allow_html=True)
