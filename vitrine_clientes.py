@@ -78,14 +78,19 @@ class LuxuryDatabase:
             for row in resultados:
                 veiculo = dict(zip(colunas, row))
                 
-                # Processar foto se existir
+                # Processar foto se existir - CORREÇÃO AQUI
                 if tem_foto and veiculo.get('foto'):
                     try:
                         if isinstance(veiculo['foto'], bytes):
-                            veiculo['foto_base64'] = base64.b64encode(veiculo['foto']).decode()
+                            # Converter bytes para base64 corretamente
+                            veiculo['foto_base64'] = base64.b64encode(veiculo['foto']).decode('utf-8')
+                        elif isinstance(veiculo['foto'], memoryview):
+                            # Se for memoryview, converter para bytes primeiro
+                            veiculo['foto_base64'] = base64.b64encode(veiculo['foto'].tobytes()).decode('utf-8')
                         else:
                             veiculo['foto_base64'] = None
-                    except:
+                    except Exception as e:
+                        print(f"Erro ao processar foto: {e}")
                         veiculo['foto_base64'] = None
                 else:
                     veiculo['foto_base64'] = None
@@ -95,6 +100,7 @@ class LuxuryDatabase:
             return veiculos
             
         except Exception as e:
+            print(f"Erro ao buscar veículos: {e}")
             return []
         finally:
             if conn:
@@ -129,11 +135,17 @@ def load_logo():
 def create_vehicle_card_html(veiculo):
     """Cria HTML de um card de veículo"""
     
-    # Usar foto real se disponível, senão placeholder
+    # CORREÇÃO: Verificar se a foto base64 é válida
+    image_src = generate_placeholder_image(veiculo)  # Default para placeholder
+    
     if veiculo.get('foto_base64'):
-        image_src = f"data:image/jpeg;base64,{veiculo['foto_base64']}"
-    else:
-        image_src = generate_placeholder_image(veiculo)
+        try:
+            # Testar se a base64 é válida
+            base64.b64decode(veiculo['foto_base64'])
+            image_src = f"data:image/jpeg;base64,{veiculo['foto_base64']}"
+        except:
+            # Se base64 for inválido, usar placeholder
+            image_src = generate_placeholder_image(veiculo)
     
     # Determinar badges
     idade = datetime.now().year - veiculo['ano']
@@ -152,10 +164,29 @@ def create_vehicle_card_html(veiculo):
     parcela_formatada = f"R$ {parcela:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
     km_formatado = f"{veiculo['km']:,} km".replace(',', '.')
     
+    # CORREÇÃO: Adicionar mais informações nos detalhes
+    detalhes_info = f"""
+    Marca: {veiculo['marca']}
+    Modelo: {veiculo['modelo']}
+    Ano: {veiculo['ano']}
+    Cor: {veiculo['cor']}
+    KM: {km_formatado}
+    Câmbio: {veiculo['cambio']}
+    Combustível: {veiculo['combustivel']}
+    Portas: {veiculo['portas']}
+    Preço: {preco_formatado}
+    Placa: {veiculo['placa'] or 'Não informada'}
+    
+    Financiamento:
+    • Entrada: R$ {entrada:,.2f}
+    • 48x de: {parcela_formatada}
+    """
+    
     card_html = f'''
     <div class="vehicle-card">
         <div class="image-container">
-            <img src="{image_src}" class="vehicle-image" alt="{veiculo['marca']} {veiculo['modelo']}">
+            <img src="{image_src}" class="vehicle-image" alt="{veiculo['marca']} {veiculo['modelo']}" 
+                 onerror="this.src='{generate_placeholder_image(veiculo)}'">
             <div class="badges-container">
                 {badges_html}
             </div>
@@ -180,7 +211,7 @@ def create_vehicle_card_html(veiculo):
             </div>
             
             <div class="btn-container">
-                <button class="btn-details" onclick="showVehicleDetails({veiculo['id']})">
+                <button class="btn-details" onclick="showVehicleDetails({veiculo['id']}, `{detalhes_info.replace('`', "'")}`)">
                     🔍 Detalhes
                 </button>
                 <a href="https://wa.me/5584981885353?text=Olá! Gostaria de informações sobre o {veiculo['marca']} {veiculo['modelo']} {veiculo['ano']} - {preco_formatado}" 
@@ -217,11 +248,14 @@ def get_full_html_page(veiculos_filtrados, filtros_html):
     logo = load_logo()
     logo_html = ''
     if logo:
-        # Converter logo para base64
-        buffered = io.BytesIO()
-        logo.save(buffered, format="PNG")
-        logo_base64 = base64.b64encode(buffered.getvalue()).decode()
-        logo_html = f'<img src="data:image/png;base64,{logo_base64}" class="logo" alt="Garagem Multimarcas">'
+        try:
+            # Converter logo para base64 corretamente
+            buffered = io.BytesIO()
+            logo.save(buffered, format="PNG")
+            logo_base64 = base64.b64encode(buffered.getvalue()).decode('utf-8')
+            logo_html = f'<img src="data:image/png;base64,{logo_base64}" class="logo" alt="Garagem Multimarcas">'
+        except Exception as e:
+            logo_html = '<div class="logo-placeholder">🚗</div>'
     
     vehicles_grid_html = render_vehicle_grid_html(veiculos_filtrados)
     
@@ -278,6 +312,11 @@ def get_full_html_page(veiculos_filtrados, filtros_html):
             .logo {{
                 height: 60px;
                 width: auto;
+            }}
+            
+            .logo-placeholder {{
+                font-size: 40px;
+                color: #e88e1b;
             }}
             
             .brand-title {{
@@ -359,6 +398,7 @@ def get_full_html_page(veiculos_filtrados, filtros_html):
                 width: 100%;
                 height: 200px;
                 overflow: hidden;
+                background: #2d2d2d;
             }}
             
             .vehicle-image {{
@@ -559,6 +599,56 @@ def get_full_html_page(veiculos_filtrados, filtros_html):
                 font-size: 12px;
             }}
             
+            /* Modal de detalhes */
+            .modal {{
+                display: none;
+                position: fixed;
+                z-index: 1000;
+                left: 0;
+                top: 0;
+                width: 100%;
+                height: 100%;
+                background-color: rgba(0,0,0,0.8);
+            }}
+            
+            .modal-content {{
+                background: #1a1a1a;
+                margin: 5% auto;
+                padding: 30px;
+                border-radius: 16px;
+                border: 2px solid #e88e1b;
+                width: 90%;
+                max-width: 600px;
+                position: relative;
+            }}
+            
+            .close {{
+                color: #e88e1b;
+                float: right;
+                font-size: 28px;
+                font-weight: bold;
+                cursor: pointer;
+                position: absolute;
+                right: 20px;
+                top: 15px;
+            }}
+            
+            .close:hover {{
+                color: #f4c220;
+            }}
+            
+            .details-title {{
+                color: #e88e1b;
+                margin-bottom: 20px;
+                text-align: center;
+            }}
+            
+            .details-content {{
+                white-space: pre-line;
+                line-height: 1.8;
+                color: #b0b0b0;
+            }}
+            
             /* Responsividade */
             @media (max-width: 768px) {{
                 .vehicles-grid {{
@@ -572,6 +662,11 @@ def get_full_html_page(veiculos_filtrados, filtros_html):
                 
                 .hero-title {{
                     font-size: 32px;
+                }}
+                
+                .modal-content {{
+                    width: 95%;
+                    margin: 10% auto;
                 }}
             }}
         </style>
@@ -605,6 +700,15 @@ def get_full_html_page(veiculos_filtrados, filtros_html):
             {vehicles_grid_html}
         </div>
         
+        <!-- Modal para detalhes -->
+        <div id="detailsModal" class="modal">
+            <div class="modal-content">
+                <span class="close" onclick="closeModal()">&times;</span>
+                <h2 class="details-title">🚗 Detalhes do Veículo</h2>
+                <div id="modalBody" class="details-content"></div>
+            </div>
+        </div>
+        
         <div class="footer">
             <div class="container">
                 <div class="footer-brand">GARAGEM MULTIMARCAS</div>
@@ -614,9 +718,35 @@ def get_full_html_page(veiculos_filtrados, filtros_html):
         </div>
         
         <script>
-            function showVehicleDetails(vehicleId) {{
-                alert("Detalhes do veículo ID: " + vehicleId + "\\\\n\\\\nEm breve: mais informações detalhadas!");
+            function showVehicleDetails(vehicleId, details) {{
+                document.getElementById('modalBody').textContent = details;
+                document.getElementById('detailsModal').style.display = 'block';
             }}
+            
+            function closeModal() {{
+                document.getElementById('detailsModal').style.display = 'none';
+            }}
+            
+            // Fechar modal ao clicar fora
+            window.onclick = function(event) {{
+                const modal = document.getElementById('detailsModal');
+                if (event.target === modal) {{
+                    closeModal();
+                }}
+            }}
+            
+            // Fallback para imagens que não carregam
+            document.addEventListener('DOMContentLoaded', function() {{
+                const images = document.querySelectorAll('.vehicle-image');
+                images.forEach(img => {{
+                    img.onerror = function() {{
+                        const altText = this.alt || 'Veículo';
+                        const marcaModelo = altText.split(' ').slice(0, 2).join('+');
+                        const cor = '3498db'; // Cor padrão
+                        this.src = `https://via.placeholder.com/400x250/${{cor}}/ffffff?text=${{marcaModelo}}`;
+                    }};
+                }});
+            }});
         </script>
     </body>
     </html>
