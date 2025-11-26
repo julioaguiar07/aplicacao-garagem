@@ -825,11 +825,13 @@ class Database:
             ''', ('admin', hash_password('admin123'), 'Administrador', 'admin'))
 
     def salvar_foto_veiculo(self, veiculo_id, foto_bytes):
-        conn = self.get_connection()
-        cursor = conn.cursor()
-        
+        """Salva foto do veículo de forma segura"""
+        conn = None
         try:
-            # Primeiro verificar se a coluna 'foto' existe
+            conn = self.get_connection()
+            cursor = conn.cursor()
+            
+            # Verificar se a coluna 'foto' existe
             if os.getenv('DATABASE_URL'):
                 cursor.execute("""
                     SELECT column_name 
@@ -843,6 +845,7 @@ class Database:
             
             # Se a coluna não existir, adicionar
             if 'foto' not in colunas:
+                print("🔄 Criando coluna 'foto' antes de salvar...")
                 if os.getenv('DATABASE_URL'):
                     cursor.execute('ALTER TABLE veiculos ADD COLUMN foto BYTEA')
                 else:
@@ -856,12 +859,16 @@ class Database:
                 cursor.execute('UPDATE veiculos SET foto = ? WHERE id = ?', (foto_bytes, veiculo_id))
             
             conn.commit()
+            print("✅ Foto salva com sucesso!")
             return True
         except Exception as e:
-            print(f"Erro ao salvar foto: {e}")
+            print(f"❌ Erro ao salvar foto: {e}")
+            if conn:
+                conn.rollback()
             return False
         finally:
-            conn.close()
+            if conn:
+                conn.close()
     
     def get_foto_veiculo(self, veiculo_id):
         """Busca a foto do veículo"""
@@ -921,10 +928,6 @@ class Database:
         finally:
             if conn:
                 conn.close()  # ⬅️ Fechar conexão APÓS commit/rollback     
-            
-        conn.commit()
-        conn.close()
-        print("✅ Todas as tabelas criadas/verificadas com sucesso!")
 
     # =============================================
     # MÉTODOS ORIGINAIS - ADAPTADOS PARA AMBOS OS BANCOS
