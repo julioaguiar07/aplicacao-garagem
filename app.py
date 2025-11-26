@@ -909,7 +909,7 @@ class Database:
                     cursor.execute('ALTER TABLE veiculos ADD COLUMN foto BYTEA')
                 else:
                     cursor.execute('ALTER TABLE veiculos ADD COLUMN foto BLOB')
-                conn.commit()
+                conn.commit()  # ⬅️ COMMIT ANTES de fechar
                 print("✅ Coluna 'foto' criada!")
             else:
                 print("✅ Coluna 'foto' já existe")
@@ -920,7 +920,7 @@ class Database:
                 conn.rollback()
         finally:
             if conn:
-                conn.close()     
+                conn.close()  # ⬅️ Fechar conexão APÓS commit/rollback     
             
         conn.commit()
         conn.close()
