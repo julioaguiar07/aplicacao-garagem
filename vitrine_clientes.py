@@ -214,7 +214,7 @@ def create_vehicle_card_html(veiculo):
                 <button class="btn-details" onclick="showVehicleDetails({veiculo['id']}, `{detalhes_info.replace('`', "'")}`)">
                     🔍 Detalhes
                 </button>
-                <a href="https://wa.me/558430622434?text=Olá! Gostaria de informações sobre o {veiculo['marca']} {veiculo['modelo']} {veiculo['ano']} - {preco_formatado}" 
+                <a href="https://wa.me/558430622434?text=Olá! Gostaria de informações sobre o {veiculo['marca']} {veiculo['modelo']} {veiculo['ano']} - Placa: {veiculo['placa']}" 
                    target="_blank" class="btn-whatsapp">
                     💬 WhatsApp
                 </a>
