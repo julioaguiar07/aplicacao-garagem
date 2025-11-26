@@ -164,10 +164,11 @@ def create_vehicle_card_html(veiculo):
     parcela_formatada = f"R$ {parcela:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
     km_formatado = f"{veiculo['km']:,} km".replace(',', '.')
     
-    # Preparar dados para o modal
-    modal_image_src = image_src  # Usar a mesma imagem, mas será exibida maior no modal
+    # Preparar dados para o modal - CORREÇÃO: Remover quebras de linha problemáticas
+    modal_image_src = image_src
     
-    detalhes_info = f"""
+    # Criar HTML do modal de forma segura
+    detalhes_info = f'''
     <div class="details-container">
         <div class="details-image">
             <img src="{modal_image_src}" alt="{veiculo['marca']} {veiculo['modelo']}" class="large-vehicle-image">
@@ -228,7 +229,10 @@ def create_vehicle_card_html(veiculo):
             </div>
         </div>
     </div>
-    """
+    '''
+    
+    # CORREÇÃO: Escapar caracteres problemáticos para JavaScript
+    detalhes_info_escaped = detalhes_info.replace('`', "'").replace('\n', ' ')
     
     card_html = f'''
     <div class="vehicle-card">
@@ -259,7 +263,7 @@ def create_vehicle_card_html(veiculo):
             </div>
             
             <div class="btn-container">
-                <button class="btn-details" onclick="showVehicleDetails({veiculo['id']}, `{detalhes_info.replace('`', "'").replace('\\n', ' ')}`)">
+                <button class="btn-details" onclick="showVehicleDetails({veiculo['id']}, `{detalhes_info_escaped}`)">
                     🔍 Detalhes
                 </button>
                 <a href="https://wa.me/5584981885353?text=Olá! Gostaria de informações sobre o {veiculo['marca']} {veiculo['modelo']} {veiculo['ano']} - {preco_formatado}" 
@@ -876,7 +880,7 @@ def get_full_html_page(veiculos_filtrados, filtros_html):
                         const altText = this.alt || 'Veículo';
                         const marcaModelo = altText.split(' ').slice(0, 2).join('+');
                         const cor = '3498db';
-                        this.src = `https://via.placeholder.com/600x400/${{cor}}/ffffff?text=${{marcaModelo}}`;
+                        this.src = 'https://via.placeholder.com/600x400/' + cor + '/ffffff?text=' + marcaModelo;
                     }};
                 }}
             }}
@@ -908,8 +912,8 @@ def get_full_html_page(veiculos_filtrados, filtros_html):
                     img.onerror = function() {{
                         const altText = this.alt || 'Veículo';
                         const marcaModelo = altText.split(' ').slice(0, 2).join('+');
-                        const cor = '3498db'; // Cor padrão
-                        this.src = `https://via.placeholder.com/400x250/${{cor}}/ffffff?text=${{marcaModelo}}`;
+                        const cor = '3498db';
+                        this.src = 'https://via.placeholder.com/400x250/' + cor + '/ffffff?text=' + marcaModelo;
                     }};
                 }});
             }});
