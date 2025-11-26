@@ -680,14 +680,13 @@ def get_full_html_page(veiculos_filtrados, filtros_html):
             <div class="container">
                 <div class="header-content">
                     {logo_html}
-                    <div class="brand-title">GARAGEM MULTIMARCAS</div>
                 </div>
             </div>
         </div>
         
         <div class="hero-section">
             <div class="container">
-                <h1 class="hero-title">CATÁLOGO PREMIUM</h1>
+                <h1 class="hero-title">GARAGEM MULTIMARCAS</h1>
                 <p class="hero-subtitle">Os melhores veículos novos e seminovos com condições especiais de pagamento</p>
             </div>
         </div>
