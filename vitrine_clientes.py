@@ -19,7 +19,7 @@ import json
 # =============================================
 
 st.set_page_config(
-    page_title="Garagem Multimarcas - Veículos Premium em Mossoró",
+    page_title="Garagem Multimarcas",
     page_icon="🚗",
     layout="wide",
     initial_sidebar_state="collapsed"
