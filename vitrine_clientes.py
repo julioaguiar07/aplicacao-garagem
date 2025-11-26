@@ -242,6 +242,17 @@ def render_vehicle_grid_html(veiculos):
     
     return grid_html
 
+def get_filtros_html(marca_filtro, ano_filtro, preco_filtro, ordenacao):
+    """Gera HTML para a seção de filtros"""
+    return f"""
+    <div class="filters-section">
+        <div class="filter-title">🔍 FILTRAR VEÍCULOS</div>
+        <div style="color: #b0b0b0; text-align: center; margin-bottom: 20px;">
+            Filtros aplicados: {marca_filtro} • {ano_filtro} • Até R$ {preco_filtro:,} • Ordenação: {ordenacao}
+        </div>
+    </div>
+    """
+
 def get_full_html_page(veiculos_filtrados, filtros_html):
     """Retorna a página HTML completa"""
     
@@ -764,7 +775,7 @@ def main():
         db = LuxuryDatabase()
         veiculos = db.get_veiculos_estoque()
     
-    # Filtros usando Streamlit
+    # Aplicar CSS para fundo escuro
     st.markdown("""
     <style>
     .stApp {
@@ -772,6 +783,15 @@ def main():
     }
     </style>
     """, unsafe_allow_html=True)
+    
+    # PRIMEIRO: Renderizar o HTML completo do cabeçalho e hero section
+    filtros_html_placeholder = get_filtros_html("Todas as marcas", "Todos os anos", 100000, "Mais recentes")
+    initial_html = get_full_html_page([], filtros_html_placeholder)
+    html(initial_html, height=800, scrolling=False)
+    
+    # SEGUNDO: Criar os filtros APÓS o conteúdo principal
+    st.markdown("---")
+    st.markdown("<h2 style='color: #e88e1b; text-align: center;'>🔍 FILTRAR VEÍCULOS</h2>", unsafe_allow_html=True)
     
     col1, col2, col3, col4 = st.columns([2, 2, 2, 1])
     
@@ -822,20 +842,28 @@ def main():
         else:
             veiculos_filtrados.sort(key=lambda x: x['data_cadastro'], reverse=True)
     
-    # Gerar HTML completo
-    filtros_html = f"""
-    <div class="filters-section">
-        <div class="filter-title">🔍 FILTRAR VEÍCULOS</div>
-        <div style="color: #b0b0b0; text-align: center; margin-bottom: 20px;">
-            Filtros aplicados: {marca_filtro} • {ano_filtro} • Até R$ {preco_filtro:,}
+    # TERCEIRO: Atualizar a seção de veículos com os filtros aplicados
+    st.markdown(f"<div style='text-align: center; margin: 20px 0;'>", unsafe_allow_html=True)
+    st.markdown(f"<div style='background: #e88e1b; color: #1a1a1a; padding: 12px 24px; border-radius: 25px; font-weight: 800; display: inline-block;'>🚗 {len(veiculos_filtrados)} VEÍCULOS ENCONTRADOS</div>", unsafe_allow_html=True)
+    st.markdown("</div>", unsafe_allow_html=True)
+    
+    # Renderizar os veículos filtrados
+    if veiculos_filtrados:
+        # Criar grid de veículos
+        cols = st.columns(3)
+        for i, veiculo in enumerate(veiculos_filtrados):
+            with cols[i % 3]:
+                # Usar HTML para renderizar cada card
+                card_html = create_vehicle_card_html(veiculo)
+                html(card_html, height=400)
+    else:
+        st.markdown("""
+        <div style='text-align: center; padding: 80px 20px; color: #888;'>
+            <div style='font-size: 64px; margin-bottom: 20px;'>🚗</div>
+            <h3 style='color: #e88e1b; margin-bottom: 10px;'>Nenhum veículo encontrado</h3>
+            <p>Tente ajustar os filtros para encontrar mais opções!</p>
         </div>
-    </div>
-    """
-    
-    full_html = get_full_html_page(veiculos_filtrados, filtros_html)
-    
-    # Renderizar HTML usando components
-    html(full_html, height=2000, scrolling=True)
+        """, unsafe_allow_html=True)
 
 if __name__ == "__main__":
     main()
