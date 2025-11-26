@@ -164,75 +164,23 @@ def create_vehicle_card_html(veiculo):
     parcela_formatada = f"R$ {parcela:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
     km_formatado = f"{veiculo['km']:,} km".replace(',', '.')
     
-    # Preparar dados para o modal - CORREÇÃO: Remover quebras de linha problemáticas
-    modal_image_src = image_src
+    # CORREÇÃO: Adicionar mais informações nos detalhes
+    detalhes_info = f"""
+    Marca: {veiculo['marca']}
+    Modelo: {veiculo['modelo']}
+    Ano: {veiculo['ano']}
+    Cor: {veiculo['cor']}
+    KM: {km_formatado}
+    Câmbio: {veiculo['cambio']}
+    Combustível: {veiculo['combustivel']}
+    Portas: {veiculo['portas']}
+    Preço: {preco_formatado}
+    Placa: {veiculo['placa'] or 'Não informada'}
     
-    # Criar HTML do modal de forma segura
-    detalhes_info = f'''
-    <div class="details-container">
-        <div class="details-image">
-            <img src="{modal_image_src}" alt="{veiculo['marca']} {veiculo['modelo']}" class="large-vehicle-image">
-        </div>
-        <div class="details-info">
-            <div class="info-section">
-                <h3>📋 Informações do Veículo</h3>
-                <div class="info-grid">
-                    <div class="info-item">
-                        <strong>Marca:</strong> {veiculo['marca']}
-                    </div>
-                    <div class="info-item">
-                        <strong>Modelo:</strong> {veiculo['modelo']}
-                    </div>
-                    <div class="info-item">
-                        <strong>Ano:</strong> {veiculo['ano']}
-                    </div>
-                    <div class="info-item">
-                        <strong>Cor:</strong> {veiculo['cor']}
-                    </div>
-                    <div class="info-item">
-                        <strong>KM:</strong> {km_formatado}
-                    </div>
-                    <div class="info-item">
-                        <strong>Placa:</strong> {veiculo['placa'] or 'Não informada'}
-                    </div>
-                </div>
-            </div>
-            
-            <div class="info-section">
-                <h3>⚙️ Especificações Técnicas</h3>
-                <div class="info-grid">
-                    <div class="info-item">
-                        <strong>Câmbio:</strong> {veiculo['cambio']}
-                    </div>
-                    <div class="info-item">
-                        <strong>Combustível:</strong> {veiculo['combustivel']}
-                    </div>
-                    <div class="info-item">
-                        <strong>Portas:</strong> {veiculo['portas']}
-                    </div>
-                </div>
-            </div>
-            
-            <div class="info-section">
-                <h3>💰 Valores</h3>
-                <div class="price-grid">
-                    <div class="price-item highlight">
-                        <strong>Preço à Vista:</strong> {preco_formatado}
-                    </div>
-                    <div class="price-item">
-                        <strong>Entrada:</strong> R$ {entrada:,.2f}
-                    </div>
-                    <div class="price-item">
-                        <strong>48x de:</strong> {parcela_formatada}
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    '''
-    
-    # CORREÇÃO: Escapar caracteres problemáticos para JavaScript
-    detalhes_info_escaped = detalhes_info.replace('`', "'").replace('\n', ' ')
+    Financiamento:
+    • Entrada: R$ {entrada:,.2f}
+    • 48x de: {parcela_formatada}
+    """
     
     card_html = f'''
     <div class="vehicle-card">
@@ -263,7 +211,7 @@ def create_vehicle_card_html(veiculo):
             </div>
             
             <div class="btn-container">
-                <button class="btn-details" onclick="showVehicleDetails({veiculo['id']}, `{detalhes_info_escaped}`)">
+                <button class="btn-details" onclick="showVehicleDetails({veiculo['id']}, `{detalhes_info.replace('`', "'")}`)">
                     🔍 Detalhes
                 </button>
                 <a href="https://wa.me/5584981885353?text=Olá! Gostaria de informações sobre o {veiculo['marca']} {veiculo['modelo']} {veiculo['ano']} - {preco_formatado}" 
@@ -660,125 +608,45 @@ def get_full_html_page(veiculos_filtrados, filtros_html):
                 top: 0;
                 width: 100%;
                 height: 100%;
-                background-color: rgba(0,0,0,0.9);
-                overflow-y: auto;
+                background-color: rgba(0,0,0,0.8);
             }}
             
             .modal-content {{
                 background: #1a1a1a;
-                margin: 2% auto;
+                margin: 5% auto;
                 padding: 30px;
                 border-radius: 16px;
                 border: 2px solid #e88e1b;
-                width: 95%;
-                max-width: 1000px;
+                width: 90%;
+                max-width: 600px;
                 position: relative;
             }}
             
             .close {{
                 color: #e88e1b;
                 float: right;
-                font-size: 32px;
+                font-size: 28px;
                 font-weight: bold;
                 cursor: pointer;
                 position: absolute;
-                right: 25px;
+                right: 20px;
                 top: 15px;
-                z-index: 1001;
-                background: rgba(26, 26, 26, 0.9);
-                border-radius: 50%;
-                width: 40px;
-                height: 40px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
             }}
             
             .close:hover {{
                 color: #f4c220;
-                background: rgba(26, 26, 26, 0.95);
             }}
             
             .details-title {{
                 color: #e88e1b;
-                margin-bottom: 25px;
-                text-align: center;
-                font-size: 28px;
-            }}
-            
-            /* Container de detalhes */
-            .details-container {{
-                display: grid;
-                grid-template-columns: 1fr 1fr;
-                gap: 30px;
-                align-items: start;
-            }}
-            
-            .details-image {{
+                margin-bottom: 20px;
                 text-align: center;
             }}
             
-            .large-vehicle-image {{
-                width: 100%;
-                max-width: 500px;
-                height: auto;
-                border-radius: 12px;
-                border: 2px solid #333;
-            }}
-            
-            .details-info {{
-                display: flex;
-                flex-direction: column;
-                gap: 25px;
-            }}
-            
-            .info-section h3 {{
-                color: #e88e1b;
-                margin-bottom: 15px;
-                font-size: 18px;
-                border-bottom: 1px solid #333;
-                padding-bottom: 8px;
-            }}
-            
-            .info-grid {{
-                display: grid;
-                grid-template-columns: 1fr;
-                gap: 10px;
-            }}
-            
-            .info-item {{
-                padding: 8px 12px;
-                background: rgba(255,255,255,0.05);
-                border-radius: 8px;
-                border-left: 3px solid #e88e1b;
-            }}
-            
-            .info-item strong {{
-                color: #e88e1b;
-            }}
-            
-            .price-grid {{
-                display: grid;
-                grid-template-columns: 1fr;
-                gap: 12px;
-            }}
-            
-            .price-item {{
-                padding: 12px;
-                background: rgba(232, 142, 27, 0.1);
-                border-radius: 8px;
-                border: 1px solid rgba(232, 142, 27, 0.3);
-            }}
-            
-            .price-item.highlight {{
-                background: rgba(232, 142, 27, 0.2);
-                border: 2px solid #e88e1b;
-                font-size: 18px;
-                font-weight: 700;
-            }}
-            
-            .price-item.highlight strong {{
-                color: #f4c220;
+            .details-content {{
+                white-space: pre-line;
+                line-height: 1.8;
+                color: #b0b0b0;
             }}
             
             /* Responsividade */
@@ -798,25 +666,7 @@ def get_full_html_page(veiculos_filtrados, filtros_html):
                 
                 .modal-content {{
                     width: 95%;
-                    margin: 5% auto;
-                    padding: 20px;
-                }}
-                
-                .details-container {{
-                    grid-template-columns: 1fr;
-                    gap: 20px;
-                }}
-                
-                .large-vehicle-image {{
-                    max-width: 100%;
-                }}
-                
-                .close {{
-                    right: 15px;
-                    top: 10px;
-                    width: 35px;
-                    height: 35px;
-                    font-size: 24px;
+                    margin: 10% auto;
                 }}
             }}
         </style>
@@ -869,25 +719,12 @@ def get_full_html_page(veiculos_filtrados, filtros_html):
         
         <script>
             function showVehicleDetails(vehicleId, details) {{
-                document.getElementById('modalBody').innerHTML = details;
+                document.getElementById('modalBody').textContent = details;
                 document.getElementById('detailsModal').style.display = 'block';
-                document.body.style.overflow = 'hidden';
-                
-                // Adicionar fallback para imagens no modal
-                const modalImage = document.querySelector('#modalBody .large-vehicle-image');
-                if (modalImage) {{
-                    modalImage.onerror = function() {{
-                        const altText = this.alt || 'Veículo';
-                        const marcaModelo = altText.split(' ').slice(0, 2).join('+');
-                        const cor = '3498db';
-                        this.src = 'https://via.placeholder.com/600x400/' + cor + '/ffffff?text=' + marcaModelo;
-                    }};
-                }}
             }}
             
             function closeModal() {{
                 document.getElementById('detailsModal').style.display = 'none';
-                document.body.style.overflow = 'auto';
             }}
             
             // Fechar modal ao clicar fora
@@ -898,13 +735,6 @@ def get_full_html_page(veiculos_filtrados, filtros_html):
                 }}
             }}
             
-            // Fechar modal com ESC
-            document.addEventListener('keydown', function(event) {{
-                if (event.key === 'Escape') {{
-                    closeModal();
-                }}
-            }});
-            
             // Fallback para imagens que não carregam
             document.addEventListener('DOMContentLoaded', function() {{
                 const images = document.querySelectorAll('.vehicle-image');
@@ -912,8 +742,8 @@ def get_full_html_page(veiculos_filtrados, filtros_html):
                     img.onerror = function() {{
                         const altText = this.alt || 'Veículo';
                         const marcaModelo = altText.split(' ').slice(0, 2).join('+');
-                        const cor = '3498db';
-                        this.src = 'https://via.placeholder.com/400x250/' + cor + '/ffffff?text=' + marcaModelo;
+                        const cor = '3498db'; // Cor padrão
+                        this.src = `https://via.placeholder.com/400x250/${{cor}}/ffffff?text=${{marcaModelo}}`;
                     }};
                 }});
             }});
