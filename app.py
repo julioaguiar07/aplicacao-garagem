@@ -825,23 +825,25 @@ class Database:
             ''', ('admin', hash_password('admin123'), 'Administrador', 'admin'))
 
     def salvar_foto_veiculo(self, veiculo_id, foto_bytes):
-        """Salva foto do veículo de forma segura"""
+        """Salva foto do veículo de forma segura - VERSÃO CORRIGIDA"""
         conn = None
         try:
             conn = self.get_connection()
             cursor = conn.cursor()
             
-            # Verificar se a coluna 'foto' existe
+            # ✅ CORREÇÃO: Verificar se a coluna 'foto' existe de forma mais robusta
             if os.getenv('DATABASE_URL'):
+                # PostgreSQL - Verificar coluna
                 cursor.execute("""
                     SELECT column_name 
                     FROM information_schema.columns 
                     WHERE table_name = 'veiculos' AND column_name = 'foto'
                 """)
+                colunas = [col[0] for col in cursor.fetchall()]
             else:
+                # SQLite - Verificar coluna
                 cursor.execute("PRAGMA table_info(veiculos)")
-            
-            colunas = [col[1] if os.getenv('DATABASE_URL') else col[1] for col in cursor.fetchall()]
+                colunas = [col[1] for col in cursor.fetchall()]
             
             # Se a coluna não existir, adicionar
             if 'foto' not in colunas:
@@ -851,16 +853,36 @@ class Database:
                 else:
                     cursor.execute('ALTER TABLE veiculos ADD COLUMN foto BLOB')
                 conn.commit()
+                print("✅ Coluna 'foto' criada com sucesso!")
             
-            # Agora salvar a foto
+            # ✅ CORREÇÃO CRÍTICA: Verificar se o veículo existe antes de atualizar
             if os.getenv('DATABASE_URL'):
-                cursor.execute('UPDATE veiculos SET foto = %s WHERE id = %s', (foto_bytes, veiculo_id))
+                cursor.execute('SELECT id FROM veiculos WHERE id = %s', (veiculo_id,))
             else:
-                cursor.execute('UPDATE veiculos SET foto = ? WHERE id = ?', (foto_bytes, veiculo_id))
+                cursor.execute('SELECT id FROM veiculos WHERE id = ?', (veiculo_id,))
             
-            conn.commit()
-            print("✅ Foto salva com sucesso!")
-            return True
+            veiculo_existe = cursor.fetchone()
+            
+            if not veiculo_existe:
+                print(f"❌ Veículo ID {veiculo_id} não encontrado!")
+                return False
+            
+            # ✅ CORREÇÃO: Agora salvar a foto com verificação de tamanho
+            if foto_bytes and len(foto_bytes) > 0:
+                print(f"📸 Salvando foto ({len(foto_bytes)} bytes) para veículo {veiculo_id}...")
+                
+                if os.getenv('DATABASE_URL'):
+                    cursor.execute('UPDATE veiculos SET foto = %s WHERE id = %s', (foto_bytes, veiculo_id))
+                else:
+                    cursor.execute('UPDATE veiculos SET foto = ? WHERE id = ?', (foto_bytes, veiculo_id))
+                
+                conn.commit()
+                print("✅ Foto salva com sucesso!")
+                return True
+            else:
+                print("⚠️ Nenhum dado de foto para salvar")
+                return False
+                
         except Exception as e:
             print(f"❌ Erro ao salvar foto: {e}")
             if conn:
@@ -890,11 +912,13 @@ class Database:
             conn.close()
     
     def criar_coluna_foto(self):
-        """Cria a coluna foto se não existir - VERSÃO CORRIGIDA"""
+        """Cria a coluna foto se não existir - VERSÃO MAIS ROBUSTA"""
         conn = None
         try:
             conn = self.get_connection()
             cursor = conn.cursor()
+            
+            print("🔍 Verificando coluna 'foto'...")
             
             # Verificar se a coluna 'foto' existe
             if os.getenv('DATABASE_URL'):
@@ -904,30 +928,35 @@ class Database:
                     FROM information_schema.columns 
                     WHERE table_name = 'veiculos' AND column_name = 'foto'
                 """)
+                resultado = cursor.fetchall()
+                colunas = [col[0] for col in resultado] if resultado else []
             else:
                 # SQLite
                 cursor.execute("PRAGMA table_info(veiculos)")
+                resultado = cursor.fetchall()
+                colunas = [col[1] for col in resultado] if resultado else []
             
-            colunas = [col[1] if os.getenv('DATABASE_URL') else col[1] for col in cursor.fetchall()]
+            print(f"📊 Colunas encontradas: {colunas}")
             
             if 'foto' not in colunas:
                 print("🔄 Criando coluna 'foto'...")
                 if os.getenv('DATABASE_URL'):
                     cursor.execute('ALTER TABLE veiculos ADD COLUMN foto BYTEA')
+                    print("✅ Coluna 'foto' criada no PostgreSQL!")
                 else:
                     cursor.execute('ALTER TABLE veiculos ADD COLUMN foto BLOB')
-                conn.commit()  # ⬅️ COMMIT ANTES de fechar
-                print("✅ Coluna 'foto' criada!")
+                    print("✅ Coluna 'foto' criada no SQLite!")
+                conn.commit()
             else:
                 print("✅ Coluna 'foto' já existe")
                 
         except Exception as e:
-            print(f"❌ Erro ao criar coluna foto: {e}")
+            print(f"❌ Erro ao verificar/criar coluna foto: {e}")
             if conn:
                 conn.rollback()
         finally:
             if conn:
-                conn.close()  # ⬅️ Fechar conexão APÓS commit/rollback     
+                conn.close()     
 
     # =============================================
     # MÉTODOS ORIGINAIS - ADAPTADOS PARA AMBOS OS BANCOS
@@ -3710,14 +3739,22 @@ with tab2:
                             print("🔄 Tentando cadastrar veículo...")
                             veiculo_id = db.add_veiculo(novo_veiculo)
                             
+                            # No formulário de cadastro de veículos, após o sucesso do cadastro:
                             if veiculo_id:
-                                # ✅✅✅ SALVAR FOTO SE FOI ENVIADA
+                                # ✅ CORREÇÃO: Salvar foto com tratamento de erro melhorado
                                 if foto_veiculo is not None:
-                                    success_foto = db.salvar_foto_veiculo(veiculo_id, foto_veiculo.getvalue())
-                                    if success_foto:
-                                        st.success("✅ Foto salva com sucesso!")
-                                    else:
-                                        st.warning("⚠️ Veículo cadastrado, mas houve erro ao salvar a foto")
+                                    try:
+                                        # Verificar tamanho da foto (máximo 5MB)
+                                        if len(foto_veiculo.getvalue()) > 5 * 1024 * 1024:
+                                            st.warning("⚠️ Foto muito grande (máximo 5MB). Reduza o tamanho da imagem.")
+                                        else:
+                                            success_foto = db.salvar_foto_veiculo(veiculo_id, foto_veiculo.getvalue())
+                                            if success_foto:
+                                                st.success("✅ Foto salva com sucesso!")
+                                            else:
+                                                st.warning("⚠️ Veículo cadastrado, mas houve erro ao salvar a foto")
+                                    except Exception as e:
+                                        st.warning(f"⚠️ Veículo cadastrado, mas erro na foto: {str(e)}")
                                 
                                 st.success("✅ Veículo cadastrado com sucesso!")
                                 st.balloons()
