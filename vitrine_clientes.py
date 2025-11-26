@@ -65,26 +65,39 @@ st.markdown('''
         position: relative;
     }
     
-    /* Cards de veículos */
-    .vehicle-card {
+    /* Cards de veículos - DESIGN MELHORADO */
+    .vehicle-card-container {
         background: linear-gradient(145deg, #1a1a1a, #0f0f0f);
-        border-radius: 15px;
+        border-radius: 20px;
         padding: 0;
-        border: 1px solid #333;
+        border: 2px solid #333;
         transition: all 0.3s ease;
-        margin-bottom: 25px;
+        margin-bottom: 30px;
         overflow: hidden;
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+        position: relative;
     }
     
-    .vehicle-card:hover {
-        transform: translateY(-5px);
+    .vehicle-card-container::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, #d4af37, #f4c220, #d4af37);
+        z-index: 2;
+    }
+    
+    .vehicle-card-container:hover {
+        transform: translateY(-8px);
         border-color: #d4af37;
-        box-shadow: 0 10px 25px rgba(212, 175, 55, 0.2);
+        box-shadow: 0 15px 35px rgba(212, 175, 55, 0.25);
     }
     
     .vehicle-image-container {
         position: relative;
-        height: 200px;
+        height: 220px;
         overflow: hidden;
     }
     
@@ -95,27 +108,30 @@ st.markdown('''
         transition: transform 0.3s ease;
     }
     
-    .vehicle-card:hover .vehicle-image {
-        transform: scale(1.05);
+    .vehicle-card-container:hover .vehicle-image {
+        transform: scale(1.08);
     }
     
     .vehicle-badges {
         position: absolute;
-        top: 10px;
-        left: 10px;
+        top: 15px;
+        left: 15px;
         display: flex;
         flex-direction: column;
-        gap: 5px;
+        gap: 8px;
+        z-index: 3;
     }
     
     .luxury-badge {
-        padding: 6px 12px;
-        border-radius: 15px;
-        font-size: 10px;
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-size: 11px;
         font-weight: 800;
         text-transform: uppercase;
-        letter-spacing: 0.5px;
+        letter-spacing: 0.8px;
         backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
     }
     
     .badge-new {
@@ -128,70 +144,92 @@ st.markdown('''
         color: #1a1a1a;
     }
     
+    .badge-promo {
+        background: linear-gradient(135deg, #e74c3c, #c0392b);
+        color: white;
+    }
+    
     .card-content {
-        padding: 20px;
+        padding: 25px;
     }
     
     .vehicle-title {
-        font-size: 18px;
-        font-weight: 700;
+        font-size: 22px;
+        font-weight: 800;
         color: #d4af37;
-        margin: 0 0 10px 0;
+        margin: 0 0 15px 0;
         line-height: 1.3;
+        text-align: center;
+        border-bottom: 2px solid #333;
+        padding-bottom: 12px;
     }
     
     .vehicle-specs {
         color: #b0b0b0;
-        font-size: 13px;
-        margin-bottom: 15px;
-        line-height: 1.5;
+        font-size: 14px;
+        margin-bottom: 20px;
+        line-height: 1.6;
     }
     
     .spec-item {
         display: flex;
         align-items: center;
-        gap: 8px;
-        margin-bottom: 4px;
+        gap: 10px;
+        margin-bottom: 8px;
+        padding: 4px 0;
+    }
+    
+    .spec-item:hover {
+        color: #ffffff;
+        background: rgba(212, 175, 55, 0.1);
+        border-radius: 6px;
+        padding: 4px 8px;
     }
     
     .price-section {
-        border-top: 1px solid #333;
-        padding-top: 15px;
-        margin-top: 10px;
+        background: linear-gradient(135deg, rgba(212, 175, 55, 0.1), rgba(244, 194, 32, 0.05));
+        border-radius: 12px;
+        padding: 20px;
+        margin: 20px 0;
+        border: 1px solid rgba(212, 175, 55, 0.3);
     }
     
     .vehicle-price {
-        font-size: 22px;
+        font-size: 28px;
         font-weight: 800;
         color: #d4af37;
-        margin: 0 0 5px 0;
+        margin: 0 0 10px 0;
+        text-align: center;
+        text-shadow: 0 2px 4px rgba(212, 175, 55, 0.3);
     }
     
     .vehicle-financing {
-        color: #888;
-        font-size: 12px;
-        margin-bottom: 15px;
-        line-height: 1.4;
+        color: #e0e0e0;
+        font-size: 14px;
+        margin-bottom: 5px;
+        line-height: 1.5;
+        text-align: center;
     }
     
     .btn-container {
         display: grid;
         grid-template-columns: 1fr 1fr;
-        gap: 10px;
+        gap: 12px;
+        margin-top: 20px;
     }
     
     .stButton>button {
         width: 100%;
         border: none;
-        border-radius: 8px;
-        padding: 10px;
-        font-weight: 600;
-        font-size: 12px;
+        border-radius: 10px;
+        padding: 12px;
+        font-weight: 700;
+        font-size: 13px;
         transition: all 0.3s ease;
         display: flex;
         align-items: center;
         justify-content: center;
-        gap: 5px;
+        gap: 8px;
     }
     
     .btn-details {
@@ -202,6 +240,7 @@ st.markdown('''
     .btn-details:hover {
         background: linear-gradient(135deg, #444, #666);
         transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(255, 255, 255, 0.1);
     }
     
     .btn-whatsapp {
@@ -212,23 +251,25 @@ st.markdown('''
     .btn-whatsapp:hover {
         background: linear-gradient(135deg, #20bd5c, #0f7a61);
         transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(37, 211, 102, 0.3);
     }
     
     /* Filtros */
     .filters-section {
         background: linear-gradient(135deg, #1a1a1a, #0f0f0f);
-        padding: 25px;
-        border-radius: 15px;
-        margin: 30px 0;
-        border: 1px solid #333;
+        padding: 30px;
+        border-radius: 20px;
+        margin: 40px 0;
+        border: 2px solid #333;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
     }
     
     /* Footer */
     .luxury-footer {
         background: linear-gradient(135deg, #1a1a1a, #0f0f0f);
-        padding: 40px 0 20px;
-        margin-top: 50px;
-        border-top: 1px solid #333;
+        padding: 50px 0 30px;
+        margin-top: 60px;
+        border-top: 2px solid #333;
         position: relative;
     }
     
@@ -238,34 +279,37 @@ st.markdown('''
         top: 0;
         left: 0;
         right: 0;
-        height: 3px;
+        height: 4px;
         background: linear-gradient(90deg, #d4af37, #f4c220, #d4af37);
     }
     
     .vehicle-counter {
         background: linear-gradient(135deg, #d4af37, #f4c220);
         color: #1a1a1a;
-        padding: 8px 16px;
-        border-radius: 20px;
-        font-weight: 700;
-        font-size: 12px;
+        padding: 12px 24px;
+        border-radius: 25px;
+        font-weight: 800;
+        font-size: 14px;
         display: inline-block;
-        margin-bottom: 15px;
+        margin-bottom: 20px;
+        box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3);
     }
     
-    /* Grid responsivo */
-    .vehicles-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-        gap: 20px;
+    /* Detalhes do veículo */
+    .details-modal {
+        background: linear-gradient(135deg, #1a1a1a, #0f0f0f);
+        border-radius: 20px;
+        padding: 30px;
         margin: 20px 0;
+        border: 2px solid #d4af37;
+        box-shadow: 0 15px 40px rgba(212, 175, 55, 0.2);
     }
     
     /* Melhorias nos componentes Streamlit */
     .stSelectbox > div > div {
         background: #1a1a1a;
-        border: 1px solid #333;
-        border-radius: 8px;
+        border: 2px solid #333;
+        border-radius: 10px;
         color: white;
     }
     
@@ -278,6 +322,14 @@ st.markdown('''
     footer {visibility: hidden;}
     header {visibility: hidden;}
     .stDeployButton {display: none;}
+    
+    /* Separador entre cards */
+    .card-separator {
+        height: 2px;
+        background: linear-gradient(90deg, transparent, #d4af37, transparent);
+        margin: 10px 0;
+        opacity: 0.5;
+    }
 </style>
 ''', unsafe_allow_html=True)
 
@@ -382,7 +434,7 @@ def generate_placeholder_image(veiculo):
     color_hex = color_map.get(veiculo['cor'], '3498db')
     texto = f"{veiculo['marca']}+{veiculo['modelo']}".replace(' ', '+')
     
-    return f"https://via.placeholder.com/400x250/{color_hex}/ffffff?text={texto}"
+    return f"https://via.placeholder.com/600x400/{color_hex}/ffffff?text={texto}"
 
 def load_logo():
     """Carrega a logo do repositório"""
@@ -395,126 +447,166 @@ def load_logo():
 def create_vehicle_card(veiculo):
     """Cria um card de veículo usando componentes Streamlit"""
     
-    # Usar foto real se disponível, senão placeholder
-    if veiculo.get('foto_base64'):
-        image_data = base64.b64decode(veiculo['foto_base64'])
-        image = Image.open(io.BytesIO(image_data))
-    else:
-        # Para placeholder, vamos usar uma imagem genérica
-        image = None
-    
-    # Determinar badges
-    idade = datetime.now().year - veiculo['ano']
-    badges = []
-    if idade <= 1:
-        badges.append(("🆕 NOVO", "badge-new"))
-    if veiculo['km'] < 20000:
-        badges.append(("⭐ BAIXA KM", "badge-lowkm"))
-    elif veiculo['km'] < 50000:
-        badges.append(("🛣️ POUCA KM", "badge-lowkm"))
-    
-    # Cálculo de financiamento
-    entrada = veiculo['preco_venda'] * 0.2
-    parcela = (veiculo['preco_venda'] - entrada) / 48
-    
-    # Formatar dados
-    preco_formatado = f"R$ {veiculo['preco_venda']:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
-    entrada_formatada = f"R$ {entrada:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
-    parcela_formatada = f"R$ {parcela:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
-    km_formatado = f"{veiculo['km']:,}".replace(',', '.')
-    
-    # Criar card usando columns
+    # Container principal do card
     with st.container():
-        col1, col2 = st.columns([1, 2])
+        st.markdown('<div class="vehicle-card-container">', unsafe_allow_html=True)
         
-        with col1:
-            # Imagem do veículo
-            if image:
+        # Usar foto real se disponível, senão placeholder
+        if veiculo.get('foto_base64'):
+            try:
+                image_data = base64.b64decode(veiculo['foto_base64'])
+                image = Image.open(io.BytesIO(image_data))
                 st.image(image, use_column_width=True)
-            else:
+            except:
                 st.image(generate_placeholder_image(veiculo), use_column_width=True)
-            
-            # Badges
-            if badges:
-                badge_cols = st.columns(len(badges))
-                for i, (badge_text, badge_class) in enumerate(badges):
-                    with badge_cols[i]:
-                        st.markdown(f'<div class="luxury-badge {badge_class}">{badge_text}</div>', unsafe_allow_html=True)
+        else:
+            st.image(generate_placeholder_image(veiculo), use_column_width=True)
         
-        with col2:
-            # Informações do veículo
-            st.markdown(f'<div class="vehicle-title">{veiculo["marca"]} {veiculo["modelo"]}</div>', unsafe_allow_html=True)
-            
-            # Especificações
+        # Determinar badges
+        idade = datetime.now().year - veiculo['ano']
+        badges = []
+        if idade <= 1:
+            badges.append(("🆕 NOVO", "badge-new"))
+        if veiculo['km'] < 20000:
+            badges.append(("⭐ BAIXA KM", "badge-lowkm"))
+        elif veiculo['km'] < 50000:
+            badges.append(("🛣️ POUCA KM", "badge-lowkm"))
+        
+        # Mostrar badges
+        if badges:
+            badge_cols = st.columns(len(badges))
+            for i, (badge_text, badge_class) in enumerate(badges):
+                with badge_cols[i]:
+                    st.markdown(f'<div class="luxury-badge {badge_class}">{badge_text}</div>', unsafe_allow_html=True)
+        
+        # Conteúdo do card
+        st.markdown(f'<div class="vehicle-title">{veiculo["marca"]} {veiculo["modelo"]}</div>', unsafe_allow_html=True)
+        
+        # Especificações em colunas
+        col_spec1, col_spec2 = st.columns(2)
+        
+        with col_spec1:
             st.markdown(f'''
             <div class="vehicle-specs">
                 <div class="spec-item">📅 <strong>Ano:</strong> {veiculo['ano']}</div>
-                <div class="spec-item">🛣️ <strong>KM:</strong> {km_formatado}</div>
+                <div class="spec-item">🛣️ <strong>KM:</strong> {veiculo['km']:,}</div>
                 <div class="spec-item">🎨 <strong>Cor:</strong> {veiculo['cor']}</div>
+            </div>
+            ''', unsafe_allow_html=True)
+        
+        with col_spec2:
+            st.markdown(f'''
+            <div class="vehicle-specs">
                 <div class="spec-item">⚙️ <strong>Câmbio:</strong> {veiculo['cambio']}</div>
                 <div class="spec-item">⛽ <strong>Combustível:</strong> {veiculo['combustivel']}</div>
                 <div class="spec-item">🚪 <strong>Portas:</strong> {veiculo['portas']}</div>
             </div>
             ''', unsafe_allow_html=True)
-            
-            # Preço e financiamento
-            st.markdown(f'''
-            <div class="price-section">
-                <div class="vehicle-price">{preco_formatado}</div>
-                <div class="vehicle-financing">
-                    💰 <strong>Entrada:</strong> {entrada_formatada}<br>
-                    📅 <strong>48x de:</strong> {parcela_formatada}
-                </div>
-            </div>
-            ''', unsafe_allow_html=True)
-            
-            # Botões de ação
-            col_btn1, col_btn2 = st.columns(2)
-            with col_btn1:
-                if st.button("🔍 Detalhes", key=f"details_{veiculo['id']}", use_container_width=True):
-                    show_vehicle_details(veiculo)
-            with col_btn2:
-                whatsapp_url = f"https://wa.me/5584981885353?text=Olá! Gostaria de informações sobre o {veiculo['marca']} {veiculo['modelo']} {veiculo['ano']} - {preco_formatado}"
-                st.markdown(f'<a href="{whatsapp_url}" target="_blank"><button class="btn-whatsapp" style="width:100%">💬 WhatsApp</button></a>', unsafe_allow_html=True)
         
-        st.markdown("---")
+        # Cálculo de financiamento
+        entrada = veiculo['preco_venda'] * 0.2
+        parcela = (veiculo['preco_venda'] - entrada) / 48
+        
+        # Formatar dados
+        preco_formatado = f"R$ {veiculo['preco_venda']:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
+        entrada_formatada = f"R$ {entrada:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
+        parcela_formatada = f"R$ {parcela:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
+        
+        # Seção de preço
+        st.markdown(f'''
+        <div class="price-section">
+            <div class="vehicle-price">{preco_formatado}</div>
+            <div class="vehicle-financing">
+                💰 <strong>Entrada:</strong> {entrada_formatada}
+            </div>
+            <div class="vehicle-financing">
+                📅 <strong>48x de:</strong> {parcela_formatada}
+            </div>
+        </div>
+        ''', unsafe_allow_html=True)
+        
+        # Botões de ação
+        col_btn1, col_btn2 = st.columns(2)
+        
+        with col_btn1:
+            if st.button("🔍 Detalhes", key=f"details_{veiculo['id']}", use_container_width=True):
+                st.session_state[f"show_details_{veiculo['id']}"] = True
+        
+        with col_btn2:
+            whatsapp_url = f"https://wa.me/5584981885353?text=Olá! Gostaria de informações sobre o {veiculo['marca']} {veiculo['modelo']} {veiculo['ano']} - {preco_formatado}"
+            st.markdown(f'<a href="{whatsapp_url}" target="_blank" style="text-decoration: none;"><button style="width:100%; background: linear-gradient(135deg, #25D366, #128C7E); color: white; border: none; border-radius: 10px; padding: 12px; font-weight: 700; font-size: 13px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">💬 WhatsApp</button></a>', unsafe_allow_html=True)
+        
+        st.markdown('</div>', unsafe_allow_html=True)  # Fecha vehicle-card-container
+        
+        # Separador entre cards
+        st.markdown('<div class="card-separator"></div>', unsafe_allow_html=True)
+        
+        # Mostrar detalhes se solicitado
+        if st.session_state.get(f"show_details_{veiculo['id']}", False):
+            show_vehicle_details(veiculo)
 
 def show_vehicle_details(veiculo):
-    """Mostra detalhes completos do veículo em um modal"""
-    st.session_state[f"show_details_{veiculo['id']}"] = True
+    """Mostra detalhes completos do veículo"""
+    st.markdown('<div class="details-modal">', unsafe_allow_html=True)
     
-    with st.expander(f"🚗 Detalhes Completos - {veiculo['marca']} {veiculo['modelo']}", expanded=True):
+    st.subheader(f"🚗 Detalhes Completos - {veiculo['marca']} {veiculo['modelo']}")
+    
+    # Layout principal sem nesting de columns
+    if veiculo.get('foto_base64'):
+        try:
+            image_data = base64.b64decode(veiculo['foto_base64'])
+            image = Image.open(io.BytesIO(image_data))
+            st.image(image, use_column_width=True)
+        except:
+            st.image(generate_placeholder_image(veiculo), use_column_width=True)
+    
+    # Informações em expansores para melhor organização
+    with st.expander("📋 Informações Básicas", expanded=True):
         col1, col2 = st.columns(2)
-        
         with col1:
-            if veiculo.get('foto_base64'):
-                image_data = base64.b64decode(veiculo['foto_base64'])
-                image = Image.open(io.BytesIO(image_data))
-                st.image(image, use_column_width=True)
-            else:
-                st.image(generate_placeholder_image(veiculo), use_column_width=True)
-        
-        with col2:
-            st.subheader("📋 Informações Técnicas")
             st.write(f"**Marca:** {veiculo['marca']}")
             st.write(f"**Modelo:** {veiculo['modelo']}")
             st.write(f"**Ano:** {veiculo['ano']}")
             st.write(f"**Cor:** {veiculo['cor']}")
+        with col2:
             st.write(f"**KM:** {veiculo['km']:,}")
             st.write(f"**Placa:** {veiculo['placa'] or 'Não informada'}")
             st.write(f"**Combustível:** {veiculo['combustivel']}")
             st.write(f"**Câmbio:** {veiculo['cambio']}")
-            st.write(f"**Portas:** {veiculo['portas']}")
-            
-            if veiculo.get('observacoes'):
-                st.subheader("📝 Observações")
-                st.write(veiculo['observacoes'])
+    
+    with st.expander("💰 Informações Financeiras"):
+        entrada = veiculo['preco_venda'] * 0.2
+        parcela = (veiculo['preco_venda'] - entrada) / 48
+        
+        preco_formatado = f"R$ {veiculo['preco_venda']:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
+        entrada_formatada = f"R$ {entrada:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
+        parcela_formatada = f"R$ {parcela:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
+        
+        st.metric("💵 Preço à Vista", preco_formatado)
+        st.metric("💰 Valor de Entrada", entrada_formatada)
+        st.metric("📅 Parcela (48x)", parcela_formatada)
+    
+    if veiculo.get('observacoes'):
+        with st.expander("📝 Observações"):
+            st.write(veiculo['observacoes'])
+    
+    # Botão para fechar detalhes
+    if st.button("❌ Fechar Detalhes", key=f"close_{veiculo['id']}", use_container_width=True):
+        st.session_state[f"show_details_{veiculo['id']}"] = False
+        st.rerun()
+    
+    st.markdown('</div>', unsafe_allow_html=True)
 
 # =============================================
 # PÁGINA PRINCIPAL
 # =============================================
 
 def main():
+    # Inicializar session states
+    for key in st.session_state.keys():
+        if key.startswith('show_details_'):
+            st.session_state[key] = False
+    
     # Header com logo
     logo = load_logo()
     
@@ -523,16 +615,18 @@ def main():
     col_logo, col_title = st.columns([1, 3])
     with col_logo:
         if logo:
-            st.image(logo, width=100)
+            st.image(logo, width=120)
         else:
-            st.markdown('<div style="font-size: 48px;">🚗</div>', unsafe_allow_html=True)
+            st.markdown('<div style="font-size: 48px; text-align: center;">🚗</div>', unsafe_allow_html=True)
     
+    with col_title:
+        st.markdown('<div style="font-size: 42px; font-weight: 800; color: #d4af37; margin-top: 15px; text-align: center;">GARAGEM MULTIMARCAS</div>', unsafe_allow_html=True)
     
     # Hero Section
     st.markdown('''
     <div class="hero-section">
-        <h1 style="color: #d4af37; font-size: 36px; font-weight: 800; margin-bottom: 10px;">
-            GARAGEM MULTIMARCAS
+        <h1 style="color: white; font-size: 36px; font-weight: 800; margin-bottom: 10px;">
+            CATÁLOGO PREMIUM
         </h1>
         <p style="color: #ccc; font-size: 18px; margin-bottom: 20px;">
             Os melhores veículos novos e seminovos com condições especiais
@@ -618,7 +712,7 @@ def main():
     st.markdown('''
     <div class="luxury-footer">
         <div style="text-align: center;">
-            <div style="font-size: 24px; font-weight: 800; color: #d4af37; margin-bottom: 10px;">
+            <div style="font-size: 28px; font-weight: 800; color: #d4af37; margin-bottom: 10px;">
                 GARAGEM MULTIMARCAS
             </div>
             <div style="color: #ccc; margin-bottom: 15px;">
