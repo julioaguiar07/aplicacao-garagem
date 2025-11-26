@@ -13,8 +13,8 @@ from streamlit.components.v1 import html
 # =============================================
 
 st.set_page_config(
-    page_title="Garagem Multimarcas - Catálogo Premium",
-    page_icon="🚗",
+    page_title="Garagem Multimarcas",
+     page_icon="logo-icon.png",
     layout="wide",
     initial_sidebar_state="collapsed"
 )
@@ -265,7 +265,7 @@ def get_full_html_page(veiculos_filtrados, filtros_html):
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Garagem Multimarcas - Catálogo Premium</title>
+        <title>Garagem Multimarcas</title>
         <style>
             /* Reset e configurações base */
             * {{
@@ -673,21 +673,20 @@ def get_full_html_page(veiculos_filtrados, filtros_html):
     </head>
     <body>
         <div class="contact-bar">
-            ⭐ CONDIÇÕES ESPECIAIS • 📞 (84) 98188-5353 • 📍 Mossoró/RN • ⏰ Seg-Sex: 8h-18h
+            📞 (84) 93062-2434 • 📍 Mossoró/RN • ⏰ Seg-Sex: 8h-17:20h Sab:8-12h
         </div>
         
         <div class="header">
             <div class="container">
                 <div class="header-content">
                     {logo_html}
-                    <div class="brand-title">GARAGEM MULTIMARCAS</div>
                 </div>
             </div>
         </div>
         
         <div class="hero-section">
             <div class="container">
-                <h1 class="hero-title">CATÁLOGO PREMIUM</h1>
+                <h1 class="hero-title">GARAGEM MULTIMARCAS</h1>
                 <p class="hero-subtitle">Os melhores veículos novos e seminovos com condições especiais de pagamento</p>
             </div>
         </div>
@@ -712,8 +711,8 @@ def get_full_html_page(veiculos_filtrados, filtros_html):
         <div class="footer">
             <div class="container">
                 <div class="footer-brand">GARAGEM MULTIMARCAS</div>
-                <div class="footer-contact">📞 (84) 98188-5353 • 📍 Mossoró/RN</div>
-                <div class="footer-copyright">© 2024 Garagem Multimarcas - Todos os direitos reservados</div>
+                <div class="footer-contact">📞 (84) 93062-2434 / (84) 98188-5353 • 📍 Rua José Damião, 61 Santo Antonio/Área Urbana - Mossoró/RN</div>
+                <div class="footer-copyright">© Powered by Júlio Aguiar - Todos os direitos reservados</div>
             </div>
         </div>
         
