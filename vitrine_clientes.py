@@ -265,7 +265,7 @@ def get_full_html_page(veiculos_filtrados, filtros_html):
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Garagem Multimarcas - Catálogo Premium</title>
+        <title>Garagem Multimarcas - </title>
         <style>
             /* Reset e configurações base */
             * {{
@@ -680,14 +680,13 @@ def get_full_html_page(veiculos_filtrados, filtros_html):
             <div class="container">
                 <div class="header-content">
                     {logo_html}
-                    <div class="brand-title">GARAGEM MULTIMARCAS</div>
                 </div>
             </div>
         </div>
         
         <div class="hero-section">
             <div class="container">
-                <h1 class="hero-title">CATÁLOGO PREMIUM</h1>
+                <h1 class="hero-title">GARAGEM MULTIMARCASM</h1>
                 <p class="hero-subtitle">Os melhores veículos novos e seminovos com condições especiais de pagamento</p>
             </div>
         </div>
