@@ -170,8 +170,8 @@ def processar_timestamp_postgresql(timestamp):
 # =============================================
 
 st.set_page_config(
-    page_title="Canal Automotivo - Sistema Completo",
-    page_icon="🚗",
+    page_title="Adm. Garagem Multimarcas",
+    page_icon="logo-icon.png",
     layout="wide",
     initial_sidebar_state="collapsed"
 )
