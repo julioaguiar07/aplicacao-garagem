@@ -10,16 +10,13 @@ from PIL import Image
 import io
 import math
 import random
-import requests
-from streamlit_lottie import st_lottie
-import json
 
 # =============================================
 # CONFIGURAÇÃO DA PÁGINA
 # =============================================
 
 st.set_page_config(
-    page_title="Garagem Multimarcas",
+    page_title="Garagem Multimarcas - Veículos Premium em Mossoró",
     page_icon="🚗",
     layout="wide",
     initial_sidebar_state="collapsed"
@@ -550,16 +547,6 @@ class WebsiteDatabase:
 # =============================================
 # COMPONENTES AVANÇADOS DE UI
 # =============================================
-
-def load_lottie_url(url: str):
-    """Carrega animação Lottie"""
-    try:
-        r = requests.get(url)
-        if r.status_code != 200:
-            return None
-        return r.json()
-    except:
-        return None
 
 def generate_vehicle_image(veiculo, size="large"):
     """Gera imagem realista do veículo com múltiplos ângulos"""
