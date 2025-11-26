@@ -78,7 +78,7 @@ class LuxuryDatabase:
             for row in resultados:
                 veiculo = dict(zip(colunas, row))
                 
-                # Processar foto se existir - CORREÇÃO AQUI
+                # Processar foto se existir
                 if tem_foto and veiculo.get('foto'):
                     try:
                         if isinstance(veiculo['foto'], bytes):
@@ -110,7 +110,7 @@ class LuxuryDatabase:
 # FUNÇÕES AUXILIARES
 # =============================================
 
-def generate_placeholder_image(veiculo):
+def generate_placeholder_image(veiculo, size="400x250"):
     """Gera imagem placeholder"""
     color_map = {
         'Prata': 'c0c0c0', 'Preto': '1a1a1a', 'Branco': 'ffffff',
@@ -122,7 +122,7 @@ def generate_placeholder_image(veiculo):
     color_hex = color_map.get(veiculo['cor'], '3498db')
     texto = f"{veiculo['marca']}+{veiculo['modelo']}".replace(' ', '+')
     
-    return f"https://via.placeholder.com/400x250/{color_hex}/ffffff?text={texto}"
+    return f"https://via.placeholder.com/{size}/{color_hex}/ffffff?text={texto}"
 
 def load_logo():
     """Carrega a logo do repositório"""
@@ -135,7 +135,7 @@ def load_logo():
 def create_vehicle_card_html(veiculo):
     """Cria HTML de um card de veículo"""
     
-    # CORREÇÃO: Verificar se a foto base64 é válida
+    # Verificar se a foto base64 é válida
     image_src = generate_placeholder_image(veiculo)  # Default para placeholder
     
     if veiculo.get('foto_base64'):
@@ -164,23 +164,24 @@ def create_vehicle_card_html(veiculo):
     parcela_formatada = f"R$ {parcela:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
     km_formatado = f"{veiculo['km']:,} km".replace(',', '.')
     
-    # CORREÇÃO: Adicionar mais informações nos detalhes
-    detalhes_info = f"""
-    Marca: {veiculo['marca']}
-    Modelo: {veiculo['modelo']}
-    Ano: {veiculo['ano']}
-    Cor: {veiculo['cor']}
-    KM: {km_formatado}
-    Câmbio: {veiculo['cambio']}
-    Combustível: {veiculo['combustivel']}
-    Portas: {veiculo['portas']}
-    Preço: {preco_formatado}
-    Placa: {veiculo['placa'] or 'Não informada'}
-    
-    Financiamento:
-    • Entrada: R$ {entrada:,.2f}
-    • 48x de: {parcela_formatada}
-    """
+    # Preparar dados para o modal de detalhes
+    detalhes_info = {
+        'id': veiculo['id'],
+        'marca': veiculo['marca'],
+        'modelo': veiculo['modelo'],
+        'ano': veiculo['ano'],
+        'cor': veiculo['cor'],
+        'km': km_formatado,
+        'cambio': veiculo['cambio'],
+        'combustivel': veiculo['combustivel'],
+        'portas': veiculo['portas'],
+        'preco': preco_formatado,
+        'placa': veiculo['placa'] or 'Não informada',
+        'observacoes': veiculo.get('observacoes', ''),
+        'entrada': f"R$ {entrada:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.'),
+        'parcela': parcela_formatada,
+        'foto_base64': veiculo.get('foto_base64')
+    }
     
     card_html = f'''
     <div class="vehicle-card">
@@ -211,7 +212,7 @@ def create_vehicle_card_html(veiculo):
             </div>
             
             <div class="btn-container">
-                <button class="btn-details" onclick="showVehicleDetails({veiculo['id']}, `{detalhes_info.replace('`', "'")}`)">
+                <button class="btn-details" onclick="showVehicleDetails({veiculo['id']})">
                     🔍 Detalhes
                 </button>
                 <a href="https://wa.me/5584981885353?text=Olá! Gostaria de informações sobre o {veiculo['marca']} {veiculo['modelo']} {veiculo['ano']} - {preco_formatado}" 
@@ -221,6 +222,12 @@ def create_vehicle_card_html(veiculo):
             </div>
         </div>
     </div>
+    
+    <script>
+        // Armazenar dados do veículo para o modal
+        if (!window.vehicleData) window.vehicleData = {{}};
+        window.vehicleData[{veiculo['id']}] = {detalhes_info};
+    </script>
     '''
     return card_html
 
@@ -265,7 +272,7 @@ def get_full_html_page(veiculos_filtrados, filtros_html):
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Garagem Multimarcas - </title>
+        <title>Garagem Multimarcas - Catálogo Premium</title>
         <style>
             /* Reset e configurações base */
             * {{
@@ -599,7 +606,7 @@ def get_full_html_page(veiculos_filtrados, filtros_html):
                 font-size: 12px;
             }}
             
-            /* Modal de detalhes */
+            /* Modal de detalhes melhorado */
             .modal {{
                 display: none;
                 position: fixed;
@@ -608,45 +615,220 @@ def get_full_html_page(veiculos_filtrados, filtros_html):
                 top: 0;
                 width: 100%;
                 height: 100%;
-                background-color: rgba(0,0,0,0.8);
+                background-color: rgba(0,0,0,0.95);
+                backdrop-filter: blur(5px);
             }}
             
             .modal-content {{
                 background: #1a1a1a;
-                margin: 5% auto;
-                padding: 30px;
+                margin: 2% auto;
+                padding: 0;
                 border-radius: 16px;
                 border: 2px solid #e88e1b;
-                width: 90%;
-                max-width: 600px;
+                width: 95%;
+                max-width: 1200px;
                 position: relative;
+                max-height: 95vh;
+                overflow-y: auto;
             }}
             
             .close {{
                 color: #e88e1b;
                 float: right;
-                font-size: 28px;
+                font-size: 32px;
                 font-weight: bold;
                 cursor: pointer;
                 position: absolute;
                 right: 20px;
                 top: 15px;
+                z-index: 1001;
+                background: rgba(26, 26, 26, 0.9);
+                border-radius: 50%;
+                width: 40px;
+                height: 40px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
             }}
             
             .close:hover {{
                 color: #f4c220;
+                background: rgba(26, 26, 26, 1);
+            }}
+            
+            .details-container {{
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 0;
+            }}
+            
+            .image-section {{
+                background: #2d2d2d;
+                border-radius: 14px 0 0 14px;
+                padding: 30px;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                min-height: 600px;
+            }}
+            
+            .main-image {{
+                width: 100%;
+                max-width: 600px;
+                height: auto;
+                max-height: 500px;
+                object-fit: contain;
+                border-radius: 12px;
+                box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+            }}
+            
+            .image-placeholder {{
+                width: 100%;
+                max-width: 600px;
+                height: 400px;
+                background: linear-gradient(135deg, #333, #555);
+                border-radius: 12px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: #e88e1b;
+                font-size: 48px;
+            }}
+            
+            .info-section {{
+                padding: 40px;
+                display: flex;
+                flex-direction: column;
+                justify-content: space-between;
             }}
             
             .details-title {{
                 color: #e88e1b;
-                margin-bottom: 20px;
-                text-align: center;
+                font-size: 28px;
+                font-weight: 800;
+                margin-bottom: 10px;
             }}
             
-            .details-content {{
-                white-space: pre-line;
-                line-height: 1.8;
+            .details-subtitle {{
                 color: #b0b0b0;
+                font-size: 18px;
+                margin-bottom: 30px;
+            }}
+            
+            .details-grid {{
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 20px;
+                margin-bottom: 30px;
+            }}
+            
+            .detail-item {{
+                display: flex;
+                flex-direction: column;
+                gap: 5px;
+            }}
+            
+            .detail-label {{
+                font-size: 12px;
+                color: #888;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+            }}
+            
+            .detail-value {{
+                font-size: 16px;
+                font-weight: 600;
+                color: #ffffff;
+            }}
+            
+            .price-section {{
+                background: linear-gradient(135deg, #e88e1b, #f4c220);
+                padding: 25px;
+                border-radius: 12px;
+                text-align: center;
+                margin: 20px 0;
+            }}
+            
+            .main-price {{
+                font-size: 32px;
+                font-weight: 800;
+                color: #1a1a1a;
+                margin-bottom: 10px;
+            }}
+            
+            .financing-info {{
+                color: #1a1a1a;
+                font-size: 14px;
+                font-weight: 600;
+            }}
+            
+            .actions-section {{
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 15px;
+                margin-top: 20px;
+            }}
+            
+            .btn-modal-whatsapp {{
+                background: #25D366;
+                color: white;
+                border: none;
+                padding: 15px;
+                border-radius: 8px;
+                font-weight: 700;
+                font-size: 16px;
+                text-decoration: none;
+                text-align: center;
+                transition: all 0.3s ease;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 8px;
+            }}
+            
+            .btn-modal-whatsapp:hover {{
+                background: #20bd5c;
+                transform: translateY(-2px);
+            }}
+            
+            .btn-modal-call {{
+                background: #e88e1b;
+                color: #1a1a1a;
+                border: none;
+                padding: 15px;
+                border-radius: 8px;
+                font-weight: 700;
+                font-size: 16px;
+                text-decoration: none;
+                text-align: center;
+                transition: all 0.3s ease;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 8px;
+            }}
+            
+            .btn-modal-call:hover {{
+                background: #f4c220;
+                transform: translateY(-2px);
+            }}
+            
+            .observations {{
+                background: #2d2d2d;
+                padding: 20px;
+                border-radius: 8px;
+                margin-top: 20px;
+            }}
+            
+            .observations h4 {{
+                color: #e88e1b;
+                margin-bottom: 10px;
+            }}
+            
+            .observations p {{
+                color: #b0b0b0;
+                line-height: 1.6;
             }}
             
             /* Responsividade */
@@ -665,8 +847,35 @@ def get_full_html_page(veiculos_filtrados, filtros_html):
                 }}
                 
                 .modal-content {{
-                    width: 95%;
-                    margin: 10% auto;
+                    width: 98%;
+                    margin: 1% auto;
+                }}
+                
+                .details-container {{
+                    grid-template-columns: 1fr;
+                }}
+                
+                .image-section {{
+                    border-radius: 14px 14px 0 0;
+                    min-height: 300px;
+                    padding: 20px;
+                }}
+                
+                .main-image {{
+                    max-height: 300px;
+                }}
+                
+                .info-section {{
+                    padding: 25px;
+                }}
+                
+                .details-grid {{
+                    grid-template-columns: 1fr;
+                    gap: 15px;
+                }}
+                
+                .actions-section {{
+                    grid-template-columns: 1fr;
                 }}
             }}
         </style>
@@ -680,13 +889,14 @@ def get_full_html_page(veiculos_filtrados, filtros_html):
             <div class="container">
                 <div class="header-content">
                     {logo_html}
+                    <div class="brand-title">GARAGEM MULTIMARCAS</div>
                 </div>
             </div>
         </div>
         
         <div class="hero-section">
             <div class="container">
-                <h1 class="hero-title">GARAGEM MULTIMARCASM</h1>
+                <h1 class="hero-title">CATÁLOGO PREMIUM</h1>
                 <p class="hero-subtitle">Os melhores veículos novos e seminovos com condições especiais de pagamento</p>
             </div>
         </div>
@@ -699,12 +909,46 @@ def get_full_html_page(veiculos_filtrados, filtros_html):
             {vehicles_grid_html}
         </div>
         
-        <!-- Modal para detalhes -->
+        <!-- Modal para detalhes melhorado -->
         <div id="detailsModal" class="modal">
             <div class="modal-content">
                 <span class="close" onclick="closeModal()">&times;</span>
-                <h2 class="details-title">🚗 Detalhes do Veículo</h2>
-                <div id="modalBody" class="details-content"></div>
+                <div class="details-container">
+                    <div class="image-section">
+                        <div id="modalImageContainer">
+                            <!-- Imagem será carregada aqui via JavaScript -->
+                        </div>
+                    </div>
+                    <div class="info-section">
+                        <div>
+                            <h2 id="modalTitle" class="details-title"></h2>
+                            <p id="modalSubtitle" class="details-subtitle"></p>
+                            
+                            <div class="details-grid" id="modalDetails">
+                                <!-- Detalhes serão carregados aqui via JavaScript -->
+                            </div>
+                            
+                            <div class="price-section">
+                                <div id="modalPrice" class="main-price"></div>
+                                <div class="financing-info" id="modalFinancing"></div>
+                            </div>
+                            
+                            <div class="observations" id="modalObservations" style="display: none;">
+                                <h4>📝 Observações</h4>
+                                <p id="modalObservationsText"></p>
+                            </div>
+                        </div>
+                        
+                        <div class="actions-section">
+                            <a href="#" id="modalWhatsapp" class="btn-modal-whatsapp" target="_blank">
+                                💬 WhatsApp
+                            </a>
+                            <a href="tel:+5584981885353" class="btn-modal-call">
+                                📞 Ligar Agora
+                            </a>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
         
@@ -717,22 +961,104 @@ def get_full_html_page(veiculos_filtrados, filtros_html):
         </div>
         
         <script>
-            function showVehicleDetails(vehicleId, details) {{
-                document.getElementById('modalBody').textContent = details;
+            function showVehicleDetails(vehicleId) {{
+                const vehicle = window.vehicleData[vehicleId];
+                if (!vehicle) return;
+                
+                // Atualizar título e subtítulo
+                document.getElementById('modalTitle').textContent = vehicle.marca + ' ' + vehicle.modelo;
+                document.getElementById('modalSubtitle').textContent = vehicle.ano + ' • ' + vehicle.cor + ' • ' + vehicle.km;
+                
+                // Atualizar imagem
+                const imageContainer = document.getElementById('modalImageContainer');
+                if (vehicle.foto_base64) {{
+                    imageContainer.innerHTML = `<img src="data:image/jpeg;base64,${vehicle.foto_base64}" class="main-image" alt="${vehicle.marca} ${vehicle.modelo}">`;
+                }} else {{
+                    imageContainer.innerHTML = `<div class="image-placeholder">🚗</div>`;
+                }}
+                
+                // Atualizar detalhes
+                const detailsGrid = document.getElementById('modalDetails');
+                detailsGrid.innerHTML = `
+                    <div class="detail-item">
+                        <div class="detail-label">Marca</div>
+                        <div class="detail-value">${vehicle.marca}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Modelo</div>
+                        <div class="detail-value">${vehicle.modelo}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Ano</div>
+                        <div class="detail-value">${vehicle.ano}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Cor</div>
+                        <div class="detail-value">${vehicle.cor}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Quilometragem</div>
+                        <div class="detail-value">${vehicle.km}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Câmbio</div>
+                        <div class="detail-value">${vehicle.cambio}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Combustível</div>
+                        <div class="detail-value">${vehicle.combustivel}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Portas</div>
+                        <div class="detail-value">${vehicle.portas}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Placa</div>
+                        <div class="detail-value">${vehicle.placa}</div>
+                    </div>
+                `;
+                
+                // Atualizar preço e financiamento
+                document.getElementById('modalPrice').textContent = vehicle.preco;
+                document.getElementById('modalFinancing').innerHTML = `
+                    Entrada: <strong>${vehicle.entrada}</strong> • 48x de <strong>${vehicle.parcela}</strong>
+                `;
+                
+                // Atualizar observações se existirem
+                if (vehicle.observacoes) {{
+                    document.getElementById('modalObservations').style.display = 'block';
+                    document.getElementById('modalObservationsText').textContent = vehicle.observacoes;
+                }} else {{
+                    document.getElementById('modalObservations').style.display = 'none';
+                }}
+                
+                // Atualizar link do WhatsApp
+                const whatsappText = `Olá! Gostaria de mais informações sobre o ${vehicle.marca} ${vehicle.modelo} ${vehicle.ano} - ${vehicle.preco}`;
+                document.getElementById('modalWhatsapp').href = `https://wa.me/5584981885353?text=${{encodeURIComponent(whatsappText)}}`;
+                
+                // Mostrar modal
                 document.getElementById('detailsModal').style.display = 'block';
+                document.body.style.overflow = 'hidden';
             }}
             
             function closeModal() {{
                 document.getElementById('detailsModal').style.display = 'none';
+                document.body.style.overflow = 'auto';
             }}
             
-            // Fechar modal ao clicar fora
+            // Fechar modal ao clicar fora ou pressionar ESC
             window.onclick = function(event) {{
                 const modal = document.getElementById('detailsModal');
                 if (event.target === modal) {{
                     closeModal();
                 }}
             }}
+            
+            document.addEventListener('keydown', function(event) {{
+                if (event.key === 'Escape') {{
+                    closeModal();
+                }}
+            }});
             
             // Fallback para imagens que não carregam
             document.addEventListener('DOMContentLoaded', function() {{
@@ -741,7 +1067,7 @@ def get_full_html_page(veiculos_filtrados, filtros_html):
                     img.onerror = function() {{
                         const altText = this.alt || 'Veículo';
                         const marcaModelo = altText.split(' ').slice(0, 2).join('+');
-                        const cor = '3498db'; // Cor padrão
+                        const cor = '3498db';
                         this.src = `https://via.placeholder.com/400x250/${{cor}}/ffffff?text=${{marcaModelo}}`;
                     }};
                 }});
