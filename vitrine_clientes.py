@@ -673,21 +673,22 @@ def get_full_html_page(veiculos_filtrados, filtros_html):
     </head>
     <body>
         <div class="contact-bar">
-            📞 (84) 93062-2434 • 📍 Mossoró/RN • ⏰ Seg-Sex: 8h-17:20h Sab:8-12h
+            ⭐ CONDIÇÕES ESPECIAIS • 📞 (84) 98188-5353 • 📍 Mossoró/RN • ⏰ Seg-Sex: 8h-18h
         </div>
         
         <div class="header">
             <div class="container">
                 <div class="header-content">
                     {logo_html}
+                    <div class="brand-title">GARAGEM MULTIMARCAS</div>
                 </div>
             </div>
         </div>
         
         <div class="hero-section">
             <div class="container">
-                <h1 class="hero-title">GARAGEM MULTIMARCAS</h1>
-                <p class="hero-subtitle">Os melhores veículos novos e seminovos</p>
+                <h1 class="hero-title">CATÁLOGO PREMIUM</h1>
+                <p class="hero-subtitle">Os melhores veículos novos e seminovos com condições especiais de pagamento</p>
             </div>
         </div>
         
@@ -711,8 +712,8 @@ def get_full_html_page(veiculos_filtrados, filtros_html):
         <div class="footer">
             <div class="container">
                 <div class="footer-brand">GARAGEM MULTIMARCAS</div>
-                <div class="footer-contact">📞 (84) 93062-2434 / (84) 98188-5353 • 📍 Rua José Damião, 61 Santo Antonio/Área Urbana - Mossoró/RN</div>
-                <div class="footer-copyright">© Powered by Júlio Aguiar</div>
+                <div class="footer-contact">📞 (84) 98188-5353 • 📍 Mossoró/RN</div>
+                <div class="footer-copyright">© 2024 Garagem Multimarcas - Todos os direitos reservados</div>
             </div>
         </div>
         
@@ -772,15 +773,6 @@ def main():
     </style>
     """, unsafe_allow_html=True)
     
-    # Gerar HTML completo
-    filtros_html = f"""
-    <div class="filters-section">
-        <div class="filter-title">🔍 FILTRAR VEÍCULOS</div>
-        <div style="color: #b0b0b0; text-align: center; margin-bottom: 20px;">
-            Filtros aplicados: {marca_filtro} • {ano_filtro} • Até R$ {preco_filtro:,}
-        </div>
-    </div>
-    """
     col1, col2, col3, col4 = st.columns([2, 2, 2, 1])
     
     with col1:
@@ -829,6 +821,17 @@ def main():
             veiculos_filtrados.sort(key=lambda x: x['km'])
         else:
             veiculos_filtrados.sort(key=lambda x: x['data_cadastro'], reverse=True)
+    
+    # Gerar HTML completo
+    filtros_html = f"""
+    <div class="filters-section">
+        <div class="filter-title">🔍 FILTRAR VEÍCULOS</div>
+        <div style="color: #b0b0b0; text-align: center; margin-bottom: 20px;">
+            Filtros aplicados: {marca_filtro} • {ano_filtro} • Até R$ {preco_filtro:,}
+        </div>
+    </div>
+    """
+    
     full_html = get_full_html_page(veiculos_filtrados, filtros_html)
     
     # Renderizar HTML usando components
