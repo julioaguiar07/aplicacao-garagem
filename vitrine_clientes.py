@@ -772,7 +772,29 @@ def main():
     }
     </style>
     """, unsafe_allow_html=True)
-    
+
+    # Aplicar filtros
+    veiculos_filtrados = []
+    if veiculos:
+        veiculos_filtrados = veiculos.copy()
+        
+        if marca_filtro != "Todas as marcas":
+            veiculos_filtrados = [v for v in veiculos_filtrados if v['marca'] == marca_filtro]
+        
+        if ano_filtro != "Todos os anos":
+            veiculos_filtrados = [v for v in veiculos_filtrados if v['ano'] == ano_filtro]
+        
+        veiculos_filtrados = [v for v in veiculos_filtrados if v['preco_venda'] <= preco_filtro]
+        
+        if ordenacao == "Menor preço":
+            veiculos_filtrados.sort(key=lambda x: x['preco_venda'])
+        elif ordenacao == "Maior preço":
+            veiculos_filtrados.sort(key=lambda x: x['preco_venda'], reverse=True)
+        elif ordenacao == "Menor KM":
+            veiculos_filtrados.sort(key=lambda x: x['km'])
+        else:
+            veiculos_filtrados.sort(key=lambda x: x['data_cadastro'], reverse=True)
+            
     col1, col2, col3, col4 = st.columns([2, 2, 2, 1])
     
     with col1:
@@ -799,29 +821,6 @@ def main():
     
     with col4:
         ordenacao = st.selectbox("🔃 Ordenar", ["Mais recentes", "Menor preço", "Maior preço", "Menor KM"])
-    
-    # Aplicar filtros
-    veiculos_filtrados = []
-    if veiculos:
-        veiculos_filtrados = veiculos.copy()
-        
-        if marca_filtro != "Todas as marcas":
-            veiculos_filtrados = [v for v in veiculos_filtrados if v['marca'] == marca_filtro]
-        
-        if ano_filtro != "Todos os anos":
-            veiculos_filtrados = [v for v in veiculos_filtrados if v['ano'] == ano_filtro]
-        
-        veiculos_filtrados = [v for v in veiculos_filtrados if v['preco_venda'] <= preco_filtro]
-        
-        if ordenacao == "Menor preço":
-            veiculos_filtrados.sort(key=lambda x: x['preco_venda'])
-        elif ordenacao == "Maior preço":
-            veiculos_filtrados.sort(key=lambda x: x['preco_venda'], reverse=True)
-        elif ordenacao == "Menor KM":
-            veiculos_filtrados.sort(key=lambda x: x['km'])
-        else:
-            veiculos_filtrados.sort(key=lambda x: x['data_cadastro'], reverse=True)
-    
     # Gerar HTML completo
     filtros_html = f"""
     <div class="filters-section">
