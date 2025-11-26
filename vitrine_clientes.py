@@ -527,14 +527,12 @@ def main():
         else:
             st.markdown('<div style="font-size: 48px;">🚗</div>', unsafe_allow_html=True)
     
-    with col_title:
-        st.markdown('<div style="font-size: 32px; font-weight: 800; color: #d4af37; margin-top: 10px;">GARAGEM MULTIMARCAS</div>', unsafe_allow_html=True)
     
     # Hero Section
     st.markdown('''
     <div class="hero-section">
-        <h1 style="color: white; font-size: 36px; font-weight: 800; margin-bottom: 10px;">
-            CATÁLOGO PREMIUM
+        <h1 style="color: #d4af37; font-size: 36px; font-weight: 800; margin-bottom: 10px;">
+            GARAGEM MULTIMARCAS
         </h1>
         <p style="color: #ccc; font-size: 18px; margin-bottom: 20px;">
             Os melhores veículos novos e seminovos com condições especiais
