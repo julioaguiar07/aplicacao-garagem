@@ -41,13 +41,6 @@ st.markdown("""
         background: transparent;
     }
     
-    .vehicle-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-        gap: 2rem;
-        margin: 2rem 0;
-    }
-    
     .vehicle-card {
         background: rgba(255, 255, 255, 0.05);
         backdrop-filter: blur(20px);
@@ -56,6 +49,7 @@ st.markdown("""
         padding: 1.5rem;
         transition: all 0.3s ease;
         height: 100%;
+        margin-bottom: 2rem;
     }
     
     .vehicle-card:hover {
@@ -299,67 +293,61 @@ def generate_vehicle_image(veiculo):
     
     return f"https://via.placeholder.com/400x250/{color_hex}/ffffff?text={texto}"
 
-def render_vehicle_card_html(veiculo, index):
-    """Renderiza card completo em HTML puro"""
+def render_vehicle_card(veiculo, index):
+    """Renderiza card do veículo usando apenas Streamlit"""
     image_url = generate_vehicle_image(veiculo)
-    
-    # Determinar badges
-    badges_html = ""
-    idade = datetime.now().year - veiculo['ano']
-    if idade <= 1:
-        badges_html += '<div class="badge badge-new">🆕 NOVO</div>'
-    if veiculo['km'] < 30000:
-        badges_html += '<div class="badge badge-lowkm">🛣️ BAIXA KM</div>'
     
     # Calcular parcelas
     entrada = veiculo['preco_venda'] * 0.2
     parcelas = (veiculo['preco_venda'] - entrada) / 48
     
-    # Gerar HTML completo
-    html = f'''
-    <div class="vehicle-card">
-        <img src="{image_url}" class="vehicle-image" alt="{veiculo['marca']} {veiculo['modelo']}">
-        {badges_html}
-        <div class="vehicle-title">{veiculo['marca']} {veiculo['modelo']}</div>
-        <div class="vehicle-subtitle">
-            📅 {veiculo['ano']} • 🛣️ {veiculo['km']:,} km • 🎨 {veiculo['cor']}
-        </div>
+    # Renderizar card usando apenas Streamlit
+    with st.container():
+        st.markdown(f'<div class="vehicle-card">', unsafe_allow_html=True)
         
-        <div class="vehicle-features">
-            <span class="feature-tag">⚙️ {veiculo['cambio']}</span>
-            <span class="feature-tag">⛽ {veiculo['combustivel']}</span>
-            <span class="feature-tag">🚪 {veiculo['portas']} portas</span>
-        </div>
+        # Imagem
+        st.markdown(f'<img src="{image_url}" class="vehicle-image" alt="{veiculo["marca"]} {veiculo["modelo"]}">', unsafe_allow_html=True)
         
+        # Badges
+        idade = datetime.now().year - veiculo['ano']
+        if idade <= 1:
+            st.markdown('<div class="badge badge-new">🆕 NOVO</div>', unsafe_allow_html=True)
+        if veiculo['km'] < 30000:
+            st.markdown('<div class="badge badge-lowkm">🛣️ BAIXA KM</div>', unsafe_allow_html=True)
+        
+        # Título e informações
+        st.markdown(f'<div class="vehicle-title">{veiculo["marca"]} {veiculo["modelo"]}</div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="vehicle-subtitle">📅 {veiculo["ano"]} • 🛣️ {veiculo["km"]:,} km • 🎨 {veiculo["cor"]}</div>', unsafe_allow_html=True)
+        
+        # Features - usando columns do Streamlit de forma simples
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.markdown(f'<div class="feature-tag">⚙️ {veiculo["cambio"]}</div>', unsafe_allow_html=True)
+        with col2:
+            st.markdown(f'<div class="feature-tag">⛽ {veiculo["combustivel"]}</div>', unsafe_allow_html=True)
+        with col3:
+            st.markdown(f'<div class="feature-tag">🚪 {veiculo["portas"]}</div>', unsafe_allow_html=True)
+        
+        # Preço
+        st.markdown(f'''
         <div class="price-section">
             <div class="price-label">PREÇO À VISTA</div>
-            <div class="vehicle-price">R$ {veiculo['preco_venda']:,.2f}</div>
+            <div class="vehicle-price">R$ {veiculo["preco_venda"]:,.2f}</div>
             <div class="financing-info">Ou R$ {entrada:,.2f} + 48x de R$ {parcelas:,.2f}</div>
         </div>
+        ''', unsafe_allow_html=True)
         
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-top: 1rem;">
-            <button onclick="document.getElementById('details_{index}').click()" style="
-                background: linear-gradient(135deg, #e88e1b, #f4c220);
-                border: none;
-                border-radius: 10px;
-                padding: 12px;
-                font-weight: 600;
-                color: white;
-                cursor: pointer;
-                transition: all 0.3s ease;
-            " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 5px 15px rgba(232, 142, 27, 0.4)';" 
-            onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">
-                🔍 Ver Detalhes
-            </button>
-            
-            <a href="https://wa.me/5584981885353?text=Olá! Gostaria de mais informações sobre o {veiculo['marca']} {veiculo['modelo']} {veiculo['ano']} - R$ {veiculo['preco_venda']:,.2f}" 
-               target="_blank" class="btn-whatsapp">
-                💬 WhatsApp
-            </a>
-        </div>
-    </div>
-    '''
-    return html
+        # Botões - usando columns do Streamlit
+        btn_col1, btn_col2 = st.columns(2)
+        with btn_col1:
+            if st.button("🔍 Ver Detalhes", key=f"details_{veiculo['id']}_{index}", use_container_width=True):
+                st.session_state[f"modal_{veiculo['id']}"] = True
+        with btn_col2:
+            whatsapp_msg = f"Olá! Gostaria de mais informações sobre o {veiculo['marca']} {veiculo['modelo']} {veiculo['ano']} - R$ {veiculo['preco_venda']:,.2f}"
+            whatsapp_url = f"https://wa.me/5584981885353?text={whatsapp_msg.replace(' ', '%20')}"
+            st.markdown(f'<a href="{whatsapp_url}" target="_blank" class="btn-whatsapp">💬 WhatsApp</a>', unsafe_allow_html=True)
+        
+        st.markdown('</div>', unsafe_allow_html=True)
 
 def render_filters(veiculos):
     """Renderiza filtros na sidebar"""
@@ -474,7 +462,7 @@ def main():
         else:
             veiculos_filtrados = veiculos
         
-        # Exibir veículos
+        # Exibir veículos em grid usando columns do Streamlit
         if not veiculos_filtrados:
             st.info("""
             **🔍 Nenhum veículo encontrado**
@@ -486,13 +474,14 @@ def main():
         else:
             st.markdown(f"**Encontramos {len(veiculos_filtrados)} veículo(s)**")
             
-            # Grid de veículos usando HTML puro
-            html_grid = '<div class="vehicle-grid">'
-            for i, veiculo in enumerate(veiculos_filtrados):
-                html_grid += render_vehicle_card_html(veiculo, i)
-            html_grid += '</div>'
-            
-            st.markdown(html_grid, unsafe_allow_html=True)
+            # Criar grid com columns do Streamlit
+            cols_per_row = 3
+            for i in range(0, len(veiculos_filtrados), cols_per_row):
+                cols = st.columns(cols_per_row)
+                for j in range(cols_per_row):
+                    if i + j < len(veiculos_filtrados):
+                        with cols[j]:
+                            render_vehicle_card(veiculos_filtrados[i + j], i + j)
     
     # Footer
     st.markdown("---")
