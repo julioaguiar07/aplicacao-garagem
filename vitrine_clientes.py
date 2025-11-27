@@ -6,6 +6,7 @@ import os
 from PIL import Image
 import base64
 import io
+from streamlit.components.v1 import html
 
 # =============================================
 # CONFIGURAÇÃO DA PÁGINA
@@ -13,7 +14,7 @@ import io
 
 st.set_page_config(
     page_title="Garagem Multimarcas",
-    page_icon="logo-icon.png",
+     page_icon="logo-icon.png",
     layout="wide",
     initial_sidebar_state="collapsed"
 )
@@ -89,6 +90,7 @@ class LuxuryDatabase:
                         else:
                             veiculo['foto_base64'] = None
                     except Exception as e:
+                        print(f"Erro ao processar foto: {e}")
                         veiculo['foto_base64'] = None
                 else:
                     veiculo['foto_base64'] = None
@@ -98,6 +100,7 @@ class LuxuryDatabase:
             return veiculos
             
         except Exception as e:
+            print(f"Erro ao buscar veículos: {e}")
             return []
         finally:
             if conn:
@@ -129,377 +132,19 @@ def load_logo():
     except:
         return None
 
-# =============================================
-# CSS COMPLETO - DESIGN PROFISSIONAL
-# =============================================
-
-def inject_css():
-    """Injeta todo o CSS necessário"""
-    st.markdown("""
-    <style>
-        /* Reset e configurações base */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        .stApp {
-            background: #0f0f0f;
-            color: #ffffff;
-            font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
-            line-height: 1.6;
-        }
-        
-        .main .block-container {
-            max-width: 100% !important;
-            padding-left: 2rem;
-            padding-right: 2rem;
-            background: transparent;
-        }
-        
-        /* Remove scrollbars desnecessários */
-        .stApp > header {
-            display: none;
-        }
-        
-        #MainMenu {visibility: hidden;}
-        footer {visibility: hidden;}
-        header {visibility: hidden;}
-        
-        /* Header */
-        .contact-bar {
-            background: #e88e1b;
-            color: #1a1a1a;
-            padding: 12px 0;
-            text-align: center;
-            font-weight: 700;
-            font-size: 14px;
-            width: 100%;
-        }
-        
-        .header {
-            background: #1a1a1a;
-            padding: 20px 0;
-            border-bottom: 3px solid #e88e1b;
-            width: 100%;
-        }
-        
-        .header-content {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        
-        .logo {
-            height: 60px;
-            width: auto;
-        }
-        
-        .logo-placeholder {
-            font-size: 40px;
-            color: #e88e1b;
-        }
-        
-        /* Hero Section */
-        .hero-section {
-            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
-            padding: 50px 0;
-            text-align: center;
-            margin-bottom: 30px;
-            width: 100%;
-        }
-        
-        .hero-title {
-            font-size: 42px;
-            font-weight: 800;
-            margin-bottom: 15px;
-            background: linear-gradient(135deg, #e88e1b, #f4c220);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-        
-        .hero-subtitle {
-            font-size: 18px;
-            color: #b0b0b0;
-            max-width: 600px;
-            margin: 0 auto;
-        }
-        
-        /* Filtros */
-        .filters-section {
-            background: #1a1a1a;
-            padding: 30px;
-            border-radius: 16px;
-            margin: 40px 0;
-            border: 1px solid #333;
-        }
-        
-        .filter-title {
-            font-size: 24px;
-            font-weight: 700;
-            color: #e88e1b;
-            margin-bottom: 25px;
-            text-align: center;
-        }
-        
-        /* Grid de Cards */
-        .vehicles-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 25px;
-            margin: 40px 0;
-            width: 100%;
-        }
-        
-        /* Card do veículo */
-        .vehicle-card {
-            background: #1a1a1a;
-            border-radius: 16px;
-            border: 1px solid #333;
-            transition: all 0.3s ease;
-            overflow: hidden;
-            position: relative;
-            height: fit-content;
-        }
-        
-        .vehicle-card:hover {
-            transform: translateY(-5px);
-            border-color: #e88e1b;
-            box-shadow: 0 10px 30px rgba(232, 142, 27, 0.2);
-        }
-        
-        .image-container {
-            position: relative;
-            width: 100%;
-            height: 200px;
-            overflow: hidden;
-            background: #2d2d2d;
-        }
-        
-        .vehicle-image {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            transition: transform 0.3s ease;
-        }
-        
-        .vehicle-card:hover .vehicle-image {
-            transform: scale(1.05);
-        }
-        
-        .badges-container {
-            position: absolute;
-            top: 12px;
-            left: 12px;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-        
-        .badge {
-            padding: 6px 12px;
-            border-radius: 12px;
-            font-size: 11px;
-            font-weight: 800;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        
-        .badge-new {
-            background: #27ae60;
-            color: white;
-        }
-        
-        .badge-lowkm {
-            background: #e88e1b;
-            color: #1a1a1a;
-        }
-        
-        .card-content {
-            padding: 20px;
-        }
-        
-        .vehicle-price {
-            font-size: 22px;
-            font-weight: 800;
-            color: #e88e1b;
-            margin-bottom: 8px;
-        }
-        
-        .vehicle-name {
-            font-size: 18px;
-            font-weight: 600;
-            color: #ffffff;
-            margin-bottom: 12px;
-            line-height: 1.3;
-        }
-        
-        .vehicle-details {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 12px;
-            font-size: 14px;
-            color: #b0b0b0;
-        }
-        
-        .vehicle-year {
-            font-weight: 600;
-            color: #e88e1b;
-        }
-        
-        .vehicle-km {
-            font-weight: 500;
-        }
-        
-        .vehicle-specs {
-            display: flex;
-            gap: 15px;
-            margin-bottom: 15px;
-            font-size: 13px;
-            color: #888;
-        }
-        
-        .spec-item {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-        
-        .price-info {
-            margin-bottom: 15px;
-        }
-        
-        .parcel-info {
-            font-size: 12px;
-            color: #888;
-            text-align: center;
-        }
-        
-        .btn-container {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-        }
-        
-        .btn-details {
-            background: #333;
-            color: white;
-            border: none;
-            padding: 10px;
-            border-radius: 8px;
-            font-weight: 600;
-            font-size: 12px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            text-align: center;
-            text-decoration: none;
-            display: block;
-        }
-        
-        .btn-details:hover {
-            background: #444;
-        }
-        
-        .btn-whatsapp {
-            background: #25D366;
-            color: white;
-            border: none;
-            padding: 10px;
-            border-radius: 8px;
-            font-weight: 600;
-            font-size: 12px;
-            text-decoration: none;
-            display: block;
-            text-align: center;
-            transition: all 0.3s ease;
-        }
-        
-        .btn-whatsapp:hover {
-            background: #20bd5c;
-        }
-        
-        /* Contador */
-        .vehicle-counter {
-            background: #e88e1b;
-            color: #1a1a1a;
-            padding: 12px 24px;
-            border-radius: 25px;
-            font-weight: 800;
-            font-size: 14px;
-            display: inline-block;
-            margin-bottom: 20px;
-        }
-        
-        /* Sem veículos */
-        .no-vehicles {
-            text-align: center;
-            padding: 80px 20px;
-            color: #888;
-        }
-        
-        .no-vehicles-icon {
-            font-size: 64px;
-            margin-bottom: 20px;
-        }
-        
-        .no-vehicles h3 {
-            color: #e88e1b;
-            margin-bottom: 10px;
-        }
-        
-        /* Footer */
-        .footer {
-            background: #1a1a1a;
-            padding: 50px 0 30px;
-            margin-top: 60px;
-            border-top: 1px solid #333;
-            text-align: center;
-        }
-        
-        .footer-brand {
-            font-size: 24px;
-            font-weight: 800;
-            color: #e88e1b;
-            margin-bottom: 10px;
-        }
-        
-        .footer-contact {
-            color: #888;
-            margin-bottom: 20px;
-        }
-        
-        .footer-copyright {
-            color: #666;
-            font-size: 12px;
-        }
-        
-        /* Responsividade */
-        @media (max-width: 768px) {
-            .vehicles-grid {
-                grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-                gap: 20px;
-            }
-            
-            .hero-title {
-                font-size: 32px;
-            }
-        }
-    </style>
-    """, unsafe_allow_html=True)
-
 def create_vehicle_card_html(veiculo):
     """Cria HTML de um card de veículo"""
     
-    # Determinar imagem
-    image_src = generate_placeholder_image(veiculo)
+    # CORREÇÃO: Verificar se a foto base64 é válida
+    image_src = generate_placeholder_image(veiculo)  # Default para placeholder
+    
     if veiculo.get('foto_base64'):
         try:
+            # Testar se a base64 é válida
             base64.b64decode(veiculo['foto_base64'])
             image_src = f"data:image/jpeg;base64,{veiculo['foto_base64']}"
         except:
+            # Se base64 for inválido, usar placeholder
             image_src = generate_placeholder_image(veiculo)
     
     # Determinar badges
@@ -518,6 +163,24 @@ def create_vehicle_card_html(veiculo):
     preco_formatado = f"R$ {veiculo['preco_venda']:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
     parcela_formatada = f"R$ {parcela:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
     km_formatado = f"{veiculo['km']:,} km".replace(',', '.')
+    
+    # CORREÇÃO: Adicionar mais informações nos detalhes
+    detalhes_info = f"""
+    Marca: {veiculo['marca']}
+    Modelo: {veiculo['modelo']}
+    Ano: {veiculo['ano']}
+    Cor: {veiculo['cor']}
+    KM: {km_formatado}
+    Câmbio: {veiculo['cambio']}
+    Combustível: {veiculo['combustivel']}
+    Portas: {veiculo['portas']}
+    Preço: {preco_formatado}
+    Placa: {veiculo['placa'] or 'Não informada'}
+    
+    Financiamento:
+    • Entrada: R$ {entrada:,.2f}
+    • 48x de: {parcela_formatada}
+    """
     
     card_html = f'''
     <div class="vehicle-card">
@@ -548,7 +211,7 @@ def create_vehicle_card_html(veiculo):
             </div>
             
             <div class="btn-container">
-                <button class="btn-details" onclick="showVehicleDetails({veiculo['id']})">
+                <button class="btn-details" onclick="showVehicleDetails({veiculo['id']}, `{detalhes_info.replace('`', "'")}`)">
                     🔍 Detalhes
                 </button>
                 <a href="https://wa.me/558430622434?text=Olá! Gostaria de informações sobre o {veiculo['marca']} {veiculo['modelo']} {veiculo['ano']} - Placa: {veiculo['placa']}" 
@@ -561,56 +224,554 @@ def create_vehicle_card_html(veiculo):
     '''
     return card_html
 
+def render_vehicle_grid_html(veiculos):
+    """Renderiza grid completo de veículos em HTML"""
+    if not veiculos:
+        return '''
+        <div class="no-vehicles">
+            <div class="no-vehicles-icon">🚗</div>
+            <h3>Nenhum veículo encontrado</h3>
+            <p>Tente ajustar os filtros para encontrar mais opções!</p>
+        </div>
+        '''
+    
+    grid_html = '<div class="vehicles-grid">'
+    for veiculo in veiculos:
+        grid_html += create_vehicle_card_html(veiculo)
+    grid_html += '</div>'
+    
+    return grid_html
+
+def get_full_html_page(veiculos_filtrados, filtros_html):
+    """Retorna a página HTML completa"""
+    
+    logo = load_logo()
+    logo_html = ''
+    if logo:
+        try:
+            # Converter logo para base64 corretamente
+            buffered = io.BytesIO()
+            logo.save(buffered, format="PNG")
+            logo_base64 = base64.b64encode(buffered.getvalue()).decode('utf-8')
+            logo_html = f'<img src="data:image/png;base64,{logo_base64}" class="logo" alt="Garagem Multimarcas">'
+        except Exception as e:
+            logo_html = '<div class="logo-placeholder">🚗</div>'
+    
+    vehicles_grid_html = render_vehicle_grid_html(veiculos_filtrados)
+    
+    full_html = f'''
+    <!DOCTYPE html>
+    <html lang="pt-BR">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Garagem Multimarcas</title>
+        <style>
+            /* Reset e configurações base */
+            * {{
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }}
+            
+            body {{
+                background: #0f0f0f;
+                color: #ffffff;
+                font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+                line-height: 1.6;
+            }}
+            
+            .container {{
+                max-width: 1400px;
+                margin: 0 auto;
+                padding: 0 20px;
+            }}
+            
+            /* Header */
+            .contact-bar {{
+                background: #e88e1b;
+                color: #1a1a1a;
+                padding: 12px 0;
+                text-align: center;
+                font-weight: 700;
+                font-size: 14px;
+            }}
+            
+            .header {{
+                background: #1a1a1a;
+                padding: 20px 0;
+                border-bottom: 3px solid #e88e1b;
+            }}
+            
+            .header-content {{
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+            }}
+            
+            .logo {{
+                height: 60px;
+                width: auto;
+            }}
+            
+            .logo-placeholder {{
+                font-size: 40px;
+                color: #e88e1b;
+            }}
+            
+            .brand-title {{
+                font-size: 32px;
+                font-weight: 800;
+                color: #e88e1b;
+                text-align: center;
+                flex: 1;
+            }}
+            
+            /* Hero Section */
+            .hero-section {{
+                background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+                padding: 50px 0;
+                text-align: center;
+                margin-bottom: 30px;
+            }}
+            
+            .hero-title {{
+                font-size: 42px;
+                font-weight: 800;
+                margin-bottom: 15px;
+                background: linear-gradient(135deg, #e88e1b, #f4c220);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+                background-clip: text;
+            }}
+            
+            .hero-subtitle {{
+                font-size: 18px;
+                color: #b0b0b0;
+                max-width: 600px;
+                margin: 0 auto;
+            }}
+            
+            /* Filtros */
+            .filters-section {{
+                background: #1a1a1a;
+                padding: 30px;
+                border-radius: 16px;
+                margin: 40px 0;
+                border: 1px solid #333;
+            }}
+            
+            .filter-title {{
+                font-size: 24px;
+                font-weight: 700;
+                color: #e88e1b;
+                margin-bottom: 25px;
+                text-align: center;
+            }}
+            
+            /* Grid de Cards */
+            .vehicles-grid {{
+                display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+                gap: 25px;
+                margin: 40px 0;
+            }}
+            
+            /* Card do veículo */
+            .vehicle-card {{
+                background: #1a1a1a;
+                border-radius: 16px;
+                border: 1px solid #333;
+                transition: all 0.3s ease;
+                overflow: hidden;
+                position: relative;
+            }}
+            
+            .vehicle-card:hover {{
+                transform: translateY(-5px);
+                border-color: #e88e1b;
+                box-shadow: 0 10px 30px rgba(232, 142, 27, 0.2);
+            }}
+            
+            .image-container {{
+                position: relative;
+                width: 100%;
+                height: 200px;
+                overflow: hidden;
+                background: #2d2d2d;
+            }}
+            
+            .vehicle-image {{
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+                transition: transform 0.3s ease;
+            }}
+            
+            .vehicle-card:hover .vehicle-image {{
+                transform: scale(1.05);
+            }}
+            
+            .badges-container {{
+                position: absolute;
+                top: 12px;
+                left: 12px;
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+            }}
+            
+            .badge {{
+                padding: 6px 12px;
+                border-radius: 12px;
+                font-size: 11px;
+                font-weight: 800;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+            }}
+            
+            .badge-new {{
+                background: #27ae60;
+                color: white;
+            }}
+            
+            .badge-lowkm {{
+                background: #e88e1b;
+                color: #1a1a1a;
+            }}
+            
+            .card-content {{
+                padding: 20px;
+            }}
+            
+            .vehicle-price {{
+                font-size: 22px;
+                font-weight: 800;
+                color: #e88e1b;
+                margin-bottom: 8px;
+            }}
+            
+            .vehicle-name {{
+                font-size: 18px;
+                font-weight: 600;
+                color: #ffffff;
+                margin-bottom: 12px;
+                line-height: 1.3;
+            }}
+            
+            .vehicle-details {{
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 12px;
+                font-size: 14px;
+                color: #b0b0b0;
+            }}
+            
+            .vehicle-year {{
+                font-weight: 600;
+                color: #e88e1b;
+            }}
+            
+            .vehicle-km {{
+                font-weight: 500;
+            }}
+            
+            .vehicle-specs {{
+                display: flex;
+                gap: 15px;
+                margin-bottom: 15px;
+                font-size: 13px;
+                color: #888;
+            }}
+            
+            .spec-item {{
+                display: flex;
+                align-items: center;
+                gap: 5px;
+            }}
+            
+            .price-info {{
+                margin-bottom: 15px;
+            }}
+            
+            .parcel-info {{
+                font-size: 12px;
+                color: #888;
+                text-align: center;
+            }}
+            
+            .btn-container {{
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 10px;
+            }}
+            
+            .btn-details {{
+                background: #333;
+                color: white;
+                border: none;
+                padding: 10px;
+                border-radius: 8px;
+                font-weight: 600;
+                font-size: 12px;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                text-align: center;
+                text-decoration: none;
+                display: block;
+            }}
+            
+            .btn-details:hover {{
+                background: #444;
+            }}
+            
+            .btn-whatsapp {{
+                background: #25D366;
+                color: white;
+                border: none;
+                padding: 10px;
+                border-radius: 8px;
+                font-weight: 600;
+                font-size: 12px;
+                text-decoration: none;
+                display: block;
+                text-align: center;
+                transition: all 0.3s ease;
+            }}
+            
+            .btn-whatsapp:hover {{
+                background: #20bd5c;
+            }}
+            
+            /* Contador */
+            .vehicle-counter {{
+                background: #e88e1b;
+                color: #1a1a1a;
+                padding: 12px 24px;
+                border-radius: 25px;
+                font-weight: 800;
+                font-size: 14px;
+                display: inline-block;
+                margin-bottom: 20px;
+            }}
+            
+            /* Sem veículos */
+            .no-vehicles {{
+                text-align: center;
+                padding: 80px 20px;
+                color: #888;
+            }}
+            
+            .no-vehicles-icon {{
+                font-size: 64px;
+                margin-bottom: 20px;
+            }}
+            
+            .no-vehicles h3 {{
+                color: #e88e1b;
+                margin-bottom: 10px;
+            }}
+            
+            /* Footer */
+            .footer {{
+                background: #1a1a1a;
+                padding: 50px 0 30px;
+                margin-top: 60px;
+                border-top: 1px solid #333;
+                text-align: center;
+            }}
+            
+            .footer-brand {{
+                font-size: 24px;
+                font-weight: 800;
+                color: #e88e1b;
+                margin-bottom: 10px;
+            }}
+            
+            .footer-contact {{
+                color: #888;
+                margin-bottom: 20px;
+            }}
+            
+            .footer-copyright {{
+                color: #666;
+                font-size: 12px;
+            }}
+            
+            /* Modal de detalhes */
+            .modal {{
+                display: none;
+                position: fixed;
+                z-index: 1000;
+                left: 0;
+                top: 0;
+                width: 100%;
+                height: 100%;
+                background-color: rgba(0,0,0,0.8);
+            }}
+            
+            .modal-content {{
+                background: #1a1a1a;
+                margin: 5% auto;
+                padding: 30px;
+                border-radius: 16px;
+                border: 2px solid #e88e1b;
+                width: 90%;
+                max-width: 600px;
+                position: relative;
+            }}
+            
+            .close {{
+                color: #e88e1b;
+                float: right;
+                font-size: 28px;
+                font-weight: bold;
+                cursor: pointer;
+                position: absolute;
+                right: 20px;
+                top: 15px;
+            }}
+            
+            .close:hover {{
+                color: #f4c220;
+            }}
+            
+            .details-title {{
+                color: #e88e1b;
+                margin-bottom: 20px;
+                text-align: center;
+            }}
+            
+            .details-content {{
+                white-space: pre-line;
+                line-height: 1.8;
+                color: #b0b0b0;
+            }}
+            
+            /* Responsividade */
+            @media (max-width: 768px) {{
+                .vehicles-grid {{
+                    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+                    gap: 20px;
+                }}
+                
+                .brand-title {{
+                    font-size: 24px;
+                }}
+                
+                .hero-title {{
+                    font-size: 32px;
+                }}
+                
+                .modal-content {{
+                    width: 95%;
+                    margin: 10% auto;
+                }}
+            }}
+        </style>
+    </head>
+    <body>
+        <div class="contact-bar">
+            📞 (84) 93062-2434 • 📍 Mossoró/RN • ⏰ Seg-Sex: 8h-17:20h Sab:8-12h
+        </div>
+        
+        <div class="header">
+            <div class="container">
+                <div class="header-content" style="display: flex; justify-content: center; align-items: center;">
+                    {logo_html}
+                </div>
+            </div>
+        </div>
+        
+        <div class="hero-section">
+            <div class="container">
+                <h1 class="hero-title">GARAGEM MULTIMARCAS</h1>
+                <p class="hero-subtitle">Os melhores veículos novos e seminovos com condições especiais de pagamento</p>
+            </div>
+        </div>
+        
+        <div class="container">
+            {filtros_html}
+            
+            <div class="vehicle-counter">🚗 {len(veiculos_filtrados)} VEÍCULOS ENCONTRADOS</div>
+            
+            {vehicles_grid_html}
+        </div>
+        
+        <!-- Modal para detalhes -->
+        <div id="detailsModal" class="modal">
+            <div class="modal-content">
+                <span class="close" onclick="closeModal()">&times;</span>
+                <h2 class="details-title">🚗 Detalhes do Veículo</h2>
+                <div id="modalBody" class="details-content"></div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <div class="container">
+                <div class="footer-brand">GARAGEM MULTIMARCAS</div>
+                <div class="footer-contact">📞 (84) 93062-2434 / (84) 98188-5353 • 📍 Rua José Damião, 61 Santo Antonio/Área Urbana - Mossoró/RN</div>
+                <div class="footer-copyright">© Powered by Júlio Aguiar - Todos os direitos reservados</div>
+            </div>
+        </div>
+        
+        <script>
+            function showVehicleDetails(vehicleId, details) {{
+                document.getElementById('modalBody').textContent = details;
+                document.getElementById('detailsModal').style.display = 'block';
+            }}
+            
+            function closeModal() {{
+                document.getElementById('detailsModal').style.display = 'none';
+            }}
+            
+            // Fechar modal ao clicar fora
+            window.onclick = function(event) {{
+                const modal = document.getElementById('detailsModal');
+                if (event.target === modal) {{
+                    closeModal();
+                }}
+            }}
+            
+            // Fallback para imagens que não carregam
+            document.addEventListener('DOMContentLoaded', function() {{
+                const images = document.querySelectorAll('.vehicle-image');
+                images.forEach(img => {{
+                    img.onerror = function() {{
+                        const altText = this.alt || 'Veículo';
+                        const marcaModelo = altText.split(' ').slice(0, 2).join('+');
+                        const cor = '3498db'; // Cor padrão
+                        this.src = `https://via.placeholder.com/400x250/${{cor}}/ffffff?text=${{marcaModelo}}`;
+                    }};
+                }});
+            }});
+        </script>
+    </body>
+    </html>
+    '''
+    
+    return full_html
+
 # =============================================
 # PÁGINA PRINCIPAL
 # =============================================
 
 def main():
-    # Inject CSS primeiro
-    inject_css()
-    
     # Buscar dados do banco
     with st.spinner('🔄 Carregando veículos...'):
         db = LuxuryDatabase()
         veiculos = db.get_veiculos_estoque()
     
-    # Header com contato
-    st.markdown("""
-    <div class="contact-bar">
-        📞 (84) 93062-2434 • 📍 Mossoró/RN • ⏰ Seg-Sex: 8h-17:20h Sab:8-12h
-    </div>
-    """, unsafe_allow_html=True)
-    
-    # Header com logo
-    st.markdown("""
-    <div class="header">
-        <div class="header-content">
-    """, unsafe_allow_html=True)
-    
-    logo = load_logo()
-    if logo:
-        # Converter logo para base64
-        buffered = io.BytesIO()
-        logo.save(buffered, format="PNG")
-        logo_base64 = base64.b64encode(buffered.getvalue()).decode('utf-8')
-        st.markdown(f'<img src="data:image/png;base64,{logo_base64}" class="logo" alt="Garagem Multimarcas">', unsafe_allow_html=True)
-    else:
-        st.markdown('<div class="logo-placeholder">🚗</div>', unsafe_allow_html=True)
-    
-    st.markdown("""
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    # Hero Section
-    st.markdown("""
-    <div class="hero-section">
-        <h1 class="hero-title">GARAGEM MULTIMARCAS</h1>
-        <p class="hero-subtitle">Os melhores veículos novos e seminovos com condições especiais de pagamento</p>
-    </div>
-    """, unsafe_allow_html=True)
-    
     # Filtros usando Streamlit
+    st.markdown("""
+    <style>
+    .stApp {
+        background: #0f0f0f;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+    
     col1, col2, col3, col4 = st.columns([2, 2, 2, 1])
     
     with col1:
@@ -660,70 +821,20 @@ def main():
         else:
             veiculos_filtrados.sort(key=lambda x: x['data_cadastro'], reverse=True)
     
-    # Seção de filtros aplicados
-    st.markdown(f"""
+    # Gerar HTML completo
+    filtros_html = f"""
     <div class="filters-section">
         <div class="filter-title">🔍 FILTRAR VEÍCULOS</div>
         <div style="color: #b0b0b0; text-align: center; margin-bottom: 20px;">
             Filtros aplicados: {marca_filtro} • {ano_filtro} • Até R$ {preco_filtro:,}
         </div>
     </div>
-    """, unsafe_allow_html=True)
+    """
     
-    # Contador de veículos
-    st.markdown(f'<div class="vehicle-counter">🚗 {len(veiculos_filtrados)} VEÍCULOS ENCONTRADOS</div>', unsafe_allow_html=True)
+    full_html = get_full_html_page(veiculos_filtrados, filtros_html)
     
-    # Grid de veículos
-    if not veiculos_filtrados:
-        st.markdown("""
-        <div class="no-vehicles">
-            <div class="no-vehicles-icon">🚗</div>
-            <h3>Nenhum veículo encontrado</h3>
-            <p>Tente ajustar os filtros para encontrar mais opções!</p>
-        </div>
-        """, unsafe_allow_html=True)
-    else:
-        # Criar grid usando columns do Streamlit
-        cols_per_row = 3
-        rows = [veiculos_filtrados[i:i + cols_per_row] for i in range(0, len(veiculos_filtrados), cols_per_row)]
-        
-        for row in rows:
-            cols = st.columns(cols_per_row)
-            for i, veiculo in enumerate(row):
-                with cols[i]:
-                    card_html = create_vehicle_card_html(veiculo)
-                    st.markdown(card_html, unsafe_allow_html=True)
-    
-    # Footer
-    st.markdown("""
-    <div class="footer">
-        <div class="footer-brand">GARAGEM MULTIMARCAS</div>
-        <div class="footer-contact">📞 (84) 93062-2434 / (84) 98188-5353 • 📍 Rua José Damião, 61 Santo Antonio/Área Urbana - Mossoró/RN</div>
-        <div class="footer-copyright">© Powered by Júlio Aguiar - Todos os direitos reservados</div>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    # JavaScript para funcionalidades
-    st.markdown("""
-    <script>
-    function showVehicleDetails(vehicleId) {
-        alert('Detalhes do veículo ID: ' + vehicleId + '\\n\\nEsta funcionalidade será implementada em breve!');
-    }
-    
-    // Fallback para imagens que não carregam
-    document.addEventListener('DOMContentLoaded', function() {
-        const images = document.querySelectorAll('.vehicle-image');
-        images.forEach(img => {
-            img.onerror = function() {
-                const altText = this.alt || 'Veículo';
-                const marcaModelo = altText.split(' ').slice(0, 2).join('+');
-                const cor = '3498db';
-                this.src = `https://via.placeholder.com/400x250/${cor}/ffffff?text=${marcaModelo}`;
-            };
-        });
-    });
-    </script>
-    """, unsafe_allow_html=True)
+    # Renderizar HTML usando components
+    html(full_html, height=2000, scrolling=True)
 
 if __name__ == "__main__":
     main()
