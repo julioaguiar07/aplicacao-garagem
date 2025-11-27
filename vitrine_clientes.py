@@ -678,7 +678,7 @@ def get_full_html_page(veiculos_filtrados, filtros_html):
         
         <div class="header">
             <div class="container">
-                <div class="header-content">
+                <div class="header-content" style="display: flex; justify-content: center; align-items: center;">
                     {logo_html}
                 </div>
             </div>
