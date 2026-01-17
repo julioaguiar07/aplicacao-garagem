@@ -4637,7 +4637,7 @@ with tab7:
     # NOVA SEÇÃO DO PAPEL TIMBRADO
     st.markdown("---")
     seção_papel_timbrado()
-     
+         
     st.markdown("---")
     st.markdown("#### 🔐 Alterar Minha Senha")
     
@@ -4680,7 +4680,79 @@ with tab7:
                     st.error("❌ Senha atual incorreta")
             else:
                 st.error("⚠️ Preencha todos os campos")
-
+                
+    # === VITRINE PREMIUM PARA CLIENTES ===
+    st.markdown("---")
+    st.markdown("#### 🌐 Vitrine Premium para Clientes")
+    
+    col_vit1, col_vit2, col_vit3 = st.columns(3)
+    
+    with col_vit1:
+        if st.button("🔄 Atualizar Vitrine", use_container_width=True, help="Atualiza a vitrine com os veículos em estoque"):
+            try:
+                from vitrine_premium import VitrinePremium
+                vitrine = VitrinePremium()
+                count = vitrine.atualizar_vitrine()
+                st.success(f"✅ Vitrine atualizada! **{count}** veículos disponíveis.")
+                st.balloons()
+            except Exception as e:
+                st.error(f"❌ Erro ao atualizar vitrine: {e}")
+    
+    with col_vit2:
+        # Verificar se arquivo existe
+        if os.path.exists("vitrine_premium.html"):
+            with open("vitrine_premium.html", "rb") as file:
+                st.download_button(
+                    label="📥 Baixar Vitrine",
+                    data=file,
+                    file_name="vitrine_garagem.html",
+                    mime="text/html",
+                    use_container_width=True,
+                    help="Baixe o arquivo HTML para hospedar em seu site"
+                )
+        else:
+            st.info("ℹ️ Gere a vitrine primeiro")
+    
+    with col_vit3:
+        # Link para visualizar localmente
+        vitrine_path = os.path.abspath("vitrine_premium.html")
+        if os.path.exists("vitrine_premium.html"):
+            st.markdown(f"""
+            <a href="file://{vitrine_path}" target="_blank">
+                <button style="width:100%; padding:12px; background:linear-gradient(135deg,#3498DB,#2980B9); color:white; border:none; border-radius:10px; font-weight:600; cursor:pointer;">
+                    👁️ Abrir Vitrine
+                </button>
+            </a>
+            """, unsafe_allow_html=True)
+        else:
+            st.info("ℹ️ Gere a vitrine primeiro")
+    
+    # Estatísticas da vitrine
+    try:
+        from vitrine_premium import VitrinePremium
+        vitrine = VitrinePremium()
+        veiculos = vitrine.get_veiculos_estoque()
+        
+        if veiculos:
+            st.markdown("#### 📊 Estatísticas da Vitrine")
+            col_stat1, col_stat2, col_stat3, col_stat4 = st.columns(4)
+            
+            with col_stat1:
+                st.metric("🚗 Veículos", len(veiculos))
+            
+            with col_stat2:
+                valor_total = sum(v['preco_venda'] for v in veiculos)
+                st.metric("💰 Valor Total", f"R$ {valor_total:,.0f}")
+            
+            with col_stat3:
+                media_preco = valor_total / len(veiculos) if veiculos else 0
+                st.metric("📊 Preço Médio", f"R$ {media_preco:,.0f}")
+            
+            with col_stat4:
+                marcas = len(set(v['marca'] for v in veiculos))
+                st.metric("🏷️ Marcas", marcas)
+    except Exception as e:
+        st.error(f"Erro ao carregar estatísticas: {e}")
     
 
     '''st.markdown("---")
