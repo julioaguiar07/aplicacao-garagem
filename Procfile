@@ -1,2 +1,2 @@
 web: streamlit run app.py --server.port $PORT --server.address 0.0.0.0
-vitrine: pip install -r requirements.txt && python vitrine_railway.py
+vitrine: gunicorn --bind 0.0.0.0:$PORT vitrine_railway:app
