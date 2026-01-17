@@ -1224,13 +1224,21 @@ def home():
 # INICIALIZAÇÃO
 # =============================================
 if __name__ == "__main__":
+    # Modo desenvolvimento local
     port = int(os.environ.get("PORT", 5000))
+    
     print("=" * 60)
     print("🚀 VITRINE PREMIUM - GARAGEM MULTIMARCAS")
     print("=" * 60)
-    print(f"🌐 Porta: {port}")
-    print(f"🗄️  Banco: {'PostgreSQL (Railway)' if os.environ.get('DATABASE_URL') else 'SQLite (Local)'}")
-    print(f"🔗 API: http://localhost:{port}/api/veiculos")
-    print(f"❤️  Saúde: http://localhost:{port}/api/health")
+    print(f"🌐 Modo: {'Produção (Railway)' if os.environ.get('RAILWAY_ENVIRONMENT') else 'Desenvolvimento'}")
+    print(f"🔧 Porta: {port}")
+    print(f"🗄️  Banco: {'PostgreSQL' if os.environ.get('DATABASE_URL') else 'SQLite'}")
     print("=" * 60)
-    app.run(host='0.0.0.0', port=port, debug=False)
+    
+    # Só roda servidor de desenvolvimento se não estiver no Railway
+    if not os.environ.get('RAILWAY_ENVIRONMENT'):
+        print("⚡ Iniciando servidor de desenvolvimento...")
+        app.run(host='0.0.0.0', port=port, debug=False)
+    else:
+        print("✅ Pronto para produção com Gunicorn")
+        print(f"🔗 A aplicação será servida pelo Gunicorn na porta {port}")
