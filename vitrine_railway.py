@@ -228,7 +228,7 @@ def home():
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Garagem Multimarcas - Veículos Premium</title>
+    <title>Carmelo Multimarcas - Veículos Premium</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -867,7 +867,7 @@ def home():
         <div class="header-content">
             <div class="logo">
                 <i class="fas fa-car"></i>
-                <h1>Garagem Multimarcas</h1>
+                <h1>Carmelo Multimarcas</h1>
             </div>
             <div class="header-contact">
                 <a href="tel:+5584991359875" class="contact-item">
@@ -965,7 +965,7 @@ def home():
     <footer class="footer">
         <div class="footer-content">
             <div class="footer-section">
-                <h3>Garagem Multimarcas</h3>
+                <h3>Carmelo Multimarcas</h3>
                 <p>Veículos de qualidade com procedência garantida</p>
             </div>
             <div class="footer-section">
@@ -981,7 +981,7 @@ def home():
             </div>
         </div>
         <div class="footer-bottom">
-            <p>&copy; {datetime.now().year} Garagem Multimarcas. Todos os direitos reservados.</p>
+            <p>&copy; {datetime.now().year} Carmelo Multimarcas. Todos os direitos reservados.</p>
         </div>
     </footer>
 
@@ -1256,7 +1256,7 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     
     print("=" * 60)
-    print("🚀 VITRINE PREMIUM - GARAGEM MULTIMARCAS")
+    print("CATÁLOGO - CARMELO MULTIMARCAS")
     print("=" * 60)
     print(f"🌐 Modo: {'Produção (Railway)' if os.environ.get('RAILWAY_ENVIRONMENT') else 'Desenvolvimento'}")
     print(f"🔧 Porta: {port}")
