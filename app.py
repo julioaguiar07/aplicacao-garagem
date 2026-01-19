@@ -170,7 +170,7 @@ def processar_timestamp_postgresql(timestamp):
 # =============================================
 
 st.set_page_config(
-    page_title="Adm. Garagem Multimarcas",
+    page_title="Adm. Carmelo Multimarcas",
     page_icon="logo-icon.png",
     layout="wide",
     initial_sidebar_state="collapsed"
@@ -2434,7 +2434,7 @@ with col_title:
     st.markdown("""
     <div style="text-align: center;">
         <h1 style="margin:0; font-size: 2.2rem; background: linear-gradient(135deg, #ffffff, #e0e0e0); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; font-weight: 800;">
-            Gerenciamento Garagem Multimarcas
+            Gerenciamento Carmelo Multimarcas
         </h1>
         <p style="margin:0; color: #a0a0a0; font-size: 1rem;">Sistema Completo de Gestão Automotiva</p>
     </div>
