@@ -872,8 +872,10 @@ class Database:
                 print(f"📸 Salvando foto ({len(foto_bytes)} bytes) para veículo {veiculo_id}...")
                 
                 if os.getenv('DATABASE_URL'):
-                    cursor.execute('UPDATE veiculos SET foto = %s WHERE id = %s', (foto_bytes, veiculo_id))
+                    # ✅ PostgreSQL: Converter para psycopg2.Binary para BYTEA
+                    cursor.execute('UPDATE veiculos SET foto = %s WHERE id = %s', (psycopg2.Binary(foto_bytes), veiculo_id))
                 else:
+                    # SQLite: manter como bytes
                     cursor.execute('UPDATE veiculos SET foto = ? WHERE id = ?', (foto_bytes, veiculo_id))
                 
                 conn.commit()
