@@ -866,8 +866,10 @@ def home():
     <header class="header">
         <div class="header-content">
             <div class="logo">
-                <i class="fas fa-car"></i>
-                <h1>Carmelo Multimarcas</h1>
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                    <img src="data:image/png;base64,{logo_base64}" alt="Logo Carmelo" style="height: 60px; width: auto; border-radius: 8px; object-fit: contain;">
+                    <h1 style="margin: 0; font-size: 1.8rem; background: linear-gradient(135deg, #fff, var(--secondary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: 800;">Carmelo Multimarcas</h1>
+                </div>
             </div>
             <div class="header-contact">
                 <a href="tel:+5584991359875" class="contact-item">
