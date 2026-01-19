@@ -26,7 +26,46 @@ def get_db_connection():
         conn = sqlite3.connect("canal_automotivo.db")
         conn.row_factory = sqlite3.Row
         return conn
-
+        
+# =============================================
+# FUNÇÃO AUXILIAR PARA PROCESSAR FOTOS
+# =============================================
+def processar_foto(foto_data):
+    """Processa a foto independentemente do formato"""
+    if not foto_data:
+        return None
+    
+    try:
+        # Se já for bytes (PostgreSQL bytea)
+        if isinstance(foto_data, bytes):
+            return base64.b64encode(foto_data).decode('utf-8')
+        
+        # Se for memoryview (PostgreSQL)
+        if isinstance(foto_data, memoryview):
+            return base64.b64encode(foto_data.tobytes()).decode('utf-8')
+        
+        # Se for string com \x (hex string)
+        if isinstance(foto_data, str):
+            # String com \xffd8... (hex string)
+            if foto_data.startswith('\\x'):
+                # Remove \x e converte hex para bytes
+                try:
+                    hex_str = foto_data.replace('\\x', '')
+                    bytes_data = bytes.fromhex(hex_str)
+                    return base64.b64encode(bytes_data).decode('utf-8')
+                except:
+                    return None
+            
+            # Se já for base64
+            if len(foto_data) > 100 and ('/' in foto_data or '+' in foto_data):
+                return foto_data
+        
+        return None
+        
+    except Exception as e:
+        print(f"❌ Erro ao processar foto: {e}")
+        return None
+        
 # =============================================
 # FUNÇÕES DE BANCO DE DADOS
 # =============================================
@@ -77,18 +116,7 @@ def get_veiculos_estoque():
                 veiculo['preco_venda'] = float(veiculo['preco_venda'])
             
             # Processar foto
-            if veiculo.get('foto'):
-                try:
-                    if isinstance(veiculo['foto'], (bytes, memoryview)):
-                        if isinstance(veiculo['foto'], memoryview):
-                            veiculo['foto'] = veiculo['foto'].tobytes()
-                        veiculo['foto_base64'] = base64.b64encode(veiculo['foto']).decode('utf-8')
-                    elif isinstance(veiculo['foto'], str):
-                        veiculo['foto_base64'] = veiculo['foto']
-                except:
-                    veiculo['foto_base64'] = None
-            else:
-                veiculo['foto_base64'] = None
+            veiculo['foto_base64'] = processar_foto(veiculo.get('foto'))
             
             # Garantir tipos corretos
             veiculo['km'] = int(veiculo.get('km', 0)) if veiculo.get('km') else 0
