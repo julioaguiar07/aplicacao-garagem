@@ -958,7 +958,7 @@ def home():
     </div>
 
     <!-- WHATSAPP FLUTUANTE -->
-    <a href="https://wa.me/5584991359875?text=Olá! Gostaria de informações sobre os veículos" 
+    <a href="https://wa.me/558430622434?text=Olá! Gostaria de informações sobre os veículos" 
        class="whatsapp-float" target="_blank" title="Fale conosco no WhatsApp">
         <i class="fab fa-whatsapp"></i>
     </a>
@@ -1162,7 +1162,7 @@ def home():
                 '<div style="display: flex; align-items: center; justify-content: center; height: 100%; font-size: 8rem; color: #666;"><i class="fas fa-car"></i></div>';
 
             // Mensagem WhatsApp
-            const whatsappMsg = encodeURIComponent(`Olá! Tenho interesse no ${{vehicle.marca}} ${{vehicle.modelo}} ${{vehicle.ano}} - R$ ${{vehicle.preco_venda.toLocaleString('pt-BR')}}. Poderia me passar mais informações?`);
+            const whatsappMsg = encodeURIComponent(`Olá! Tenho interesse no ${{vehicle.marca}} ${{vehicle.modelo}} ${{vehicle.ano}} - PLACA: ${{vehicle.placa}}. Poderia me passar mais informações?`);
             
             body.innerHTML = `
                 <div class="modal-header">
