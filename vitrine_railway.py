@@ -872,11 +872,11 @@ def home():
                 </div>
             </div>
             <div class="header-contact">
-                <a href="tel:+5584991359875" class="contact-item">
+                <a href="tel:+558430622434" class="contact-item">
                     <i class="fas fa-phone"></i>
                     <span>(84) 3062-2434</span>
                 </a>
-                <a href="https://wa.me/5584991359875" class="contact-item" target="_blank">
+                <a href="https://wa.me/558430622434" class="contact-item" target="_blank">
                     <i class="fab fa-whatsapp"></i>
                     <span>WhatsApp</span>
                 </a>
