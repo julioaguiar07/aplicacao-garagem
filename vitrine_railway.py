@@ -874,7 +874,7 @@ def home():
             <div class="header-contact">
                 <a href="tel:+5584991359875" class="contact-item">
                     <i class="fas fa-phone"></i>
-                    <span>(84) 99135-9875</span>
+                    <span>(84) 3062-2434</span>
                 </a>
                 <a href="https://wa.me/5584991359875" class="contact-item" target="_blank">
                     <i class="fab fa-whatsapp"></i>
@@ -972,7 +972,7 @@ def home():
             </div>
             <div class="footer-section">
                 <h3>Contato</h3>
-                <p><i class="fas fa-phone"></i> (84) 99135-9875</p>
+                <p><i class="fas fa-phone"></i> (84) 3062-2434</p>
                 <p><i class="fas fa-envelope"></i> contato@garagemmultimarcas.com.br</p>
                 <p><i class="fas fa-map-marker-alt"></i> Mossoró/RN</p>
             </div>
