@@ -989,7 +989,7 @@ def home():
 
     <script>
         // CONFIGURAÇÃO
-        const WHATSAPP_NUMBER = '5584991359875';
+        const WHATSAPP_NUMBER = '558430622434';
         let vehicles = {veiculos_json};
         let filteredVehicles = [...vehicles];
 
