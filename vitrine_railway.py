@@ -863,26 +863,26 @@ def home():
 </head>
 <body>
     <!-- HEADER -->
-    <header class="header">
-        <div class="header-content" style="display: flex; align-items: center; justify-content: space-between; padding: 1rem 2rem; position: relative;">
+    <header class="header" style="position: sticky; top: 0; z-index: 1000; background: var(--primary); padding: 1rem 0; box-shadow: 0 2px 20px rgba(0, 0, 0, 0.3);">
+        <div class="header-content" style="max-width: 1200px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; padding: 0 2rem; position: relative;">
             
             <!-- Logo GRANDE e centralizada -->
-            <div class="logo" style="flex: 1; text-align: center;">
+            <div class="logo" style="position: absolute; left: 50%; transform: translateX(-50%);">
                 <img src="data:image/png;base64,{logo_base64}" alt="Logo Carmelo" 
-                     style="height: 160px; width: auto; border-radius: 8px; object-fit: contain; max-width: 100%;">
+                     style="height: 100px; width: auto; border-radius: 8px; object-fit: contain; max-width: 100%;">
             </div>
             
-            <!-- Contatos no canto direito com espaçamento -->
-            <div class="header-contact" style="position: absolute; right: 2rem; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 0.8rem; align-items: flex-end;">
+            <!-- Contatos no canto direito -->
+            <div class="header-contact" style="margin-left: auto; display: flex; gap: 1.5rem; align-items: center;">
                 <a href="tel:+558430622434" class="contact-item" 
-                   style="display: flex; align-items: center; gap: 0.5rem; background: rgba(255, 255, 255, 0.1); padding: 0.5rem 1rem; border-radius: 8px; text-decoration: none; color: white;">
-                    <i class="fas fa-phone" style="font-size: 1.2rem;"></i>
-                    <span style="font-size: 1rem; font-weight: 500;">(84) 3062-2434</span>
+                   style="display: flex; align-items: center; gap: 0.5rem; background: rgba(255, 255, 255, 0.1); padding: 0.5rem 1rem; border-radius: 8px; text-decoration: none; color: white; transition: all 0.3s ease;">
+                    <i class="fas fa-phone" style="font-size: 1.1rem;"></i>
+                    <span style="font-size: 0.95rem; font-weight: 500;">(84) 3062-2434</span>
                 </a>
                 <a href="https://wa.me/558430622434" class="contact-item" target="_blank"
-                   style="display: flex; align-items: center; gap: 0.5rem; background: rgba(37, 211, 102, 0.2); padding: 0.5rem 1rem; border-radius: 8px; text-decoration: none; color: white;">
-                    <i class="fab fa-whatsapp" style="font-size: 1.2rem;"></i>
-                    <span style="font-size: 1rem; font-weight: 500;">WhatsApp</span>
+                   style="display: flex; align-items: center; gap: 0.5rem; background: rgba(37, 211, 102, 0.2); padding: 0.5rem 1rem; border-radius: 8px; text-decoration: none; color: white; transition: all 0.3s ease;">
+                    <i class="fab fa-whatsapp" style="font-size: 1.1rem;"></i>
+                    <span style="font-size: 0.95rem; font-weight: 500;">WhatsApp</span>
                 </a>
             </div>
             
