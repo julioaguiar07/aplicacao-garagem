@@ -228,7 +228,7 @@ def home():
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Carmelo Multimarcas - Veículos Premium</title>
+    <title>Carmelo Multimarcas</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -865,11 +865,8 @@ def home():
     <!-- HEADER -->
     <header class="header">
         <div class="header-content">
-            <div class="logo">
-                <div style="display: flex; align-items: center; gap: 1rem;">
-                    <img src="data:image/png;base64,{logo_base64}" alt="Logo Carmelo" style="height: 60px; width: auto; border-radius: 8px; object-fit: contain;">
-                    <h1 style="margin: 0; font-size: 1.8rem; background: linear-gradient(135deg, #fff, var(--secondary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: 800;">Carmelo Multimarcas</h1>
-                </div>
+            <div class="logo" style="text-align: center; width: 100%;">
+                <img src="data:image/png;base64,{logo_base64}" alt="Logo Carmelo" style="height: 100px; width: auto; border-radius: 8px; object-fit: contain; margin: 0 auto;">
             </div>
             <div class="header-contact">
                 <a href="tel:+558430622434" class="contact-item">
