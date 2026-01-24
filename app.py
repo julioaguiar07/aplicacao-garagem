@@ -3706,7 +3706,7 @@ with tab2:
                 st.caption("🏷️ **ANUNCIADO**")
             
             # 3. MARGEM PARA NEGOCIAÇÃO (campo numérico)
-            col_margem1, col_margem2, col_margem3 = st.columns([2, 1, 1])
+            col_margem1, col_margem2 = st.columns([3, 1])
             with col_margem1:
                 margem_negociacao = st.number_input(
                     "Margem para Negociação (%)*",
@@ -3720,10 +3720,6 @@ with tab2:
             with col_margem2:
                 st.markdown("<br>", unsafe_allow_html=True)
                 st.caption("🎯 **MARGEM**")
-            with col_margem3:
-                st.markdown("<br>", unsafe_allow_html=True)
-                if st.button("🔁 Calcular", key="calcular_margem", use_container_width=True):
-                    st.rerun()
             
             # =============================================
             # CÁLCULOS EM TEMPO REAL
@@ -3940,6 +3936,7 @@ with tab2:
                 image = Image.open(foto_veiculo)
                 st.image(image, caption="Prévia da Foto", width=300)
             
+            # BOTÃO DE SUBMIT DO FORMULÁRIO
             submitted = st.form_submit_button("Cadastrar Veículo", use_container_width=True)
             
             if submitted:
