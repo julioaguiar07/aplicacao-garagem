@@ -16,7 +16,6 @@ import hmac
 import time
 from functools import wraps
 import psycopg2
-import time
 import textwrap
 
 # =============================================
@@ -3652,36 +3651,273 @@ with tab2:
     with col_veic1:
         st.markdown("#### ➕ Novo Veículo")
         with st.form("novo_veiculo_form", clear_on_submit=True):
+            # Dados básicos
             modelo = st.text_input("Modelo*", placeholder="Gol")
             marca = st.text_input("Marca*", placeholder="Volkswagen")
-            ano = st.number_input("Ano*", min_value=1970, max_value=2030, value=2025)
             cor = st.selectbox("Cor*", ["Prata", "Preto", "Branco", "Vermelho", "Azul", "Cinza", "Verde", "Laranja"])
             
+            # ANOS - lado a lado
+            st.markdown("#### 📅 Anos")
+            col_ano1, col_ano2 = st.columns(2)
+            with col_ano1:
+                ano = st.number_input("Ano*", min_value=1970, max_value=2030, value=2025,
+                                    help="Ano do modelo (geralmente igual ao de fabricação)")
+            with col_ano2:
+                ano_fabricacao = st.number_input("Ano de Fabricação", min_value=1970, max_value=2030, value=2025,
+                                               help="Ano em que o veículo foi efetivamente fabricado")
+            
+            # Dados para contrato
             st.markdown("#### 📄 Dados para Contrato")
-            renavam = st.text_input("RENAVAM", placeholder="12345678901", key="renavam_input")
-            chassi = st.text_input("Chassi", placeholder="9BWZZZ377VT004251")
-            ano_fabricacao = st.number_input("Ano de Fabricação", min_value=1970, max_value=2030, value=2025)
-            ano_modelo = st.number_input("Ano Modelo", min_value=1970, max_value=2030, value=2025)
+            col_doc1, col_doc2 = st.columns(2)
+            with col_doc1:
+                renavam = st.text_input("RENAVAM", placeholder="12345678901", key="renavam_input")
+            with col_doc2:
+                chassi = st.text_input("Chassi", placeholder="9BWZZZ377VT004251")
             
-            # ✅ CAMPO DE PREÇO (JÁ EXISTE)
-            preco_input = st.text_input(
-                "Preço de Custo (R$)*", 
-                placeholder="Ex: 50.000,00",
-                help="Use ponto para milhares e vírgula para centavos"
-            )
+            # =============================================
+            # SISTEMA DE PREÇOS COM NEGOCIAÇÃO
+            # =============================================
+            st.markdown("#### 💰 Sistema de Preços")
             
-            margem_negociacao = st.slider("Margem para Negociação (%)", min_value=0, max_value=20, value=12,
-                                        help="Percentual acrescido para negociação")
+            # 1. PREÇO DE CUSTO (PISO)
+            col_custo1, col_custo2 = st.columns([3, 1])
+            with col_custo1:
+                preco_custo_input = st.text_input(
+                    "Preço de Custo (R$)*", 
+                    placeholder="Ex: 50.000,00",
+                    help="Valor que você pagou pelo veículo (piso mínimo)",
+                    key="preco_custo"
+                )
+            with col_custo2:
+                st.markdown("<br>", unsafe_allow_html=True)
+                st.caption("💰 **PISO**")
             
-            # Calcular preço de venda automaticamente
-            if preco_input:
+            # 2. PREÇO PARA NEGOCIAÇÃO
+            col_negociacao1, col_negociacao2 = st.columns([3, 1])
+            with col_negociacao1:
+                preco_negociacao_input = st.text_input(
+                    "Preço para Negociação (R$)*", 
+                    placeholder="Ex: 65.000,00",
+                    help="Valor anunciado - ponto de partida para negociação",
+                    key="preco_negociacao"
+                )
+            with col_negociacao2:
+                st.markdown("<br>", unsafe_allow_html=True)
+                st.caption("🏷️ **ANUNCIADO**")
+            
+            # 3. MARGEM PARA NEGOCIAÇÃO (campo numérico)
+            col_margem1, col_margem2, col_margem3 = st.columns([2, 1, 1])
+            with col_margem1:
+                margem_negociacao = st.number_input(
+                    "Margem para Negociação (%)*",
+                    min_value=0.0,
+                    max_value=100.0,
+                    value=15.0,
+                    step=0.5,
+                    format="%.1f",
+                    help="Percentual de desconto máximo que pode ser concedido"
+                )
+            with col_margem2:
+                st.markdown("<br>", unsafe_allow_html=True)
+                st.caption("🎯 **MARGEM**")
+            with col_margem3:
+                st.markdown("<br>", unsafe_allow_html=True)
+                if st.button("🔁 Calcular", key="calcular_margem", use_container_width=True):
+                    st.rerun()
+            
+            # =============================================
+            # CÁLCULOS EM TEMPO REAL
+            # =============================================
+            
+            # Função para converter preço BR para float
+            def converter_preco_para_float(preco_str):
+                """Converte formato brasileiro para float"""
+                if not preco_str:
+                    return None
                 try:
-                    preco_convertido = float(preco_input.replace('.', '').replace(',', '.'))
-                    preco_venda_negociacao = preco_convertido * (1 + margem_negociacao/100)
-                    preco_venda_formatado = f"R$ {preco_venda_negociacao:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
-                    st.info(f"💰 **Preço para Negociação:** {preco_venda_formatado}")
+                    # Remove R$, espaços e pontos de milhar
+                    preco_limpo = preco_str.replace('R$', '').replace(' ', '').strip()
+                    
+                    # Verifica formato
+                    if ',' in preco_limpo and '.' in preco_limpo:
+                        # Formato: 50.000,00
+                        preco_limpo = preco_limpo.replace('.', '').replace(',', '.')
+                    elif ',' in preco_limpo:
+                        # Formato: 50000,00
+                        preco_limpo = preco_limpo.replace(',', '.')
+                    
+                    return float(preco_limpo)
                 except:
-                    st.error("❌ Valor inválido no preço de custo")
+                    return None
+            
+            # Converter preços
+            preco_custo_float = converter_preco_para_float(preco_custo_input)
+            preco_negociacao_float = converter_preco_para_float(preco_negociacao_input)
+            
+            # Container para resultados
+            if preco_custo_float and preco_negociacao_float:
+                st.markdown("---")
+                st.markdown("#### 📊 Resultados dos Cálculos")
+                
+                # Calcular margem real
+                margem_real = ((preco_negociacao_float - preco_custo_float) / preco_custo_float * 100)
+                
+                # Calcular preço mínimo (com margem de desconto aplicada)
+                preco_minimo = preco_negociacao_float * (1 - margem_negociacao/100)
+                
+                # Calcular lucro potencial mínimo
+                lucro_minimo = preco_minimo - preco_custo_float
+                
+                # Mostrar métricas
+                col_res1, col_res2 = st.columns(2)
+                
+                with col_res1:
+                    # Margem real do preço anunciado
+                    st.metric(
+                        "📈 Margem no Anúncio",
+                        f"{margem_real:.1f}%",
+                        help="Margem entre preço anunciado e custo"
+                    )
+                    
+                    # Preço mínimo
+                    st.metric(
+                        "💰 Preço Mínimo",
+                        f"R$ {preco_minimo:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.'),
+                        delta=f"-{margem_negociacao:.1f}%",
+                        delta_color="inverse",
+                        help="Menor valor que pode ser aceito na negociação"
+                    )
+                
+                with col_res2:
+                    # Margem de negociação permitida
+                    st.metric(
+                        "🎯 Margem de Negociação",
+                        f"{margem_negociacao:.1f}%",
+                        help="Desconto máximo que pode ser concedido"
+                    )
+                    
+                    # Lucro mínimo garantido
+                    cor_lucro = "normal" if lucro_minimo > 0 else "inverse"
+                    st.metric(
+                        "💵 Lucro Mínimo",
+                        f"R$ {lucro_minimo:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.'),
+                        delta_color=cor_lucro,
+                        help="Lucro garantido mesmo com desconto máximo"
+                    )
+                
+                # Barra de visualização
+                st.markdown("#### 📊 Visualização da Faixa de Preços")
+                
+                # Calcular valores para a barra
+                faixa_custo = preco_custo_float
+                faixa_minimo = preco_minimo
+                faixa_negociacao = preco_negociacao_float
+                
+                # Encontrar máximo para escala
+                faixa_max = max(faixa_custo, faixa_minimo, faixa_negociacao) * 1.1
+                
+                # Criar visualização
+                fig = go.Figure()
+                
+                # Adicionar barra de custo
+                fig.add_trace(go.Indicator(
+                    mode="number+gauge",
+                    value=faixa_custo,
+                    title={'text': "💰 Custo"},
+                    domain={'x': [0.25, 1], 'y': [0.7, 1]},
+                    gauge={
+                        'shape': "bullet",
+                        'axis': {'range': [0, faixa_max]},
+                        'bar': {'color': "#E74C3C", 'thickness': 0.8},
+                        'steps': [
+                            {'range': [0, faixa_custo], 'color': "rgba(231, 76, 60, 0.2)"}
+                        ],
+                        'threshold': {
+                            'line': {'color': "red", 'width': 2},
+                            'thickness': 0.75,
+                            'value': faixa_custo
+                        }
+                    }
+                ))
+                
+                # Adicionar barra de preço mínimo
+                fig.add_trace(go.Indicator(
+                    mode="number+gauge",
+                    value=faixa_minimo,
+                    title={'text': "🎯 Mínimo"},
+                    domain={'x': [0.25, 1], 'y': [0.4, 0.7]},
+                    gauge={
+                        'shape': "bullet",
+                        'axis': {'range': [0, faixa_max]},
+                        'bar': {'color': "#F39C12", 'thickness': 0.8},
+                        'steps': [
+                            {'range': [0, faixa_minimo], 'color': "rgba(243, 156, 18, 0.2)"}
+                        ],
+                        'threshold': {
+                            'line': {'color': "orange", 'width': 2},
+                            'thickness': 0.75,
+                            'value': faixa_minimo
+                        }
+                    }
+                ))
+                
+                # Adicionar barra de preço anunciado
+                fig.add_trace(go.Indicator(
+                    mode="number+gauge",
+                    value=faixa_negociacao,
+                    title={'text': "🏷️ Anunciado"},
+                    domain={'x': [0.25, 1], 'y': [0.1, 0.4]},
+                    gauge={
+                        'shape': "bullet",
+                        'axis': {'range': [0, faixa_max]},
+                        'bar': {'color': "#27AE60", 'thickness': 0.8},
+                        'steps': [
+                            {'range': [0, faixa_negociacao], 'color': "rgba(39, 174, 96, 0.2)"}
+                        ],
+                        'threshold': {
+                            'line': {'color': "green", 'width': 2},
+                            'thickness': 0.75,
+                            'value': faixa_negociacao
+                        }
+                    }
+                ))
+                
+                fig.update_layout(
+                    height=250,
+                    margin={'t': 20, 'b': 20, 'l': 20, 'r': 20},
+                    paper_bgcolor='rgba(0,0,0,0)',
+                    plot_bgcolor='rgba(0,0,0,0)',
+                    font={'color': 'white'}
+                )
+                
+                st.plotly_chart(fig, use_container_width=True)
+                
+                # Legenda
+                col_leg1, col_leg2, col_leg3 = st.columns(3)
+                with col_leg1:
+                    st.markdown("""
+                    <div style="background: rgba(231, 76, 60, 0.2); padding: 8px; border-radius: 6px; text-align: center;">
+                        <small><strong>💰 CUSTO</strong><br>Valor pago</small>
+                    </div>
+                    """, unsafe_allow_html=True)
+                
+                with col_leg2:
+                    st.markdown("""
+                    <div style="background: rgba(243, 156, 18, 0.2); padding: 8px; border-radius: 6px; text-align: center;">
+                        <small><strong>🎯 MÍNIMO</strong><br>Com desconto máximo</small>
+                    </div>
+                    """, unsafe_allow_html=True)
+                
+                with col_leg3:
+                    st.markdown("""
+                    <div style="background: rgba(39, 174, 96, 0.2); padding: 8px; border-radius: 6px; text-align: center;">
+                        <small><strong>🏷️ ANUNCIADO</strong><br>Ponto de partida</small>
+                    </div>
+                    """, unsafe_allow_html=True)
+            
+            # =============================================
+            # CAMPOS RESTANTES DO FORMULÁRIO
+            # =============================================
             
             fornecedor = st.text_input("Fornecedor*", placeholder="Nome do fornecedor")
             km = st.number_input("Quilometragem", value=0)
@@ -3691,7 +3927,7 @@ with tab2:
             portas = st.selectbox("Portas", [2, 4, 5])
             observacoes = st.text_area("Observações")
             
-            # ✅✅✅ ADICIONE ESTE CAMPO DE FOTO AQUI:
+            # Campo de foto do veículo
             st.markdown("#### 📸 Foto do Veículo")
             foto_veiculo = st.file_uploader(
                 "Faça upload da foto principal do veículo", 
@@ -3699,9 +3935,8 @@ with tab2:
                 help="Selecione uma imagem clara do veículo"
             )
             
-            # ✅✅✅ MOSTRAR PRÉVIA DA FOTO
+            # Mostrar prévia da foto
             if foto_veiculo is not None:
-                # Mostrar prévia da imagem
                 image = Image.open(foto_veiculo)
                 st.image(image, caption="Prévia da Foto", width=300)
             
@@ -3711,50 +3946,77 @@ with tab2:
                 if not prevenir_loop_submit():
                     st.stop()
                 
-                # ✅ VALIDAÇÃO DO PREÇO COM CONVERSÃO
-                if not preco_input:
-                    st.error("⚠️ Preço de custo é obrigatório!")
+                # Validação dos campos obrigatórios
+                campos_obrigatorios = [
+                    ("Modelo", modelo),
+                    ("Marca", marca),
+                    ("Ano", ano),
+                    ("Preço de Custo", preco_custo_input),
+                    ("Preço para Negociação", preco_negociacao_input),
+                    ("Fornecedor", fornecedor)
+                ]
+                
+                campos_faltando = [nome for nome, valor in campos_obrigatorios if not valor]
+                
+                if campos_faltando:
+                    st.error(f"❌ Campos obrigatórios faltando: {', '.join(campos_faltando)}")
                 else:
                     try:
-                        # Converter formato BR para float
-                        preco_entrada = float(preco_input.replace('.', '').replace(',', '.'))
+                        # Converter preços
+                        preco_custo = converter_preco_para_float(preco_custo_input)
+                        preco_negociacao = converter_preco_para_float(preco_negociacao_input)
                         
-                        if preco_entrada <= 0:
-                            st.error("⚠️ Preço de custo deve ser maior que zero!")
-                        elif modelo and marca and fornecedor:
-                            # Calcular preço de venda com margem
-                            preco_venda_final = preco_entrada * (1 + margem_negociacao/100)
+                        if preco_custo is None or preco_negociacao is None:
+                            st.error("❌ Formato de preço inválido! Use: 50.000,00 ou 50000,00")
+                        elif preco_custo <= 0 or preco_negociacao <= 0:
+                            st.error("⚠️ Os preços devem ser maiores que zero!")
+                        elif preco_negociacao <= preco_custo:
+                            st.error("❌ O preço para negociação deve ser maior que o preço de custo!")
+                        else:
+                            # Verificar se margem de negociação é viável
+                            preco_minimo_calculado = preco_negociacao * (1 - margem_negociacao/100)
                             
+                            if preco_minimo_calculado < preco_custo:
+                                st.warning(f"⚠️ Atenção: Com {margem_negociacao}% de desconto, o preço mínimo (R$ {preco_minimo_calculado:,.2f}) fica abaixo do custo!")
+                                if not st.checkbox("✅ Confirmar cadastro mesmo assim"):
+                                    st.stop()
+                            
+                            # Preparar dados para salvar
                             novo_veiculo = {
-                                'modelo': modelo, 'ano': ano, 'marca': marca, 'cor': cor,
-                                'preco_entrada': preco_entrada, 
-                                'preco_venda': preco_venda_final,
-                                'margem_negociacao': margem_negociacao,
-                                'fornecedor': fornecedor, 'km': km, 'placa': placa,
-                                'chassi': chassi, 'combustivel': combustivel, 'cambio': cambio,
-                                'portas': portas, 'observacoes': observacoes,
+                                'modelo': modelo, 
+                                'ano': ano, 
+                                'marca': marca, 
+                                'cor': cor,
+                                'preco_entrada': preco_custo,  # Salva como preço de custo
+                                'preco_venda': preco_negociacao,  # Salva como preço para negociação
+                                'margem_negociacao': margem_negociacao,  # Margem de desconto permitida
+                                'fornecedor': fornecedor, 
+                                'km': km, 
+                                'placa': placa,
+                                'chassi': chassi, 
                                 'renavam': renavam,
-                                'ano_fabricacao': ano_fabricacao,
-                                'ano_modelo': ano_modelo
+                                'combustivel': combustivel, 
+                                'cambio': cambio,
+                                'portas': portas, 
+                                'observacoes': observacoes,
+                                'ano_fabricacao': ano_fabricacao  # Mantemos apenas este
                             }
                             
                             print("🔄 Tentando cadastrar veículo...")
                             veiculo_id = db.add_veiculo(novo_veiculo)
                             
-                            # No formulário de cadastro de veículos, após o sucesso do cadastro:
                             if veiculo_id:
-                                # ✅ CORREÇÃO: Salvar foto com tratamento de erro melhorado
+                                # Salvar foto se fornecida
                                 if foto_veiculo is not None:
                                     try:
-                                        # Verificar tamanho da foto (máximo 5MB)
                                         if len(foto_veiculo.getvalue()) > 5 * 1024 * 1024:
-                                            st.warning("⚠️ Foto muito grande (máximo 5MB). Reduza o tamanho da imagem.")
+                                            st.warning("⚠️ Foto muito grande (máximo 5MB).")
                                         else:
                                             success_foto = db.salvar_foto_veiculo(veiculo_id, foto_veiculo.getvalue())
                                             if success_foto:
                                                 st.success("✅ Foto salva com sucesso!")
                                             else:
-                                                st.warning("⚠️ Veículo cadastrado, mas houve erro ao salvar a foto")
+                                                st.warning("⚠️ Veículo cadastrado, mas erro ao salvar foto")
                                     except Exception as e:
                                         st.warning(f"⚠️ Veículo cadastrado, mas erro na foto: {str(e)}")
                                 
@@ -3763,13 +4025,16 @@ with tab2:
                                 resetar_formulario()
                             else:
                                 st.error("❌ Erro ao cadastrar veículo. Verifique os logs.")
-                        else:
-                            st.error("❌ Preencha todos os campos obrigatórios!")
-                            
-                    except ValueError:
-                        st.error("❌ Formato de preço inválido! Use: 50.000,00 ou 50000,00")
+                                
+                    except ValueError as e:
+                        st.error(f"❌ Erro na conversão de preços: {e}")
+                    except Exception as e:
+                        st.error(f"❌ Erro inesperado: {str(e)}")
     
     with col_veic2:
+        # =============================================
+        # LISTA DE VEÍCULOS EM ESTOQUE (INALTERADA)
+        # =============================================
         st.markdown("#### 📋 Estoque Atual")
         
         # Filtros
@@ -3795,7 +4060,7 @@ with tab2:
                 total_gastos = sum(g['valor'] for g in gastos_veiculo)
                 custo_total = veiculo['preco_entrada'] + total_gastos
 
-                # Calcular margem atual
+                # Calcular margem atual (baseada no preço de negociação atual)
                 margem_atual = ((veiculo['preco_venda'] - custo_total) / custo_total) * 100 if custo_total > 0 else 0
 
                 # Exibir informações do veículo
@@ -3804,47 +4069,53 @@ with tab2:
                     st.write(f"**Marca:** {veiculo['marca']}")
                     st.write(f"**Modelo:** {veiculo['modelo']}")
                     st.write(f"**Ano:** {veiculo['ano']}")
+                    if 'ano_fabricacao' in veiculo and veiculo['ano_fabricacao'] != veiculo['ano']:
+                        st.write(f"**Fabricação:** {veiculo['ano_fabricacao']}")
                 with col_info2:
                     st.write(f"**Cor:** {veiculo['cor']}")
                     st.write(f"**KM:** {veiculo['km']:,}")
                     st.write(f"**Placa:** {veiculo['placa'] or 'Não informada'}")
 
-                # Preços
+                # Preços - AGORA MOSTRANDO OS 3 NÍVEIS
                 st.markdown("---")
-                col_preco1, col_preco2 = st.columns(2)
+                st.markdown("#### 💰 Sistema de Preços")
+                
+                # Recuperar margem de negociação do banco
+                margem_negociacao_veiculo = veiculo.get('margem_negociacao', 15)
+                preco_minimo_veiculo = veiculo['preco_venda'] * (1 - margem_negociacao_veiculo/100)
+                
+                col_preco1, col_preco2, col_preco3 = st.columns(3)
                 with col_preco1:
-                    st.subheader("💰 Preço para Negociação")
-                    st.markdown(f"<h2 style='color: #e88e1b; text-align: center;'>R$ {veiculo['preco_venda']:,.2f}</h2>", unsafe_allow_html=True)
+                    st.markdown("**💰 Custo Total**")
+                    st.markdown(f"<h3 style='color: #a0a0a0; text-align: center;'>R$ {custo_total:,.2f}</h3>", unsafe_allow_html=True)
+                    st.caption(f"Compra: R$ {veiculo['preco_entrada']:,.2f}")
+                    st.caption(f"Gastos: R$ {total_gastos:,.2f}")
+                
                 with col_preco2:
-                    st.subheader("📊 Custo Total")
-                    st.markdown(f"<h2 style='color: #a0a0a0; text-align: center;'>R$ {custo_total:,.2f}</h2>", unsafe_allow_html=True)
+                    st.markdown("**🎯 Preço Mínimo**")
+                    st.markdown(f"<h3 style='color: #F39C12; text-align: center;'>R$ {preco_minimo_veiculo:,.2f}</h3>", unsafe_allow_html=True)
+                    st.caption(f"Margem: {margem_negociacao_veiculo}%")
+                
+                with col_preco3:
+                    st.markdown("**🏷️ Anunciado**")
+                    st.markdown(f"<h3 style='color: #27AE60; text-align: center;'>R$ {veiculo['preco_venda']:,.2f}</h3>", unsafe_allow_html=True)
+                    st.caption("Ponto de partida")
 
-                # Margem
-                if margem_atual >= 20:
-                    st.success(f"**✅ Margem: +{margem_atual:.1f}%**")
-                elif margem_atual >= 10:
-                    st.warning(f"**⚠️ Margem: +{margem_atual:.1f}%**")
+                # Margem real
+                margem_real = ((veiculo['preco_venda'] - custo_total) / custo_total * 100) if custo_total > 0 else 0
+                if margem_real >= 20:
+                    st.success(f"**✅ Margem Real: +{margem_real:.1f}%**")
+                elif margem_real >= 10:
+                    st.warning(f"**⚠️ Margem Real: +{margem_real:.1f}%**")
                 else:
-                    st.error(f"**❌ Margem: +{margem_atual:.1f}%**")
+                    st.error(f"**❌ Margem Real: +{margem_real:.1f}%**")
 
-                # Detalhes do custo
-                st.markdown("**📋 Detalhes do Custo:**")
-                col_det1, col_det2, col_det3 = st.columns(3)
-                with col_det1:
-                    st.metric("Compra", f"R$ {veiculo['preco_entrada']:,.2f}")
-                with col_det2:
-                    st.metric("Gastos", f"R$ {total_gastos:,.2f}")
-                with col_det3:
-                    st.metric("Custo Total", f"R$ {custo_total:,.2f}")
-
-                # Gastos detalhados
+                # Gastos detalhados (código existente continua igual)
                 if gastos_veiculo:
                     st.markdown("#### 💰 Gastos Detalhados")
                     for i, gasto in enumerate(gastos_veiculo):
-                        # ✅ CORREÇÃO: Usar função auxiliar para data do gasto
                         data_gasto_formatada = formatar_data(gasto['data'])
                         
-                        # Key única para cada gasto
                         gasto_key = f"gasto_{veiculo['id']}_{i}"
                         st.markdown(f"""
                         <div style="padding: 0.5rem; margin: 0.25rem 0; background: rgba(255,255,255,0.02); border-radius: 6px;">
@@ -3855,19 +4126,16 @@ with tab2:
                         </div>
                         """, unsafe_allow_html=True)
                 
-                # Adicionar novo gasto - COM FORM CORRIGIDO
+                # Adicionar novo gasto (código existente continua igual)
                 st.markdown("#### ➕ Adicionar Gasto")
                 
-                # ✅ CONTROLE DE ESTADO PARA GASTOS
                 gasto_form_key = f"gasto_form_{veiculo['id']}"
                 if f"{gasto_form_key}_submitted" not in st.session_state:
                     st.session_state[f"{gasto_form_key}_submitted"] = False
                 
-                # Se o formulário foi submetido recentemente, mostrar apenas confirmação
                 if st.session_state[f"{gasto_form_key}_submitted"]:
                     st.success("✅ Gasto adicionado com sucesso!")
                     
-                    # Botão para adicionar outro gasto
                     if st.button("➕ Adicionar Outro Gasto", key=f"add_another_{veiculo['id']}"):
                         st.session_state[f"{gasto_form_key}_submitted"] = False
                         st.rerun()
@@ -3907,7 +4175,6 @@ with tab2:
                                 }
                                 success = db.add_gasto(gasto_data)
                                 
-                                # Salvar arquivo se anexado
                                 if success and arquivo_nota is not None:
                                     documento_data = {
                                         'veiculo_id': veiculo['id'],
@@ -3919,21 +4186,19 @@ with tab2:
                                     db.add_documento_financeiro(documento_data)
                                 
                                 if success:
-                                    # ✅ CORREÇÃO: MARCAR COMO SUBMETIDO SEM st.rerun() IMEDIATO
                                     st.session_state[f"{gasto_form_key}_submitted"] = True
                                     forcar_atualizacao_gastos()
                                     resetar_formulario()
                                     
-                                    # ✅ ATUALIZAÇÃO SEGURA: Usar success message que persiste
                                     st.success("✅ Gasto adicionado com sucesso! Os dados serão atualizados automaticamente.")
                                     
                             else:
                                 st.error("❌ O valor do gasto deve ser maior que zero!")
 
-                # Controles de status
+                # Controles de status (código existente continua igual)
                 st.markdown("---")
                 st.markdown("#### 🔄 Alterar Status")
-                col_status1, col_status2, col_status3 = st.columns(3)  # ← MUDAR PARA 3 COLUNAS
+                col_status1, col_status2, col_status3 = st.columns(3)
                 
                 with col_status1:
                     status_options = ["Em estoque", "Vendido", "Reservado", "Financiado"]
@@ -3952,11 +4217,9 @@ with tab2:
                                 st.success("✅ Status atualizado!")
                                 st.rerun()
                 
-                # ⬇️⬇️ NOVA COLUNA PARA EXCLUIR ⬇️⬇️
                 with col_status3:
                     if veiculo['status'] != 'Vendido':
                         if st.button("🗑️ Excluir", key=f"delete_btn_{veiculo['id']}", use_container_width=True, type="secondary"):
-                            # Para confirmar a exclusão
                             with st.container():
                                 st.warning("⚠️ Tem certeza que deseja excluir este veículo?")
                                 col_confirm1, col_confirm2 = st.columns(2)
