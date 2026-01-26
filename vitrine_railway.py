@@ -1,4 +1,3 @@
-# vitrine_railway.py
 import os
 import sqlite3
 import json
@@ -16,7 +15,7 @@ app = Flask(__name__)
 def get_db_connection():
     """Conecta ao banco de dados (PostgreSQL Railway ou SQLite local)"""
     database_url = os.environ.get('DATABASE_URL')
-    
+
     if database_url and database_url.startswith('postgresql://'):
         # PostgreSQL no Railway
         conn = psycopg2.connect(database_url, sslmode='require')
@@ -26,7 +25,7 @@ def get_db_connection():
         conn = sqlite3.connect("canal_automotivo.db")
         conn.row_factory = sqlite3.Row
         return conn
-        
+
 # =============================================
 # FUNÇÃO AUXILIAR PARA PROCESSAR FOTOS
 # =============================================
@@ -34,16 +33,16 @@ def processar_foto(foto_data):
     """Processa a foto independentemente do formato"""
     if not foto_data:
         return None
-    
+
     try:
         # Se já for bytes (PostgreSQL bytea)
         if isinstance(foto_data, bytes):
             return base64.b64encode(foto_data).decode('utf-8')
-        
+
         # Se for memoryview (PostgreSQL)
         if isinstance(foto_data, memoryview):
             return base64.b64encode(foto_data.tobytes()).decode('utf-8')
-        
+
         # Se for string com \x (hex string)
         if isinstance(foto_data, str):
             # String com \xffd8... (hex string)
@@ -55,17 +54,17 @@ def processar_foto(foto_data):
                     return base64.b64encode(bytes_data).decode('utf-8')
                 except:
                     return None
-            
+
             # Se já for base64
             if len(foto_data) > 100 and ('/' in foto_data or '+' in foto_data):
                 return foto_data
-        
+
         return None
-        
+
     except Exception as e:
         print(f"❌ Erro ao processar foto: {e}")
         return None
-        
+
 # =============================================
 # FUNÇÕES DE BANCO DE DADOS
 # =============================================
@@ -74,7 +73,7 @@ def get_veiculos_estoque():
     conn = None
     try:
         conn = get_db_connection()
-        
+
         if isinstance(conn, psycopg2.extensions.connection):
             # PostgreSQL
             cursor = conn.cursor(cursor_factory=RealDictCursor)
@@ -84,8 +83,8 @@ def get_veiculos_estoque():
                     v.km, v.combustivel, v.cambio, v.portas, v.placa,
                     v.chassi, v.observacoes, v.foto,
                     v.data_cadastro, v.status,
-                    COALESCE(v.margem_negociacao, 15) as margem_negociacao,
-                    v.preco_entrada  -- ADICIONE ESTA LINHA
+                    COALESCE(v.margem_negociacao, 30) as margem_negociacao
+
                 FROM veiculos v
                 WHERE v.status = 'Em estoque'
                 ORDER BY v.data_cadastro DESC
@@ -101,8 +100,8 @@ def get_veiculos_estoque():
                     v.km, v.combustivel, v.cambio, v.portas, v.placa,
                     v.chassi, v.observacoes, v.foto,
                     v.data_cadastro, v.status,
-                    COALESCE(v.margem_negociacao, 15) as margem_negociacao,
-                    v.preco_entrada  -- ADICIONE ESTA LINHA
+                    COALESCE(v.margem_negociacao, 30) as margem_negociacao
+
                 FROM veiculos v
                 WHERE v.status = 'Em estoque'
                 ORDER BY v.data_cadastro DESC
@@ -110,35 +109,35 @@ def get_veiculos_estoque():
             columns = [desc[0] for desc in cursor.description]
             rows = cursor.fetchall()
             veiculos = [dict(zip(columns, row)) for row in rows]
-        
+
         # Processar dados
         for veiculo in veiculos:
-            # ✅ CORREÇÃO: Garantir que preco_venda seja o preço anunciado
+            # Converter decimais
             if 'preco_venda' in veiculo:
                 veiculo['preco_venda'] = float(veiculo['preco_venda'])
-            
-            # ✅ NOVO: Calcular preço mínimo baseado na margem
-            if 'margem_negociacao' in veiculo:
-                margem = float(veiculo.get('margem_negociacao', 15))
-                veiculo['preco_minimo'] = veiculo['preco_venda'] * (1 - margem/100)
-            else:
-                veiculo['preco_minimo'] = veiculo['preco_venda'] * 0.85  # 15% padrão
-            
-            # ✅ NOVO: Calcular margem sobre custo
-            if 'preco_entrada' in veiculo:
-                custo = float(veiculo['preco_entrada'])
-                veiculo['margem_lucro'] = ((veiculo['preco_venda'] - custo) / custo * 100)
-            
+
+
+
+
+
+
+
+
+
+
+
+
+
             # Processar foto
             veiculo['foto_base64'] = processar_foto(veiculo.get('foto'))
-            
+
             # Garantir tipos corretos
             veiculo['km'] = int(veiculo.get('km', 0)) if veiculo.get('km') else 0
             veiculo['portas'] = int(veiculo.get('portas', 4)) if veiculo.get('portas') else 4
             veiculo['ano'] = int(veiculo.get('ano', 2023)) if veiculo.get('ano') else 2023
-        
+
         return veiculos
-        
+
     except Exception as e:
         print(f"❌ Erro ao buscar veículos: {e}")
         return []
@@ -157,14 +156,14 @@ def get_logo_base64():
             "logo-icon.png",
             "./logo-icon.png"
         ]
-        
+
         for path in possible_paths:
             if os.path.exists(path):
                 with open(path, "rb") as f:
                     return base64.b64encode(f.read()).decode('utf-8')
     except Exception as e:
         print(f"⚠️ Não foi possível carregar logo: {e}")
-    
+
     return None
 
 def get_timbrado_base64():
@@ -205,7 +204,7 @@ def stats():
     valor_total = sum(v['preco_venda'] for v in veiculos)
     media_preco = valor_total / total_veiculos if total_veiculos > 0 else 0
     marcas = len(set(v['marca'] for v in veiculos))
-    
+
     return jsonify({
         "total_veiculos": total_veiculos,
         "valor_total": valor_total,
@@ -223,18 +222,18 @@ def home():
     veiculos = get_veiculos_estoque()
     logo_base64 = get_logo_base64()
     timbrado_base64 = get_timbrado_base64()
-    
+
     # Estatísticas
     total_veiculos = len(veiculos)
     valor_total = sum(v['preco_venda'] for v in veiculos)
     media_preco = valor_total / total_veiculos if total_veiculos > 0 else 0
-    
+
     # Agrupar marcas para filtros
     marcas = sorted(list(set(v['marca'] for v in veiculos))) if veiculos else []
-    
+
     # Converter veículos para JSON seguro
     veiculos_json = json.dumps(veiculos, default=str, ensure_ascii=False)
-    
+
     # SEU HTML PREMIUM COMPLETO - COM DADOS DINÂMICOS
     html_template = f'''
 <!DOCTYPE html>
@@ -1105,13 +1104,13 @@ def home():
                         </div>
                         <div class="price-section">
                             <div>
-                                <div class="price">R$ {{vehicle.preco_venda.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}}</div>
-                                <span class="price-label">Preço anunciado</span>
-                                <div style="font-size: 0.85rem; color: var(--gray); margin-top: 0.25rem;">
-                                    <i class="fas fa-tag"></i> Negociável
-                                </div>
+                                <div class="price">R$ ${{vehicle.preco_venda.toLocaleString('pt-BR', {{minimumFractionDigits: 2, maximumFractionDigits: 2}})}}</div>
+                                <span class="price-label">à vista</span>
+
+
+
                             </div>
-                            <button class="btn-details" onclick="event.stopPropagation(); openModal({{vehicle.id}})">
+                            <button class="btn-details" onclick="event.stopPropagation(); openModal(${{vehicle.id}})">
                                 Ver Detalhes
                             </button>
                         </div>
@@ -1264,7 +1263,7 @@ def home():
 </body>
 </html>
 '''
-    
+
     return render_template_string(html_template)
 
 # =============================================
@@ -1273,7 +1272,7 @@ def home():
 if __name__ == "__main__":
     # Modo desenvolvimento local
     port = int(os.environ.get("PORT", 5000))
-    
+
     print("=" * 60)
     print("CATÁLOGO - CARMELO MULTIMARCAS")
     print("=" * 60)
@@ -1281,7 +1280,7 @@ if __name__ == "__main__":
     print(f"🔧 Porta: {port}")
     print(f"🗄️  Banco: {'PostgreSQL' if os.environ.get('DATABASE_URL') else 'SQLite'}")
     print("=" * 60)
-    
+
     # Só roda servidor de desenvolvimento se não estiver no Railway
     if not os.environ.get('RAILWAY_ENVIRONMENT'):
         print("⚡ Iniciando servidor de desenvolvimento...")
