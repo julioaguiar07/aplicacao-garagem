@@ -69,22 +69,21 @@ def processar_foto(foto_data):
 # FUNÇÕES DE BANCO DE DADOS
 # =============================================
 def get_veiculos_estoque():
-    """Busca veículos em estoque do banco"""
+    """Busca veículos em estoque do banco - MOSTRA APENAS PREÇO ANUNCIADO"""
     conn = None
     try:
         conn = get_db_connection()
-
+        
         if isinstance(conn, psycopg2.extensions.connection):
             # PostgreSQL
             cursor = conn.cursor(cursor_factory=RealDictCursor)
             cursor.execute('''
                 SELECT 
-                    v.id, v.marca, v.modelo, v.ano, v.cor, v.preco_venda,
+                    v.id, v.marca, v.modelo, v.ano, v.cor, 
+                    v.preco_venda,  -- ← PREÇO ANUNCIADO (valor que aparece na vitrine)
                     v.km, v.combustivel, v.cambio, v.portas, v.placa,
                     v.chassi, v.observacoes, v.foto,
-                    v.data_cadastro, v.status,
-                    COALESCE(v.margem_negociacao, 30) as margem_negociacao
-
+                    v.data_cadastro, v.status
                 FROM veiculos v
                 WHERE v.status = 'Em estoque'
                 ORDER BY v.data_cadastro DESC
@@ -96,12 +95,11 @@ def get_veiculos_estoque():
             cursor = conn.cursor()
             cursor.execute('''
                 SELECT 
-                    v.id, v.marca, v.modelo, v.ano, v.cor, v.preco_venda,
+                    v.id, v.marca, v.modelo, v.ano, v.cor, 
+                    v.preco_venda,  -- ← PREÇO ANUNCIADO (valor que aparece na vitrine)
                     v.km, v.combustivel, v.cambio, v.portas, v.placa,
                     v.chassi, v.observacoes, v.foto,
-                    v.data_cadastro, v.status,
-                    COALESCE(v.margem_negociacao, 30) as margem_negociacao
-
+                    v.data_cadastro, v.status
                 FROM veiculos v
                 WHERE v.status = 'Em estoque'
                 ORDER BY v.data_cadastro DESC
@@ -109,35 +107,28 @@ def get_veiculos_estoque():
             columns = [desc[0] for desc in cursor.description]
             rows = cursor.fetchall()
             veiculos = [dict(zip(columns, row)) for row in rows]
-
+        
         # Processar dados
         for veiculo in veiculos:
-            # Converter decimais
+            # Converter preço para float - NÃO FAZER CÁLCULOS ADICIONAIS
             if 'preco_venda' in veiculo:
                 veiculo['preco_venda'] = float(veiculo['preco_venda'])
-
-
-
-
-
-
-
-
-
-
-
-
-
+            else:
+                veiculo['preco_venda'] = 0.0
+            
             # Processar foto
             veiculo['foto_base64'] = processar_foto(veiculo.get('foto'))
-
+            
             # Garantir tipos corretos
             veiculo['km'] = int(veiculo.get('km', 0)) if veiculo.get('km') else 0
             veiculo['portas'] = int(veiculo.get('portas', 4)) if veiculo.get('portas') else 4
             veiculo['ano'] = int(veiculo.get('ano', 2023)) if veiculo.get('ano') else 2023
-
+            
+            # LOG PARA DEBUG (remova depois)
+            print(f"🚗 Vitrine: {veiculo['marca']} {veiculo['modelo']} - Preço anunciado: R$ {veiculo['preco_venda']:,.2f}")
+        
         return veiculos
-
+        
     except Exception as e:
         print(f"❌ Erro ao buscar veículos: {e}")
         return []
