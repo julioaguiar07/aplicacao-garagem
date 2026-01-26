@@ -84,7 +84,8 @@ def get_veiculos_estoque():
                     v.km, v.combustivel, v.cambio, v.portas, v.placa,
                     v.chassi, v.observacoes, v.foto,
                     v.data_cadastro, v.status,
-                    COALESCE(v.margem_negociacao, 30) as margem_negociacao
+                    COALESCE(v.margem_negociacao, 15) as margem_negociacao,
+                    v.preco_entrada  -- ADICIONE ESTA LINHA
                 FROM veiculos v
                 WHERE v.status = 'Em estoque'
                 ORDER BY v.data_cadastro DESC
@@ -100,7 +101,8 @@ def get_veiculos_estoque():
                     v.km, v.combustivel, v.cambio, v.portas, v.placa,
                     v.chassi, v.observacoes, v.foto,
                     v.data_cadastro, v.status,
-                    COALESCE(v.margem_negociacao, 30) as margem_negociacao
+                    COALESCE(v.margem_negociacao, 15) as margem_negociacao,
+                    v.preco_entrada  -- ADICIONE ESTA LINHA
                 FROM veiculos v
                 WHERE v.status = 'Em estoque'
                 ORDER BY v.data_cadastro DESC
@@ -111,9 +113,21 @@ def get_veiculos_estoque():
         
         # Processar dados
         for veiculo in veiculos:
-            # Converter decimais
+            # ✅ CORREÇÃO: Garantir que preco_venda seja o preço anunciado
             if 'preco_venda' in veiculo:
                 veiculo['preco_venda'] = float(veiculo['preco_venda'])
+            
+            # ✅ NOVO: Calcular preço mínimo baseado na margem
+            if 'margem_negociacao' in veiculo:
+                margem = float(veiculo.get('margem_negociacao', 15))
+                veiculo['preco_minimo'] = veiculo['preco_venda'] * (1 - margem/100)
+            else:
+                veiculo['preco_minimo'] = veiculo['preco_venda'] * 0.85  # 15% padrão
+            
+            # ✅ NOVO: Calcular margem sobre custo
+            if 'preco_entrada' in veiculo:
+                custo = float(veiculo['preco_entrada'])
+                veiculo['margem_lucro'] = ((veiculo['preco_venda'] - custo) / custo * 100)
             
             # Processar foto
             veiculo['foto_base64'] = processar_foto(veiculo.get('foto'))
@@ -1091,10 +1105,13 @@ def home():
                         </div>
                         <div class="price-section">
                             <div>
-                                <div class="price">R$ ${{vehicle.preco_venda.toLocaleString('pt-BR', {{minimumFractionDigits: 2, maximumFractionDigits: 2}})}}</div>
-                                <span class="price-label">à vista</span>
+                                <div class="price">R$ {{vehicle.preco_venda.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}}</div>
+                                <span class="price-label">Preço anunciado</span>
+                                <div style="font-size: 0.85rem; color: var(--gray); margin-top: 0.25rem;">
+                                    <i class="fas fa-tag"></i> Negociável
+                                </div>
                             </div>
-                            <button class="btn-details" onclick="event.stopPropagation(); openModal(${{vehicle.id}})">
+                            <button class="btn-details" onclick="event.stopPropagation(); openModal({{vehicle.id}})">
                                 Ver Detalhes
                             </button>
                         </div>
