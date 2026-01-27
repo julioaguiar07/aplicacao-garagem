@@ -261,10 +261,10 @@ def home():
             line-height: 1.6;
         }}
 
-        /* HEADER PREMIUM */
+        /* HEADER COM TEXTO DO HERO */
         .header {{
             background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
-            padding: 2rem 0;
+            padding: 1.8rem 0;
             box-shadow: 0 4px 20px rgba(0,0,0,0.1);
             position: sticky;
             top: 0;
@@ -279,31 +279,14 @@ def home():
             justify-content: space-between;
             align-items: center;
         }}
-
+                
         .logo {{
             display: flex;
             align-items: center;
-            gap: 1rem;
         }}
-
-        .logo i {{
-            font-size: 2.5rem;
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }}
-
-        .logo h1 {{
-            font-size: 1.8rem;
-
-            color: white;
-            font-weight: 800;
-
-
-
-
-
-
+                        
+        .hero-text {{
+            text-align: left;
         }}
 
         .header-contact {{
@@ -329,31 +312,27 @@ def home():
             font-size: 1.2rem;
         }}
 
-        /* HERO SECTION */
+        /* HERO SECTION COM LOGO */
         .hero {{
             background: linear-gradient(135deg, rgba(26,26,26,0.95) 0%, rgba(45,45,45,0.9) 100%),
                         url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 400"><rect fill="%23e88e1b" opacity="0.1" width="1200" height="400"/></svg>');
             background-size: cover;
-            padding: 4rem 2rem;
+            padding: 3.5rem 2rem;
             text-align: center;
-            color: white;
         }}
-
-        .hero h2 {{
-            font-size: 3rem;
-            font-weight: 800;
-            margin-bottom: 1rem;
-            background: linear-gradient(135deg, #fff, var(--secondary));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+                        
+        .logo-center {{
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }}
-
-        .hero p {{
-            font-size: 1.3rem;
-            color: #ddd;
-            max-width: 600px;
-            margin: 0 auto;
-
+                            
+        .logo-center img {{
+            height: 120px;
+            width: auto;
+            object-fit: contain;
+            border-radius: 10px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.2);
         }}
 
         /* FILTROS MODERNOS */
@@ -876,9 +855,9 @@ def home():
     <header class="header">
         <div class="header-content">
             <div class="logo">
-                <div style="display: flex; align-items: center; gap: 1rem;">
-                    <img src="data:image/png;base64,{logo_base64}" alt="Logo Carmelo" style="height: 60px; width: auto; border-radius: 8px; object-fit: contain;">
-                    <h1 style="margin: 0; font-size: 1.8rem; background: linear-gradient(135deg, #fff, var(--secondary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: 800;">Carmelo Multimarcas</h1>
+                <div class="hero-text">
+                    <h2 style="margin: 0; font-size: 2.2rem; background: linear-gradient(135deg, #fff, var(--secondary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: 800;">Encontre Seu Próximo Veículo</h2>
+                    <p style="margin: 0.5rem 0 0 0; font-size: 1.2rem; color: #ddd;">Qualidade, confiança e as melhores condições do mercado</p>
                 </div>
             </div>
             <div class="header-contact">
@@ -896,9 +875,9 @@ def home():
 
     <!-- HERO -->
     <section class="hero">
-        <h2>Encontre Seu Próximo Veículo</h2>
-        <p>Qualidade, confiança e as melhores condições do mercado</p>
-
+        <div class="logo-center">
+            <img src="data:image/png;base64,{logo_base64}" alt="Logo Carmelo" style="height: 120px; width: auto; border-radius: 10px; object-fit: contain;">
+        </div>
     </section>
 
     <!-- FILTROS -->
