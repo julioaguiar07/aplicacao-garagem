@@ -874,7 +874,7 @@ def home():
     <!-- HERO -->
     <section class="hero">
         <div class="logo-center">
-            <img src="data:image/png;base64,{logo_base64}" alt="Logo Carmelo" style="height: 210px; width: auto; object-fit: contain;">
+            <img src="data:image/png;base64,{logo_base64}" alt="Logo Carmelo" style="height: 225px; width: auto; object-fit: contain;">
         </div>
     </section>
 
