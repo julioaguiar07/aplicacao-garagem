@@ -80,7 +80,7 @@ def get_veiculos_estoque():
             cursor.execute('''
                 SELECT 
                     v.id, v.marca, v.modelo, v.ano, v.cor, 
-                    v.preco_venda,  -- ← PREÇO ANUNCIADO (valor que aparece na vitrine)
+                    v.preco_venda,  -- ← ESTE É O PREÇO ANUNCIADO DO SEU FORMULÁRIO
                     v.km, v.combustivel, v.cambio, v.portas, v.placa,
                     v.chassi, v.observacoes, v.foto,
                     v.data_cadastro, v.status
@@ -96,7 +96,7 @@ def get_veiculos_estoque():
             cursor.execute('''
                 SELECT 
                     v.id, v.marca, v.modelo, v.ano, v.cor, 
-                    v.preco_venda,  -- ← PREÇO ANUNCIADO (valor que aparece na vitrine)
+                    v.preco_venda,  -- ← ESTE É O PREÇO ANUNCIADO DO SEU FORMULÁRIO
                     v.km, v.combustivel, v.cambio, v.portas, v.placa,
                     v.chassi, v.observacoes, v.foto,
                     v.data_cadastro, v.status
@@ -110,8 +110,9 @@ def get_veiculos_estoque():
         
         # Processar dados
         for veiculo in veiculos:
-            # Converter preço para float - NÃO FAZER CÁLCULOS ADICIONAIS
+            # Converter preço anunciado para float - NÃO MEXER NO VALOR
             if 'preco_venda' in veiculo:
+                # O preço já está correto (R$ 75.000 do seu exemplo)
                 veiculo['preco_venda'] = float(veiculo['preco_venda'])
             else:
                 veiculo['preco_venda'] = 0.0
@@ -123,9 +124,6 @@ def get_veiculos_estoque():
             veiculo['km'] = int(veiculo.get('km', 0)) if veiculo.get('km') else 0
             veiculo['portas'] = int(veiculo.get('portas', 4)) if veiculo.get('portas') else 4
             veiculo['ano'] = int(veiculo.get('ano', 2023)) if veiculo.get('ano') else 2023
-            
-            # LOG PARA DEBUG (remova depois)
-            print(f"🚗 Vitrine: {veiculo['marca']} {veiculo['modelo']} - Preço anunciado: R$ {veiculo['preco_venda']:,.2f}")
         
         return veiculos
         
