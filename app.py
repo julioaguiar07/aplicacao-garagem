@@ -1012,8 +1012,9 @@ class Database:
         cursor = conn.cursor()
         
         # Calcular preço de venda
-        margem = veiculo_data.get('margem_negociacao', 30)
-        preco_venda = veiculo_data['preco_entrada'] * (1 + margem/100)
+        preco_venda = veiculo_data['preco_entrada']
+        margem = veiculo_data.get('margem_negociacao', 15)
+
         
         print(f"💰 Margem: {margem}% | Preço venda: R$ {preco_venda:,.2f}")
         
