@@ -261,10 +261,10 @@ def home():
             line-height: 1.6;
         }}
 
-        /* HEADER PREMIUM */
+        /* HEADER */
         .header {{
             background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
-            padding: 2rem 0;
+            padding: 1.8rem 0;
             box-shadow: 0 4px 20px rgba(0,0,0,0.1);
             position: sticky;
             top: 0;
@@ -280,23 +280,21 @@ def home():
             align-items: center;
         }}
 
-        .logo {{
-            display: flex;
-            align-items: center;
-            gap: 1rem;
+        .header-text {{
+            text-align: left;
         }}
 
-        .logo i {{
-            font-size: 2.5rem;
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }}
-
-        .logo h1 {{
+        .header-text h2 {{
             font-size: 1.8rem;
+            font-weight: 700;
             color: white;
-            font-weight: 800;
+            margin-bottom: 0.3rem;
+        }}
+
+        .header-text p {{
+            font-size: 1rem;
+            color: #ddd;
+            margin: 0;
         }}
 
         .header-contact {{
@@ -322,36 +320,30 @@ def home():
             font-size: 1.2rem;
         }}
 
-        /* HERO SECTION */
-        .hero {{
-            background: linear-gradient(135deg, rgba(26,26,26,0.95) 0%, rgba(45,45,45,0.9) 100%),
-                        url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 400"><rect fill="%23e88e1b" opacity="0.1" width="1200" height="400"/></svg>');
-            background-size: cover;
-            padding: 4rem 2rem;
+        /* LOGO GRANDE CENTRALIZADA */
+        .logo-section {{
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            padding: 2.5rem 2rem;
             text-align: center;
-            color: white;
         }}
 
-        .hero h2 {{
-            font-size: 3rem;
-            font-weight: 800;
-            margin-bottom: 1rem;
-            background: linear-gradient(135deg, #fff, var(--secondary));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }}
-
-        .hero p {{
-            font-size: 1.3rem;
-            color: #ddd;
-            max-width: 600px;
+        .logo-center {{
+            max-width: 1400px;
             margin: 0 auto;
+        }}
+
+        .logo-center img {{
+            height: 150px;
+            width: auto;
+            object-fit: contain;
+            border-radius: 12px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
         }}
 
         /* FILTROS MODERNOS */
         .filters {{
             max-width: 1400px;
-            margin: -3rem auto 3rem;
+            margin: 0 auto 3rem;
             padding: 0 2rem;
         }}
 
@@ -867,11 +859,9 @@ def home():
     <!-- HEADER -->
     <header class="header">
         <div class="header-content">
-            <div class="logo">
-                <div style="display: flex; align-items: center; gap: 1rem;">
-                    <img src="data:image/png;base64,{logo_base64}" alt="Logo Carmelo" style="height: 60px; width: auto; border-radius: 8px; object-fit: contain;">
-                    <h1 style="margin: 0; font-size: 1.8rem; background: linear-gradient(135deg, #fff, var(--secondary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: 800;">Carmelo Multimarcas</h1>
-                </div>
+            <div class="header-text">
+                <h2>Encontre Seu Próximo Veículo</h2>
+                <p>Qualidade, confiança e as melhores condições do mercado</p>
             </div>
             <div class="header-contact">
                 <a href="tel:+558430622434" class="contact-item">
@@ -887,9 +877,10 @@ def home():
     </header>
 
     <!-- HERO -->
-    <section class="hero">
-        <h2>Encontre Seu Próximo Veículo</h2>
-        <p>Qualidade, confiança e as melhores condições do mercado</p>
+    <section class="logo-section">
+        <div class="logo-center">
+            <img src="data:image/png;base64,{logo_base64}" alt="Logo Carmelo" style="height: 150px; width: auto; object-fit: contain;">
+        </div>
     </section>
 
     <!-- FILTROS -->
