@@ -317,7 +317,7 @@ def home():
             background: linear-gradient(135deg, rgba(26,26,26,0.95) 0%, rgba(45,45,45,0.9) 100%),
                         url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 400"><rect fill="%23e88e1b" opacity="0.1" width="1200" height="400"/></svg>');
             background-size: cover;
-            padding: 3.5rem 2rem;
+            padding: 4rem 2rem;
             text-align: center;
         }}
                         
@@ -328,11 +328,9 @@ def home():
         }}
                             
         .logo-center img {{
-            height: 120px;
+            height: 180px;
             width: auto;
             object-fit: contain;
-            border-radius: 10px;
-            box-shadow: 0 6px 20px rgba(0,0,0,0.2);
         }}
 
         /* FILTROS MODERNOS */
@@ -876,7 +874,7 @@ def home():
     <!-- HERO -->
     <section class="hero">
         <div class="logo-center">
-            <img src="data:image/png;base64,{logo_base64}" alt="Logo Carmelo" style="height: 120px; width: auto; border-radius: 10px; object-fit: contain;">
+            <img src="data:image/png;base64,{logo_base64}" alt="Logo Carmelo" style="height: 180px; width: auto; object-fit: contain;">
         </div>
     </section>
 
