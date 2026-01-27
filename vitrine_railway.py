@@ -73,7 +73,7 @@ def get_veiculos_estoque():
     conn = None
     try:
         conn = get_db_connection()
-        
+
         if isinstance(conn, psycopg2.extensions.connection):
             # PostgreSQL
             cursor = conn.cursor(cursor_factory=RealDictCursor)
@@ -107,7 +107,7 @@ def get_veiculos_estoque():
             columns = [desc[0] for desc in cursor.description]
             rows = cursor.fetchall()
             veiculos = [dict(zip(columns, row)) for row in rows]
-        
+
         # Processar dados
         for veiculo in veiculos:
             # Converter preço anunciado para float - NÃO MEXER NO VALOR
@@ -116,17 +116,17 @@ def get_veiculos_estoque():
                 veiculo['preco_venda'] = float(veiculo['preco_venda'])
             else:
                 veiculo['preco_venda'] = 0.0
-            
+
             # Processar foto
             veiculo['foto_base64'] = processar_foto(veiculo.get('foto'))
-            
+
             # Garantir tipos corretos
             veiculo['km'] = int(veiculo.get('km', 0)) if veiculo.get('km') else 0
             veiculo['portas'] = int(veiculo.get('portas', 4)) if veiculo.get('portas') else 4
             veiculo['ano'] = int(veiculo.get('ano', 2023)) if veiculo.get('ano') else 2023
-        
+
         return veiculos
-        
+
     except Exception as e:
         print(f"❌ Erro ao buscar veículos: {e}")
         return []
@@ -261,10 +261,10 @@ def home():
             line-height: 1.6;
         }}
 
-        /* HEADER */
+        /* HEADER PREMIUM */
         .header {{
             background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
-            padding: 1.8rem 0;
+            padding: 2rem 0;
             box-shadow: 0 4px 20px rgba(0,0,0,0.1);
             position: sticky;
             top: 0;
@@ -280,21 +280,30 @@ def home():
             align-items: center;
         }}
 
-        .header-text {{
-            text-align: left;
+        .logo {{
+            display: flex;
+            align-items: center;
+            gap: 1rem;
         }}
 
-        .header-text h2 {{
+        .logo i {{
+            font-size: 2.5rem;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }}
+
+        .logo h1 {{
             font-size: 1.8rem;
-            font-weight: 700;
-            color: white;
-            margin-bottom: 0.3rem;
-        }}
 
-        .header-text p {{
-            font-size: 1rem;
-            color: #ddd;
-            margin: 0;
+            color: white;
+            font-weight: 800;
+
+
+
+
+
+
         }}
 
         .header-contact {{
@@ -320,30 +329,37 @@ def home():
             font-size: 1.2rem;
         }}
 
-        /* LOGO GRANDE CENTRALIZADA */
-        .logo-section {{
-            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-            padding: 2.5rem 2rem;
+        /* HERO SECTION */
+        .hero {{
+            background: linear-gradient(135deg, rgba(26,26,26,0.95) 0%, rgba(45,45,45,0.9) 100%),
+                        url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 400"><rect fill="%23e88e1b" opacity="0.1" width="1200" height="400"/></svg>');
+            background-size: cover;
+            padding: 4rem 2rem;
             text-align: center;
+            color: white;
         }}
 
-        .logo-center {{
-            max-width: 1400px;
+        .hero h2 {{
+            font-size: 3rem;
+            font-weight: 800;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, #fff, var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }}
+
+        .hero p {{
+            font-size: 1.3rem;
+            color: #ddd;
+            max-width: 600px;
             margin: 0 auto;
-        }}
 
-        .logo-center img {{
-            height: 150px;
-            width: auto;
-            object-fit: contain;
-            border-radius: 12px;
-            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
         }}
 
         /* FILTROS MODERNOS */
         .filters {{
             max-width: 1400px;
-            margin: 0 auto 3rem;
+            margin: -3rem auto 3rem;
             padding: 0 2rem;
         }}
 
@@ -859,9 +875,11 @@ def home():
     <!-- HEADER -->
     <header class="header">
         <div class="header-content">
-            <div class="header-text">
-                <h2>Encontre Seu Próximo Veículo</h2>
-                <p>Qualidade, confiança e as melhores condições do mercado</p>
+            <div class="logo">
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                    <img src="data:image/png;base64,{logo_base64}" alt="Logo Carmelo" style="height: 60px; width: auto; border-radius: 8px; object-fit: contain;">
+                    <h1 style="margin: 0; font-size: 1.8rem; background: linear-gradient(135deg, #fff, var(--secondary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: 800;">Carmelo Multimarcas</h1>
+                </div>
             </div>
             <div class="header-contact">
                 <a href="tel:+558430622434" class="contact-item">
@@ -877,10 +895,10 @@ def home():
     </header>
 
     <!-- HERO -->
-    <section class="logo-section">
-        <div class="logo-center">
-            <img src="data:image/png;base64,{logo_base64}" alt="Logo Carmelo" style="height: 150px; width: auto; object-fit: contain;">
-        </div>
+    <section class="hero">
+        <h2>Encontre Seu Próximo Veículo</h2>
+        <p>Qualidade, confiança e as melhores condições do mercado</p>
+
     </section>
 
     <!-- FILTROS -->
