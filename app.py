@@ -332,11 +332,11 @@ def seção_papel_timbrado():
 
 
 # =============================================
-# GERADOR DE STORIES SIMPLIFICADO - SEM EMOJIS
+# GERADOR DE STORIES COM TEMPLATE FIXO - VERSÃO CORRIGIDA
 # =============================================
 
-def gerar_story_simplificado(veiculo_id):
-    """Versão simplificada para stories SEM EMOJIS problemáticos"""
+def gerar_story_com_template(veiculo_id):
+    """Gera um story usando template fixo stories.png"""
     try:
         # Buscar dados do veículo
         veiculos = db.get_veiculos()
@@ -351,176 +351,196 @@ def gerar_story_simplificado(veiculo_id):
         if not foto_bytes:
             return None, "Este veículo não tem foto cadastrada"
         
-        # Carregar template ou criar preto
+        # Carregar template do story
         try:
             template = Image.open("stories.png")
-            if template.mode != 'RGB':
-                template = template.convert('RGB')
         except:
-            # Criar template preto 1080x1920
-            template = Image.new('RGB', (1080, 1920), color='#000000')
+            return None, "Template stories.png não encontrado. Coloque o arquivo na pasta do projeto."
         
-        # Carregar foto do carro
-        foto_carro = Image.open(io.BytesIO(foto_bytes))
-        
-        # =============================================
-        # FOTO MAIOR
-        # =============================================
-        max_width = 950
-        max_height = 1200
-        
-        # Redimensionar mantendo proporção
-        foto_ratio = foto_carro.width / foto_carro.height
-        
-        if foto_carro.width > foto_carro.height:
-            # Foto horizontal
-            new_width = max_width
-            new_height = int(max_width / foto_ratio)
-        else:
-            # Foto vertical
-            new_height = max_height
-            new_width = int(max_height * foto_ratio)
-            
-            if new_width > max_width:
-                new_width = max_width
-                new_height = int(max_width / foto_ratio)
-        
-        foto_carro = foto_carro.resize((new_width, new_height), Image.Resampling.LANCZOS)
-        
-        # Centralizar
-        x = (template.width - new_width) // 2
-        y = 200
-        
-        # Colar a foto
-        template.paste(foto_carro, (x, y))
-        
-        # =============================================
-        # TEXTOS SEM EMOJIS
-        # =============================================
-        draw = ImageDraw.Draw(template)
-        
-        # Usar fonte padrão para evitar problemas
-        try:
-            # Tentar Arial primeiro
-            font_titulo = ImageFont.truetype("arial.ttf", 85)
-            font_ano = ImageFont.truetype("arial.ttf", 55)
-            font_preco = ImageFont.truetype("arialbd.ttf", 100)
-        except:
-            # Fallback para fonte padrão
-            default_font = ImageFont.load_default()
-            font_titulo = default_font
-            font_ano = default_font
-            font_preco = default_font
-        
-        # Posição inicial para textos
-        texto_start_y = y + new_height + 50
-        
-        # 1. MARCA E MODELO
-        marca_modelo = f"{veiculo['marca']} {veiculo['modelo']}"
-        
-        # Centralizar título
-        try:
-            marca_width = draw.textlength(marca_modelo, font=font_titulo)
-        except:
-            # Fallback manual
-            marca_width = len(marca_modelo) * 45
-        
-        marca_x = (template.width - marca_width) // 2
-        marca_y = texto_start_y
-        
-        # Escrever em BRANCO
-        draw.text((marca_x, marca_y), marca_modelo, fill="#FFFFFF", font=font_titulo)
-        
-        # 2. ANO
-        ano_y = marca_y + 100
-        ano_texto = f"{veiculo['ano']}"
-        
-        try:
-            ano_width = draw.textlength(ano_texto, font=font_ano)
-        except:
-            ano_width = len(ano_texto) * 30
-        
-        ano_x = (template.width - ano_width) // 2
-        
-        # ANO em LARANJA
-        draw.text((ano_x, ano_y), ano_texto, fill="#e88e1b", font=font_ano)
-        
-        # 3. KM (apenas se for relevante)
-        if veiculo['km'] > 0:
-            km_y = ano_y + 80
-            km_texto = f"{veiculo['km']:,} KM"
-            
-            try:
-                km_width = draw.textlength(km_texto, font=font_ano)
-            except:
-                km_width = len(km_texto) * 30
-            
-            km_x = (template.width - km_width) // 2
-            
-            # KM em CINZA CLARO
-            draw.text((km_x, km_y), km_texto, fill="#CCCCCC", font=font_ano)
-            
-            preco_y = km_y + 100
-        else:
-            preco_y = ano_y + 100
-        
-        # 4. PREÇO
-        preco_valor = veiculo['preco_venda']
-        preco_texto = f"R$ {preco_valor:,.2f}"
-        preco_texto = preco_texto.replace(',', 'X').replace('.', ',').replace('X', '.')
-        
-        try:
-            preco_width = draw.textlength(preco_texto, font=font_preco)
-        except:
-            preco_width = len(preco_texto) * 55
-        
-        preco_x = (template.width - preco_width) // 2
-        
-        # PREÇO em BRANCO GRANDE
-        draw.text((preco_x, preco_y), preco_texto, fill="#FFFFFF", font=font_preco)
-        
-        # 5. CONTATO (SEM EMOJI - usando texto apenas)
-        contato_y = preco_y + 120
-        contato_texto = "WhatsApp (84) 99999-9999"  # SEM EMOJI
-        
-        try:
-            contato_width = draw.textlength(contato_texto, font=font_ano)
-        except:
-            contato_width = len(contato_texto) * 30
-        
-        contato_x = (template.width - contato_width) // 2
-        
-        # Contato em CINZA
-        draw.text((contato_x, contato_y), contato_texto, fill="#888888", font=font_ano)
-        
-        # =============================================
-        # SALVAR IMAGEM
-        # =============================================
-        nome_arquivo = f"story_{veiculo['marca']}_{veiculo['modelo']}_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.png"
-        
+        # Converter template para RGB se necessário
         if template.mode != 'RGB':
             template = template.convert('RGB')
         
-        template.save(nome_arquivo, format='PNG', quality=95)
+        # Carregar e processar foto do carro
+        foto_carro = Image.open(io.BytesIO(foto_bytes))
+        
+        # Definir área para a foto (centralizada verticalmente e horizontalmente)
+        foto_area_width = 800  # Largura máxima da foto
+        foto_area_height = 900  # Altura máxima da foto
+        foto_area_x = (template.width - foto_area_width) // 2  # Centralizado horizontalmente
+        foto_area_y = 300  # Ajuste esta posição vertical conforme seu template
+        
+        # Redimensionar foto mantendo proporção
+        foto_ratio = foto_carro.width / foto_carro.height
+        target_ratio = foto_area_width / foto_area_height
+        
+        if foto_ratio > target_ratio:
+            # Foto é mais larga que a área
+            new_width = foto_area_width
+            new_height = int(foto_area_width / foto_ratio)
+        else:
+            # Foto é mais alta que a área
+            new_height = foto_area_height
+            new_width = int(foto_area_height * foto_ratio)
+        
+        foto_carro = foto_carro.resize((new_width, new_height), Image.Resampling.LANCZOS)
+        
+        # Calcular posição para centralizar na área
+        pos_x = foto_area_x + (foto_area_width - new_width) // 2
+        pos_y = foto_area_y + (foto_area_height - new_height) // 2
+        
+        # Colocar foto no template
+        template.paste(foto_carro, (pos_x, pos_y))
+        
+        # Adicionar informações do veículo (área abaixo da foto)
+        draw = ImageDraw.Draw(template)
+        
+        # Tentar carregar fontes (usando caminhos explícitos para evitar problemas)
+        try:
+            # Tentar várias fontes possíveis
+            font_paths = [
+                "arial.ttf",
+                "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
+                "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+                "/usr/share/fonts/truetype/ubuntu/Ubuntu-R.ttf"
+            ]
+            
+            font_titulo = None
+            font_detalhes = None
+            font_preco = None
+            font_info = None
+            
+            for path in font_paths:
+                try:
+                    if font_titulo is None:
+                        font_titulo = ImageFont.truetype(path, 60)
+                    if font_detalhes is None:
+                        font_detalhes = ImageFont.truetype(path, 42)
+                    if font_preco is None:
+                        font_preco = ImageFont.truetype(path, 75)
+                    if font_info is None:
+                        font_info = ImageFont.truetype(path, 36)
+                except:
+                    continue
+            
+            if font_titulo is None:
+                raise Exception("Nenhuma fonte encontrada")
+                
+        except:
+            # Fallback para fontes padrão
+            font_titulo = ImageFont.load_default()
+            font_detalhes = ImageFont.load_default()
+            font_preco = ImageFont.load_default()
+            font_info = ImageFont.load_default()
+        
+        # Posições Y para as informações (logo abaixo da área da foto)
+        info_start_y = foto_area_y + foto_area_height + 50
+        
+        # 1. TÍTULO: Marca e Modelo
+        titulo = f"{veiculo['marca']} {veiculo['modelo']}"
+        # Usar textlength em vez de textbbox se disponível
+        try:
+            titulo_width = draw.textlength(titulo, font=font_titulo)
+        except:
+            titulo_bbox = draw.textbbox((0, 0), titulo, font=font_titulo)
+            titulo_width = titulo_bbox[2] - titulo_bbox[0]
+        
+        titulo_x = (template.width - titulo_width) // 2
+        titulo_y = info_start_y
+        
+        # Escrever título em branco
+        draw.text((titulo_x, titulo_y), titulo, fill="#FFFFFF", font=font_titulo)
+        
+        # 2. DETALHES: Ano, Cor, KM
+        detalhes_y = titulo_y + 80
+        
+        # Preparar detalhes - SUBSTITUIR BULLET POR PIPE
+        ano = str(veiculo['ano'])
+        cor = veiculo['cor']
+        km = f"{veiculo['km']:,} KM" if veiculo['km'] > 0 else "KM ZERO"
+        
+        # Usar pipe (|) em vez de bullet point (•)
+        detalhes = f"{ano} | {cor} | {km}"
+        
+        try:
+            detalhes_width = draw.textlength(detalhes, font=font_detalhes)
+        except:
+            detalhes_bbox = draw.textbbox((0, 0), detalhes, font=font_detalhes)
+            detalhes_width = detalhes_bbox[2] - detalhes_bbox[0]
+        
+        detalhes_x = (template.width - detalhes_width) // 2
+        
+        draw.text((detalhes_x, detalhes_y), detalhes, fill="#e88e1b", font=font_detalhes)
+        
+        # 3. INFORMAÇÕES ADICIONAIS
+        info_y = detalhes_y + 70
+        
+        infos = []
+        if veiculo.get('combustivel'):
+            # Remover emojis problemáticos
+            combustivel_text = veiculo['combustivel']
+            infos.append(combustivel_text)
+        if veiculo.get('cambio'):
+            cambio_text = veiculo['cambio']
+            infos.append(cambio_text)
+        if veiculo.get('portas'):
+            portas_text = f"{veiculo['portas']} portas"
+            infos.append(portas_text)
+        
+        if infos:
+            # Usar pipe em vez de bullet
+            info_text = " | ".join(infos)
+            try:
+                info_width = draw.textlength(info_text, font=font_info)
+            except:
+                info_bbox = draw.textbbox((0, 0), info_text, font=font_info)
+                info_width = info_bbox[2] - info_bbox[0]
+            
+            info_x = (template.width - info_width) // 2
+            draw.text((info_x, info_y), info_text, fill="#a0a0a0", font=font_info)
+            
+            # Ajustar posição do preço baseado se tem infos adicionais
+            preco_y = info_y + 80
+        else:
+            preco_y = detalhes_y + 70
+        
+        # 4. PREÇO
+        # Formatar preço no padrão brasileiro
+        preco = f"R$ {veiculo['preco_venda']:,.2f}"
+        preco = preco.replace(',', 'X').replace('.', ',').replace('X', '.')
+        
+        try:
+            preco_width = draw.textlength(preco, font=font_preco)
+        except:
+            preco_bbox = draw.textbbox((0, 0), preco, font=font_preco)
+            preco_width = preco_bbox[2] - preco_bbox[0]
+        
+        preco_x = (template.width - preco_width) // 2
+        
+        # Escrever preço em branco
+        draw.text((preco_x, preco_y), preco, fill="#FFFFFF", font=font_preco)
+        
+        # Salvar imagem final
+        nome_arquivo = f"story_{veiculo['marca']}_{veiculo['modelo']}_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.png"
+        
+        # Salvar como RGB para evitar problemas
+        if template.mode == 'RGBA':
+            template = template.convert('RGB')
+        
+        template.save(nome_arquivo, quality=95, format='PNG')
         
         return nome_arquivo, None
         
     except Exception as e:
-        print(f"❌ Erro ao gerar story: {str(e)}")
-        return None, f"Erro: {str(e)}"
+        print(f"❌ Erro ao gerar story: {e}")
+        import traceback
+        traceback.print_exc()
+        return None, str(e)
 
 
 def seção_gerador_stories():
-    """Seção para gerar stories de veículos - SEM PROBLEMAS DE CHAVE"""
+    """Seção para gerar stories de veículos para redes sociais"""
     st.markdown("#### 📱 Gerador de Stories - Divulgação de Veículos")
-    
-    st.info("""
-    **🎯 Versão simplificada:**
-    - Foto grande e centralizada
-    - Fontes ampliadas para melhor leitura
-    - Apenas informações essenciais
-    - Design limpo e profissional
-    """)
     
     # Buscar veículos em estoque
     veiculos_estoque = [v for v in db.get_veiculos() if v['status'] == 'Em estoque']
@@ -529,60 +549,146 @@ def seção_gerador_stories():
         st.warning("⚠️ Não há veículos em estoque para gerar stories!")
         return
     
-    # Layout em colunas
-    col_selecao, col_preview = st.columns([2, 1])
+    # Layout em duas colunas
+    col_sel, col_info = st.columns([2, 1])
     
-    with col_selecao:
-        # Seleção do veículo - CHAVE ÚNICA
+    with col_sel:
+        # Seleção do veículo
         veiculos_options = {f"{v['id']} - {v['marca']} {v['modelo']} ({v['ano']})": v for v in veiculos_estoque}
         veiculo_selecionado = st.selectbox(
-            "🚗 **Selecione o veículo para o story:**",
+            "🚗 **Selecione o veículo para divulgar:**",
             options=list(veiculos_options.keys()),
-            key="story_veiculo_select_unique"  # CHAVE ÚNICA
+            key="story_veiculo_select"
         )
         
         if veiculo_selecionado:
             veiculo_id = int(veiculo_selecionado.split(" - ")[0])
             veiculo = veiculos_options[veiculo_selecionado]
-            
-            # Prévia das informações
-            st.markdown("##### 📋 Informações que aparecerão:")
-            
-            col_info1, col_info2 = st.columns(2)
-            with col_info1:
-                st.markdown(f"""
-                **Marca/Modelo:**  
-                {veiculo['marca']} {veiculo['modelo']}
-                
-                **Ano:**  
-                {veiculo['ano']}
-                """)
-            
-            with col_info2:
-                st.markdown(f"""
-                **KM:**  
-                {veiculo['km']:,}
-                
-                **Preço:**  
-                R$ {veiculo['preco_venda']:,.2f}
-                """)
     
-    with col_preview:
-        st.markdown("##### 🖼️ Status da foto:")
+    with col_info:
+        st.markdown("##### 📋 **Prévia das Informações**")
         
         if veiculo_selecionado:
+            st.markdown(f"""
+            **Marca:** {veiculo['marca']}  
+            **Modelo:** {veiculo['modelo']}  
+            **Ano:** {veiculo['ano']}  
+            **Cor:** {veiculo['cor']}  
+            **KM:** {veiculo['km']:,}  
+            **Preço:** R$ {veiculo['preco_venda']:,.2f}
+            """)
+            
+            # Verificar se tem foto
             foto_bytes = db.get_foto_veiculo(veiculo_id)
             if foto_bytes:
-                try:
-                    foto = Image.open(io.BytesIO(foto_bytes))
-                    foto.thumbnail((200, 200))
-                    st.image(foto, caption="Foto do veículo")
-                    st.success("✅ Foto disponível")
-                except:
-                    st.success("✅ Foto disponível")
+                st.success("✅ **Foto disponível**")
             else:
-                st.error("❌ Sem foto cadastrada")
-                st.info("Cadastre uma foto do veículo antes de gerar o story")
+                st.error("❌ **Sem foto cadastrada**")
+    
+    # Mostrar prévia do template
+    st.markdown("---")
+    st.markdown("##### 🎨 **Prévia do Template**")
+    
+    col_template1, col_template2 = st.columns([1, 1])
+    
+    with col_template1:
+        try:
+            # Mostrar template stories.png
+            st.image("stories.png", caption="Template Base (stories.png)", use_column_width=True)
+        except:
+            st.error("❌ **Arquivo 'stories.png' não encontrado!**")
+            st.info("""
+            **Para usar esta funcionalidade:**
+            1. Coloque o arquivo **stories.png** na mesma pasta do projeto
+            2. O template deve ter tamanho **1080x1920 pixels**
+            3. Deixe espaço para a foto do carro e textos
+            """)
+            return
+    
+    with col_template2:
+        # Instruções
+        st.markdown("##### 📝 **Como funciona:**")
+        st.markdown("""
+        O sistema irá:
+        1. **Buscar a foto** do veículo selecionado
+        2. **Redimensionar** para caber no espaço designado
+        3. **Centralizar** vertical e horizontalmente
+        4. **Adicionar informações** abaixo da foto:
+           - Marca e Modelo (em branco)
+           - Ano, Cor e KM (em laranja)
+           - Combustível/Câmbio (em cinza)
+           - Preço (em branco e maior)
+        """)
+    
+    # Divisor
+    st.markdown("---")
+    
+    # Botão para gerar
+    if veiculo_selecionado:
+        col_btn1, col_btn2, col_btn3 = st.columns([1, 2, 1])
+        
+        with col_btn2:
+            if st.button("✨ **Gerar Story para Instagram/Facebook**", 
+                        use_container_width=True, 
+                        type="primary",
+                        key="gerar_story_btn"):
+                
+                # Verificar se tem foto
+                foto_bytes = db.get_foto_veiculo(veiculo_id)
+                if not foto_bytes:
+                    st.error("❌ Este veículo não tem foto cadastrada!")
+                    return
+                
+                with st.spinner("🎨 **Gerando story profissional..."):
+                    nome_arquivo, erro = gerar_story_com_template(veiculo_id)
+                    
+                    if erro:
+                        st.error(f"❌ **Erro:** {erro}")
+                    else:
+                        st.success("✅ **Story gerado com sucesso!**")
+                        
+                        # Mostrar resultado
+                        st.markdown("##### 👁️ **Prévia do Resultado Final**")
+                        
+                        col_result1, col_result2 = st.columns([2, 1])
+                        
+                        with col_result1:
+                            st.image(nome_arquivo, use_column_width=True)
+                        
+                        with col_result2:
+                            # Botão de download
+                            with open(nome_arquivo, "rb") as file:
+                                st.download_button(
+                                    label="📥 **Baixar Story**",
+                                    data=file,
+                                    file_name=f"story_{veiculo['marca']}_{veiculo['modelo']}.png",
+                                    mime="image/png",
+                                    use_container_width=True,
+                                    key="download_story"
+                                )
+                            
+                            st.markdown("---")
+                            st.markdown("##### 💡 **Dicas:**")
+                            st.markdown("""
+                            - **Instagram Stories:** Compartilhe direto do celular
+                            - **Facebook Stories:** Mesmo formato
+                            - **WhatsApp Status:** Excelente para divulgação
+                            - Use hashtags: #carros #automoveis #veiculos
+                            """)
+                        
+                        # Limpar arquivo temporário após algum tempo
+                        import threading
+                        def deletar_arquivo_temporario(arquivo):
+                            time.sleep(300)  # 5 minutos
+                            try:
+                                os.remove(arquivo)
+                            except:
+                                pass
+                        
+                        thread = threading.Thread(target=deletar_arquivo_temporario, args=(nome_arquivo,))
+                        thread.start()
+    else:
+        st.info("ℹ️ **Selecione um veículo acima para gerar o story**")
     
     # Divisor
     st.markdown("---")
