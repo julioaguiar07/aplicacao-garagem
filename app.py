@@ -368,7 +368,7 @@ def gerar_story_com_template(veiculo_id):
         foto_area_width = 950  # Largura máxima da foto
         foto_area_height = 1200  # Altura máxima da foto
         foto_area_x = (template.width - foto_area_width) // 2  # Centralizado horizontalmente
-        foto_area_y = 320  # Ajuste esta posição vertical conforme seu template
+        foto_area_y = 325  # Ajuste esta posição vertical conforme seu template
         
         # Redimensionar foto mantendo proporção
         foto_ratio = foto_carro.width / foto_carro.height
