@@ -413,10 +413,10 @@ def gerar_story_com_template(veiculo_id):
                 try:
                     if font_marca_modelo is None:
                         # Fonte MUITO maior para marca/modelo
-                        font_marca_modelo = ImageFont.truetype(path, 650)
+                        font_marca_modelo = ImageFont.truetype(path, 1500)
                     if font_ano_cambio is None:
                         # Fonte maior para ano/câmbio
-                        font_ano_cambio = ImageFont.truetype(path, 630)
+                        font_ano_cambio = ImageFont.truetype(path, 1480)
                 except:
                     continue
             
