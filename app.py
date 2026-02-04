@@ -333,13 +333,12 @@ def seção_papel_timbrado():
 
 def gerar_story_com_template(veiculo_id):
     """
-    Gera um story usando template fixo stories.png com:
-    - Foto centralizada
-    - Texto posicionado corretamente na área laranja
-    - Fontes ajustadas
+    Gera um story com visual profissional:
+    - Foto recortada e centralizada sem distorção
+    - Texto posicionado exatamente na área laranja inferior
     """
     try:
-        # 1. BUSCAR DADOS
+        # 1. BUSCAR DADOS DO VEÍCULO
         veiculos = db.get_veiculos()
         veiculo = next((v for v in veiculos if v['id'] == veiculo_id), None)
         
@@ -354,93 +353,94 @@ def gerar_story_com_template(veiculo_id):
         try:
             template = Image.open("stories.png").convert("RGB")
         except:
-            return None, "Template 'stories.png' não encontrado."
+            return None, "Template 'stories.png' não encontrado na pasta do projeto."
 
         foto_carro = Image.open(io.BytesIO(foto_bytes)).convert("RGB")
         
-        # 3. PROCESSAR E POSICIONAR A FOTO
-        # Área reservada para a foto (baseado no seu código anterior)
+        # 3. PROCESSAMENTO INTELIGENTE DA FOTO (CROP & RESIZE)
+        # Área definida para a foto no design (ajustado para seu template)
         area_w, area_h = 950, 1200
-        area_x = (template.width - area_w) // 2
-        area_y = 325 
+        area_x = (template.width - area_w) // 2  # Centraliza horizontalmente
+        area_y = 325  # Posição vertical onde começa a foto
         
-        # Lógica de "Crop" inteligente (preencher área sem distorcer)
-        # Calcula proporções
+        # Calcula proporções para preencher todo o espaço (zoom in se necessário)
         img_ratio = foto_carro.width / foto_carro.height
         target_ratio = area_w / area_h
         
         if img_ratio > target_ratio:
-            # Foto mais larga que a área: ajusta pela altura
+            # Foto mais larga: ajusta pela altura e corta laterais
             new_height = area_h
             new_width = int(new_height * img_ratio)
         else:
-            # Foto mais alta que a área: ajusta pela largura
+            # Foto mais alta: ajusta pela largura e corta topo/base
             new_width = area_w
             new_height = int(new_width / img_ratio)
             
         foto_resized = foto_carro.resize((new_width, new_height), Image.Resampling.LANCZOS)
         
-        # Centraliza o crop
-        center_x = (new_width - area_w) // 2
-        center_y = (new_height - area_h) // 2
-        foto_final = foto_resized.crop((center_x, center_y, center_x + area_w, center_y + area_h))
+        # Cortar o excesso para caber exatamente na caixa 950x1200
+        left = (new_width - area_w) // 2
+        top = (new_height - area_h) // 2
+        right = left + area_w
+        bottom = top + area_h
         
-        # Cola a foto no template
+        foto_final = foto_resized.crop((left, top, right, bottom))
+        
+        # Colar a foto processada no template
         template.paste(foto_final, (area_x, area_y))
         
-        # 4. CONFIGURAÇÃO DE TEXTO E FONTES
+        # 4. CONFIGURAÇÃO DE TEXTOS E FONTES
         draw = ImageDraw.Draw(template)
         
-        def load_safe_font(font_name, size):
-            """Tenta carregar fontes comuns ou usa padrão"""
-            font_paths = [
-                font_name,  # Tenta arquivo local primeiro
-                "arialbd.ttf", "arial.ttf",  # Windows
-                "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf", # Linux
-                "/System/Library/Fonts/HelveticaNeue.ttc" # Mac
-            ]
-            for path in font_paths:
+        def load_font(size, is_bold=False):
+            """Carrega fontes do sistema ou usa padrão"""
+            fonts = []
+            if is_bold:
+                fonts = ["arialbd.ttf", "Roboto-Bold.ttf", "Verdana Bold.ttf", 
+                         "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf"]
+            else:
+                fonts = ["arial.ttf", "Roboto-Regular.ttf", "Verdana.ttf",
+                         "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf"]
+            
+            for f in fonts:
                 try:
-                    return ImageFont.truetype(path, size)
+                    return ImageFont.truetype(f, size)
                 except:
                     continue
             return ImageFont.load_default()
 
-        # Tamanhos base para 1080px de largura
-        size_titulo = 90
-        size_subtitulo = 50
+        # Configuração de tamanhos
+        font_titulo = load_font(80, is_bold=True)  # Marca e Modelo
+        font_sub = load_font(50, is_bold=False)    # Ano e Câmbio
         
-        font_titulo = load_safe_font("impact.ttf", size_titulo) # Impact ou Arial Bold ficam ótimos
-        font_sub = load_safe_font("arial.ttf", size_subtitulo)
-        
-        # 5. ESCREVENDO O TEXTO (Área do Hexágono Laranja)
-        # O centro vertical aproximado do hexágono laranja é Y = 1660
+        # 5. ESCREVENDO O TEXTO NA ÁREA LARANJA
+        # O centro visual do hexágono laranja fica por volta de Y = 1660
         centro_hex_y = 1660
-        largura_maxima_texto = 900 # Margem de segurança lateral
         
-        # --- TÍTULO (MARCA MODELO) ---
+        # --- LINHA 1: MARCA E MODELO ---
         texto_titulo = f"{veiculo['marca']} {veiculo['modelo']}".upper()
         
-        # Reduzir fonte se o texto for muito grande
-        while True:
-            bbox = draw.textbbox((0, 0), texto_titulo, font=font_titulo)
-            text_w = bbox[2] - bbox[0]
-            if text_w < largura_maxima_texto or size_titulo < 40:
-                break
-            size_titulo -= 5
-            font_titulo = load_safe_font("arialbd.ttf", size_titulo)
-
+        # Ajuste dinâmico se o texto for muito longo
+        bbox = draw.textbbox((0, 0), texto_titulo, font=font_titulo)
+        text_w = bbox[2] - bbox[0]
         text_h = bbox[3] - bbox[1]
         
-        # Posiciona o título um pouco acima do centro
+        while text_w > 900: # Se for maior que a largura disponível
+            current_size = font_titulo.size - 5
+            font_titulo = load_font(current_size, is_bold=True)
+            bbox = draw.textbbox((0, 0), texto_titulo, font=font_titulo)
+            text_w = bbox[2] - bbox[0]
+            text_h = bbox[3] - bbox[1]
+
+        # Posiciona um pouco acima do centro geométrico
         pos_x_titulo = (template.width - text_w) // 2
-        pos_y_titulo = centro_hex_y - text_h - 10 # 10px acima do centro
+        pos_y_titulo = centro_hex_y - text_h - 10 
         
-        # Sombra leve para destacar no laranja
-        draw.text((pos_x_titulo + 2, pos_y_titulo + 2), texto_titulo, font=font_titulo, fill="#333333")
+        # Sombra suave para legibilidade
+        draw.text((pos_x_titulo + 2, pos_y_titulo + 2), texto_titulo, font=font_titulo, fill="#A04000")
         draw.text((pos_x_titulo, pos_y_titulo), texto_titulo, font=font_titulo, fill="#FFFFFF")
         
-        # --- SUBTÍTULO (ANO | CÂMBIO) ---
+        # --- LINHA 2: ANO | CÂMBIO ---
         cambio = veiculo['cambio'] if veiculo['cambio'] else ""
         texto_sub = f"{veiculo['ano']} | {cambio}"
         
@@ -448,15 +448,15 @@ def gerar_story_com_template(veiculo_id):
         text_w_sub = bbox_sub[2] - bbox_sub[0]
         
         pos_x_sub = (template.width - text_w_sub) // 2
-        pos_y_sub = pos_y_titulo + text_h + 20 # 20px abaixo do título
+        pos_y_sub = pos_y_titulo + text_h + 15 # 15px abaixo do título
         
         draw.text((pos_x_sub, pos_y_sub), texto_sub, font=font_sub, fill="#FFFFFF")
         
-        # 6. SALVAR E RETORNAR
+        # 6. SALVAR ARQUIVO
         nome_arquivo = f"story_{veiculo['marca']}_{veiculo['modelo']}_{datetime.datetime.now().strftime('%H%M%S')}.png"
-        nome_arquivo = nome_arquivo.replace(" ", "_") # Evita espaços no nome
+        nome_arquivo = nome_arquivo.replace(" ", "_").replace("/", "-")
         
-        template.save(nome_arquivo, quality=95)
+        template.save(nome_arquivo, quality=100)
         
         return nome_arquivo, None
 
@@ -502,8 +502,6 @@ def seção_gerador_stories():
             **Marca:** {veiculo['marca']}  
             **Modelo:** {veiculo['modelo']}  
             **Ano:** {veiculo['ano']}  
-            **Cor:** {veiculo['cor']}  
-            **KM:** {veiculo['km']:,}  
             **Preço:** R$ {veiculo['preco_venda']:,.2f}
             """)
             
@@ -514,110 +512,81 @@ def seção_gerador_stories():
             else:
                 st.error("❌ **Sem foto cadastrada**")
     
-    # Mostrar prévia do template
-    st.markdown("---")
-    st.markdown("##### 🎨 **Prévia do Template**")
-    
-    col_template1, col_template2 = st.columns([1, 1])
-    
-    with col_template1:
-        try:
-            # Mostrar template stories.png
-            st.image("stories.png", caption="Template Base (stories.png)", use_column_width=True)
-        except:
-            st.error("❌ **Arquivo 'stories.png' não encontrado!**")
-            st.info("""
-            **Para usar esta funcionalidade:**
-            1. Coloque o arquivo **stories.png** na mesma pasta do projeto
-            2. O template deve ter tamanho **1080x1920 pixels**
-            3. Deixe espaço para a foto do carro e textos
-            """)
-            return
-    
-    with col_template2:
-        # Instruções
-        st.markdown("##### 📝 **Como funciona:**")
-        st.markdown("""
-        O sistema irá:
-        1. **Buscar a foto** do veículo selecionado
-        2. **Redimensionar** para caber no espaço designado
-        3. **Centralizar** vertical e horizontalmente
-        4. **Adicionar informações** abaixo da foto:
-           - Marca e Modelo (em branco)
-           - Ano, Cor e KM (em laranja)
-           - Combustível/Câmbio (em cinza)
-           - Preço (em branco e maior)
-        """)
-    
-    # Divisor
     st.markdown("---")
     
     # Botão para gerar
     if veiculo_selecionado:
+        # Usar timestamp para chave única
+        import time
+        unique_key = f"gerar_story_btn_{time.time()}"
+        
         col_btn1, col_btn2, col_btn3 = st.columns([1, 2, 1])
         
         with col_btn2:
-            if st.button("✨ **Gerar Story para Instagram/Facebook**", 
+            if st.button("✨ **GERAR STORY AGORA**", 
                         use_container_width=True, 
                         type="primary",
-                        key="gerar_story_btn"):
+                        key="btn_gerar_principal"):
                 
-                # Verificar se tem foto
                 foto_bytes = db.get_foto_veiculo(veiculo_id)
                 if not foto_bytes:
                     st.error("❌ Este veículo não tem foto cadastrada!")
                     return
                 
-                with st.spinner("🎨 **Gerando story profissional..."):
+                with st.spinner("🎨 **Criando arte profissional...**"):
+                    # CHAMA A FUNÇÃO CORRIGIDA AQUI
                     nome_arquivo, erro = gerar_story_com_template(veiculo_id)
                     
                     if erro:
                         st.error(f"❌ **Erro:** {erro}")
                     else:
                         st.success("✅ **Story gerado com sucesso!**")
+                        st.balloons()
                         
                         # Mostrar resultado
-                        st.markdown("##### 👁️ **Prévia do Resultado Final**")
+                        st.markdown("##### 🖼️ **Resultado Final:**")
                         
-                        col_result1, col_result2 = st.columns([2, 1])
+                        col_visual, col_download = st.columns([2, 1])
                         
-                        with col_result1:
-                            st.image(nome_arquivo, use_column_width=True)
+                        with col_visual:
+                            try:
+                                st.image(nome_arquivo, 
+                                        caption="Story pronto para compartilhar", 
+                                        use_column_width=True)
+                            except Exception as img_err:
+                                st.error(f"Erro ao carregar imagem: {img_err}")
                         
-                        with col_result2:
-                            # Botão de download
+                        with col_download:
+                            st.markdown("##### 📥 **Download**")
+                            
                             with open(nome_arquivo, "rb") as file:
                                 st.download_button(
-                                    label="📥 **Baixar Story**",
+                                    label="⬇️ **BAIXAR IMAGEM**",
                                     data=file,
                                     file_name=f"story_{veiculo['marca']}_{veiculo['modelo']}.png",
                                     mime="image/png",
                                     use_container_width=True,
-                                    key="download_story"
+                                    key=f"download_{unique_key}"
                                 )
                             
-                            st.markdown("---")
-                            st.markdown("##### 💡 **Dicas:**")
-                            st.markdown("""
-                            - **Instagram Stories:** Compartilhe direto do celular
-                            - **Facebook Stories:** Mesmo formato
-                            - **WhatsApp Status:** Excelente para divulgação
-                            - Use hashtags: #carros #automoveis #veiculos
+                            st.info("""
+                            💡 **Dica:**
+                            A imagem já está no formato **1080x1920**, perfeita para Instagram e WhatsApp.
                             """)
                         
-                        # Limpar arquivo temporário após algum tempo
-                        import threading
-                        def deletar_arquivo_temporario(arquivo):
-                            time.sleep(300)  # 5 minutos
+                        # Limpeza automática do arquivo temporário
+                        def limpar_arquivo(arquivo):
+                            time.sleep(300)
                             try:
-                                os.remove(arquivo)
+                                if os.path.exists(arquivo):
+                                    os.remove(arquivo)
                             except:
                                 pass
                         
-                        thread = threading.Thread(target=deletar_arquivo_temporario, args=(nome_arquivo,))
-                        thread.start()
+                        import threading
+                        threading.Thread(target=limpar_arquivo, args=(nome_arquivo,)).start()
     else:
-        st.info("ℹ️ **Selecione um veículo acima para gerar o story**")
+        st.info("Selecione um veículo acima para gerar o story")
     
     # Divisor
     st.markdown("---")
