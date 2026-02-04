@@ -458,9 +458,6 @@ def seção_gerador_stories():
             else:
                 st.error("❌ **Sem foto cadastrada**")
  
-    # Mostrar prévia do template
-    st.markdown("---")
-    st.markdown("##### 🎨 **Prévia do Template**")
     
     col_template1, col_template2 = st.columns([1, 1])
     
@@ -493,41 +490,7 @@ def seção_gerador_stories():
            - Preço (em branco e maior)
         """)
     
-    # Mostrar prévia do template
-    st.markdown("---")
-    st.markdown("##### 🎨 **Prévia do Template**")
-    
-    col_template1, col_template2 = st.columns([1, 1])
-    
-    with col_template1:
-        try:
-            # Mostrar template stories.png
-            st.image("stories.png", caption="Template Base (stories.png)", use_column_width=True)
-        except:
-            st.error("❌ **Arquivo 'stories.png' não encontrado!**")
-            st.info("""
-            **Para usar esta funcionalidade:**
-            1. Coloque o arquivo **stories.png** na mesma pasta do projeto
-            2. O template deve ter tamanho **1080x1920 pixels**
-            3. Deixe espaço para a foto do carro e textos
-            """)
-            return
-    
-    with col_template2:
-        # Instruções
-        st.markdown("##### 📝 **Como funciona:**")
-        st.markdown("""
-        O sistema irá:
-        1. **Buscar a foto** do veículo selecionado
-        2. **Redimensionar** para caber no espaço designado
-        3. **Centralizar** vertical e horizontalmente
-        4. **Adicionar informações** abaixo da foto:
-           - Marca e Modelo (em branco)
-           - Ano, Cor e KM (em laranja)
-           - Combustível/Câmbio (em cinza)
-           - Preço (em branco e maior)
-        """)
-    
+  
     # Divisor
     st.markdown("---")
     
@@ -721,75 +684,6 @@ def seção_gerador_stories():
     # Divisor
     st.markdown("---")
     
-    # Botão para gerar
-    if veiculo_selecionado:
-        col_btn1, col_btn2, col_btn3 = st.columns([1, 2, 1])
-        
-        with col_btn2:
-            if st.button("Gerar Story para Instagram/Facebook**", 
-                        use_container_width=True, 
-                        type="primary",
-                        key="gerar_story_btn"):
-                
-                # Verificar se tem foto
-                foto_bytes = db.get_foto_veiculo(veiculo_id)
-                if not foto_bytes:
-                    st.error("❌ Este veículo não tem foto cadastrada!")
-                    return
-                
-                with st.spinner("🎨 **Gerando story profissional..."):
-                    nome_arquivo, erro = gerar_story_com_template(veiculo_id)
-                    
-                    if erro:
-                        st.error(f"❌ **Erro:** {erro}")
-                    else:
-                        st.success("✅ **Story gerado com sucesso!**")
-                        
-                        # Mostrar resultado
-                        st.markdown("##### 👁️ **Prévia do Resultado Final**")
-                        
-                        col_result1, col_result2 = st.columns([2, 1])
-                        
-                        with col_result1:
-                            st.image(nome_arquivo, use_column_width=True)
-                        
-                        with col_result2:
-                            # Botão de download
-                            with open(nome_arquivo, "rb") as file:
-                                st.download_button(
-                                    label="📥 **Baixar Story**",
-                                    data=file,
-                                    file_name=f"story_{veiculo['marca']}_{veiculo['modelo']}.png",
-                                    mime="image/png",
-                                    use_container_width=True,
-                                    key="download_story"
-                                )
-                            
-                            st.markdown("---")
-                            st.markdown("##### 💡 **Dicas:**")
-                            st.markdown("""
-                            - **Instagram Stories:** Compartilhe direto do celular
-                            - **Facebook Stories:** Mesmo formato
-                            - **WhatsApp Status:** Excelente para divulgação
-                            - Use hashtags: #carros #automoveis #veiculos
-                            """)
-                        
-                        # Limpar arquivo temporário após algum tempo
-                        import threading
-                        def deletar_arquivo_temporario(arquivo):
-                            time.sleep(300)  # 5 minutos
-                            try:
-                                os.remove(arquivo)
-                            except:
-                                pass
-                        
-                        thread = threading.Thread(target=deletar_arquivo_temporario, args=(nome_arquivo,))
-                        thread.start()
-    else:
-        st.info("ℹ️ **Selecione um veículo acima para gerar o story**")
-    
-    # Mostrar prévia do template
-    st.markdown("---")
     st.markdown("##### 🎨 **Prévia do Template**")
     
     col_template1, col_template2 = st.columns([1, 1])
