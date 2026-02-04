@@ -368,7 +368,7 @@ def gerar_story_com_template(veiculo_id):
         foto_area_width = 950  # Largura máxima da foto
         foto_area_height = 1200  # Altura máxima da foto
         foto_area_x = (template.width - foto_area_width) // 2  # Centralizado horizontalmente
-        foto_area_y = 325  # Ajuste esta posição vertical conforme seu template
+        foto_area_y = 325  # Posição vertical da foto
         
         # Redimensionar foto mantendo proporção
         foto_ratio = foto_carro.width / foto_carro.height
@@ -395,14 +395,15 @@ def gerar_story_com_template(veiculo_id):
         # Adicionar informações do veículo (área abaixo da foto)
         draw = ImageDraw.Draw(template)
         
-        # Tentar carregar fontes
+        # Tentar carregar fontes com tamanhos maiores
         try:
             # Tentar várias fontes possíveis
             font_paths = [
                 "arial.ttf",
                 "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
                 "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
-                "/usr/share/fonts/truetype/ubuntu/Ubuntu-R.ttf"
+                "/usr/share/fonts/truetype/ubuntu/Ubuntu-R.ttf",
+                "/usr/share/fonts/truetype/msttcorefonts/Arial.ttf"
             ]
             
             font_marca_modelo = None
@@ -411,35 +412,42 @@ def gerar_story_com_template(veiculo_id):
             for path in font_paths:
                 try:
                     if font_marca_modelo is None:
-                        font_marca_modelo = ImageFont.truetype(path, 60)  # Fonte maior para marca/modelo
+                        # Fonte MUITO maior para marca/modelo
+                        font_marca_modelo = ImageFont.truetype(path, 85)
                     if font_ano_cambio is None:
-                        font_ano_cambio = ImageFont.truetype(path, 48)  # Fonte maior para ano/câmbio
+                        # Fonte maior para ano/câmbio
+                        font_ano_cambio = ImageFont.truetype(path, 65)
                 except:
                     continue
             
             if font_marca_modelo is None:
-                raise Exception("Nenhuma fonte encontrada")
+                # Se não encontrou nenhuma fonte, usar padrão com tamanho aumentado
+                font_marca_modelo = ImageFont.load_default()
+                font_ano_cambio = ImageFont.load_default()
+                print("⚠️ Usando fontes padrão (tamanhos podem ser menores)")
                 
-        except:
-            # Fallback para fontes padrão (maiores)
+        except Exception as font_error:
+            print(f"⚠️ Erro ao carregar fontes: {font_error}")
             font_marca_modelo = ImageFont.load_default()
             font_ano_cambio = ImageFont.load_default()
-            # Ajustar tamanho das fontes padrão
-            font_marca_modelo.size = 60
-            font_ano_cambio.size = 48
         
-        # Posição Y para as informações (logo abaixo da área da foto)
-        info_start_y = foto_area_y + foto_area_height + 50
+        # Posição Y para as informações (MUITO mais perto da foto)
+        info_start_y = foto_area_y + foto_area_height + 20  # Apenas 20px abaixo da foto
         
-        # 1. MARCA E MODELO (em branco)
+        # 1. MARCA E MODELO (em branco, fonte GRANDE)
         marca_modelo = f"{veiculo['marca']} {veiculo['modelo']}"
         
         # Calcular largura do texto para centralizar
         try:
             marca_modelo_width = draw.textlength(marca_modelo, font=font_marca_modelo)
         except:
-            marca_modelo_bbox = draw.textbbox((0, 0), marca_modelo, font=font_marca_modelo)
-            marca_modelo_width = marca_modelo_bbox[2] - marca_modelo_bbox[0]
+            try:
+                # Método alternativo para calcular largura
+                marca_modelo_bbox = draw.textbbox((0, 0), marca_modelo, font=font_marca_modelo)
+                marca_modelo_width = marca_modelo_bbox[2] - marca_modelo_bbox[0]
+            except:
+                # Estimativa se ambos os métodos falharem
+                marca_modelo_width = len(marca_modelo) * 40  # Estimativa aproximada
         
         marca_modelo_x = (template.width - marca_modelo_width) // 2
         marca_modelo_y = info_start_y
@@ -447,27 +455,41 @@ def gerar_story_com_template(veiculo_id):
         # Escrever marca e modelo em branco
         draw.text((marca_modelo_x, marca_modelo_y), marca_modelo, fill="#FFFFFF", font=font_marca_modelo)
         
-        # 2. ANO E CÂMBIO (em branco, logo abaixo)
+        # 2. ANO E CÂMBIO (em branco, fonte maior, MUITO perto da linha acima)
         ano_text = str(veiculo['ano'])
         
-        # Formatar texto do câmbio (remover espaços extras se houver)
+        # Formatar texto do câmbio
         cambio_text = veiculo['cambio'] if veiculo['cambio'] else ""
         
         # Juntar ano e câmbio
-        ano_cambio_text = f"{ano_text} | {cambio_text}"
+        if cambio_text:
+            ano_cambio_text = f"{ano_text} | {cambio_text}"
+        else:
+            ano_cambio_text = ano_text
         
         # Calcular largura do texto para centralizar
         try:
             ano_cambio_width = draw.textlength(ano_cambio_text, font=font_ano_cambio)
         except:
-            ano_cambio_bbox = draw.textbbox((0, 0), ano_cambio_text, font=font_ano_cambio)
-            ano_cambio_width = ano_cambio_bbox[2] - ano_cambio_bbox[0]
+            try:
+                ano_cambio_bbox = draw.textbbox((0, 0), ano_cambio_text, font=font_ano_cambio)
+                ano_cambio_width = ano_cambio_bbox[2] - ano_cambio_bbox[0]
+            except:
+                ano_cambio_width = len(ano_cambio_text) * 30  # Estimativa
         
         ano_cambio_x = (template.width - ano_cambio_width) // 2
-        ano_cambio_y = marca_modelo_y + 80  # Espaço reduzido entre as linhas
+        ano_cambio_y = marca_modelo_y + 45  # Apenas 45px abaixo da marca/modelo (ESPAÇO MÍNIMO)
         
         # Escrever ano e câmbio em branco
         draw.text((ano_cambio_x, ano_cambio_y), ano_cambio_text, fill="#FFFFFF", font=font_ano_cambio)
+        
+        # DEBUG: Mostrar posições no console
+        print(f"📐 Posições calculadas:")
+        print(f"  Foto área: Y={foto_area_y}, Altura={foto_area_height}")
+        print(f"  Texto inicia em: Y={info_start_y}")
+        print(f"  Marca/Modelo: Y={marca_modelo_y}")
+        print(f"  Ano/Câmbio: Y={ano_cambio_y}")
+        print(f"  Distância entre linhas: {ano_cambio_y - marca_modelo_y}px")
         
         # Salvar imagem final
         nome_arquivo = f"story_{veiculo['marca']}_{veiculo['modelo']}_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.png"
