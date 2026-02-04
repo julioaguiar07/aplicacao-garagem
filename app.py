@@ -336,7 +336,7 @@ def seção_papel_timbrado():
 # =============================================
 
 def gerar_story_com_template(veiculo_id):
-    """Gera um story usando template fixo stories.png"""
+    """Gera um story usando template fixo stories.png com texto simplificado"""
     try:
         # Buscar dados do veículo
         veiculos = db.get_veiculos()
@@ -355,7 +355,7 @@ def gerar_story_com_template(veiculo_id):
         try:
             template = Image.open("stories.png")
         except:
-            return None, "Template stories.png não encontrado. Coloque o arquivo na pasta do projeto."
+            return None, "Template stories.png não encontrado. Coloque o arquivo na mesma pasta do projeto."
         
         # Converter template para RGB se necessário
         if template.mode != 'RGB':
@@ -365,8 +365,8 @@ def gerar_story_com_template(veiculo_id):
         foto_carro = Image.open(io.BytesIO(foto_bytes))
         
         # Definir área para a foto (centralizada verticalmente e horizontalmente)
-        foto_area_width = 1000  # Largura máxima da foto
-        foto_area_height = 1250  # Altura máxima da foto
+        foto_area_width = 950  # Largura máxima da foto
+        foto_area_height = 1200  # Altura máxima da foto
         foto_area_x = (template.width - foto_area_width) // 2  # Centralizado horizontalmente
         foto_area_y = 325  # Ajuste esta posição vertical conforme seu template
         
@@ -395,7 +395,7 @@ def gerar_story_com_template(veiculo_id):
         # Adicionar informações do veículo (área abaixo da foto)
         draw = ImageDraw.Draw(template)
         
-        # Tentar carregar fontes (usando caminhos explícitos para evitar problemas)
+        # Tentar carregar fontes
         try:
             # Tentar várias fontes possíveis
             font_paths = [
@@ -405,120 +405,69 @@ def gerar_story_com_template(veiculo_id):
                 "/usr/share/fonts/truetype/ubuntu/Ubuntu-R.ttf"
             ]
             
-            font_titulo = None
-            font_detalhes = None
-            font_preco = None
-            font_info = None
+            font_marca_modelo = None
+            font_ano_cambio = None
             
             for path in font_paths:
                 try:
-                    if font_titulo is None:
-                        font_titulo = ImageFont.truetype(path, 60)
-                    if font_detalhes is None:
-                        font_detalhes = ImageFont.truetype(path, 42)
-                    if font_preco is None:
-                        font_preco = ImageFont.truetype(path, 75)
-                    if font_info is None:
-                        font_info = ImageFont.truetype(path, 36)
+                    if font_marca_modelo is None:
+                        font_marca_modelo = ImageFont.truetype(path, 60)  # Fonte maior para marca/modelo
+                    if font_ano_cambio is None:
+                        font_ano_cambio = ImageFont.truetype(path, 48)  # Fonte maior para ano/câmbio
                 except:
                     continue
             
-            if font_titulo is None:
+            if font_marca_modelo is None:
                 raise Exception("Nenhuma fonte encontrada")
                 
         except:
-            # Fallback para fontes padrão
-            font_titulo = ImageFont.load_default()
-            font_detalhes = ImageFont.load_default()
-            font_preco = ImageFont.load_default()
-            font_info = ImageFont.load_default()
+            # Fallback para fontes padrão (maiores)
+            font_marca_modelo = ImageFont.load_default()
+            font_ano_cambio = ImageFont.load_default()
+            # Ajustar tamanho das fontes padrão
+            font_marca_modelo.size = 60
+            font_ano_cambio.size = 48
         
-        # Posições Y para as informações (logo abaixo da área da foto)
+        # Posição Y para as informações (logo abaixo da área da foto)
         info_start_y = foto_area_y + foto_area_height + 50
         
-        # 1. TÍTULO: Marca e Modelo
-        titulo = f"{veiculo['marca']} {veiculo['modelo']}"
-        # Usar textlength em vez de textbbox se disponível
+        # 1. MARCA E MODELO (em branco)
+        marca_modelo = f"{veiculo['marca']} {veiculo['modelo']}"
+        
+        # Calcular largura do texto para centralizar
         try:
-            titulo_width = draw.textlength(titulo, font=font_titulo)
+            marca_modelo_width = draw.textlength(marca_modelo, font=font_marca_modelo)
         except:
-            titulo_bbox = draw.textbbox((0, 0), titulo, font=font_titulo)
-            titulo_width = titulo_bbox[2] - titulo_bbox[0]
+            marca_modelo_bbox = draw.textbbox((0, 0), marca_modelo, font=font_marca_modelo)
+            marca_modelo_width = marca_modelo_bbox[2] - marca_modelo_bbox[0]
         
-        titulo_x = (template.width - titulo_width) // 2
-        titulo_y = info_start_y
+        marca_modelo_x = (template.width - marca_modelo_width) // 2
+        marca_modelo_y = info_start_y
         
-        # Escrever título em branco
-        draw.text((titulo_x, titulo_y), titulo, fill="#FFFFFF", font=font_titulo)
+        # Escrever marca e modelo em branco
+        draw.text((marca_modelo_x, marca_modelo_y), marca_modelo, fill="#FFFFFF", font=font_marca_modelo)
         
-        # 2. DETALHES: Ano, Cor, KM
-        detalhes_y = titulo_y + 80
+        # 2. ANO E CÂMBIO (em branco, logo abaixo)
+        ano_text = str(veiculo['ano'])
         
-        # Preparar detalhes - SUBSTITUIR BULLET POR PIPE
-        ano = str(veiculo['ano'])
-        cor = veiculo['cor']
-        km = f"{veiculo['km']:,} KM" if veiculo['km'] > 0 else "KM ZERO"
+        # Formatar texto do câmbio (remover espaços extras se houver)
+        cambio_text = veiculo['cambio'] if veiculo['cambio'] else ""
         
-        # Usar pipe (|) em vez de bullet point (•)
-        detalhes = f"{ano} | {cor} | {km}"
+        # Juntar ano e câmbio
+        ano_cambio_text = f"{ano_text} | {cambio_text}"
         
+        # Calcular largura do texto para centralizar
         try:
-            detalhes_width = draw.textlength(detalhes, font=font_detalhes)
+            ano_cambio_width = draw.textlength(ano_cambio_text, font=font_ano_cambio)
         except:
-            detalhes_bbox = draw.textbbox((0, 0), detalhes, font=font_detalhes)
-            detalhes_width = detalhes_bbox[2] - detalhes_bbox[0]
+            ano_cambio_bbox = draw.textbbox((0, 0), ano_cambio_text, font=font_ano_cambio)
+            ano_cambio_width = ano_cambio_bbox[2] - ano_cambio_bbox[0]
         
-        detalhes_x = (template.width - detalhes_width) // 2
+        ano_cambio_x = (template.width - ano_cambio_width) // 2
+        ano_cambio_y = marca_modelo_y + 80  # Espaço reduzido entre as linhas
         
-        draw.text((detalhes_x, detalhes_y), detalhes, fill="#e88e1b", font=font_detalhes)
-        
-        # 3. INFORMAÇÕES ADICIONAIS
-        info_y = detalhes_y + 70
-        
-        infos = []
-        if veiculo.get('combustivel'):
-            # Remover emojis problemáticos
-            combustivel_text = veiculo['combustivel']
-            infos.append(combustivel_text)
-        if veiculo.get('cambio'):
-            cambio_text = veiculo['cambio']
-            infos.append(cambio_text)
-        if veiculo.get('portas'):
-            portas_text = f"{veiculo['portas']} portas"
-            infos.append(portas_text)
-        
-        if infos:
-            # Usar pipe em vez de bullet
-            info_text = " | ".join(infos)
-            try:
-                info_width = draw.textlength(info_text, font=font_info)
-            except:
-                info_bbox = draw.textbbox((0, 0), info_text, font=font_info)
-                info_width = info_bbox[2] - info_bbox[0]
-            
-            info_x = (template.width - info_width) // 2
-            draw.text((info_x, info_y), info_text, fill="#a0a0a0", font=font_info)
-            
-            # Ajustar posição do preço baseado se tem infos adicionais
-            preco_y = info_y + 80
-        else:
-            preco_y = detalhes_y + 70
-        
-        # 4. PREÇO
-        # Formatar preço no padrão brasileiro
-        preco = f"R$ {veiculo['preco_venda']:,.2f}"
-        preco = preco.replace(',', 'X').replace('.', ',').replace('X', '.')
-        
-        try:
-            preco_width = draw.textlength(preco, font=font_preco)
-        except:
-            preco_bbox = draw.textbbox((0, 0), preco, font=font_preco)
-            preco_width = preco_bbox[2] - preco_bbox[0]
-        
-        preco_x = (template.width - preco_width) // 2
-        
-        # Escrever preço em branco
-        draw.text((preco_x, preco_y), preco, fill="#FFFFFF", font=font_preco)
+        # Escrever ano e câmbio em branco
+        draw.text((ano_cambio_x, ano_cambio_y), ano_cambio_text, fill="#FFFFFF", font=font_ano_cambio)
         
         # Salvar imagem final
         nome_arquivo = f"story_{veiculo['marca']}_{veiculo['modelo']}_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.png"
@@ -536,7 +485,6 @@ def gerar_story_com_template(veiculo_id):
         import traceback
         traceback.print_exc()
         return None, str(e)
-
 
 def seção_gerador_stories():
     """Seção para gerar stories de veículos para redes sociais"""
