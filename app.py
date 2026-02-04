@@ -458,39 +458,6 @@ def seção_gerador_stories():
             else:
                 st.error("❌ **Sem foto cadastrada**")
     
-    # Mostrar prévia do template
-    st.markdown("---")
-    st.markdown("##### 🎨 **Prévia do Template**")
-    
-    col_template1, col_template2 = st.columns([1, 1])
-    
-    with col_template1:
-        try:
-            # Mostrar template stories.png
-            st.image("stories.png", caption="Template Base (stories.png)", use_column_width=True)
-        except:
-            st.error("❌ **Arquivo 'stories.png' não encontrado!**")
-            st.info("""
-            **Para usar esta funcionalidade:**
-            1. Coloque o arquivo **stories.png** na mesma pasta do projeto
-            2. O template deve ter tamanho **1080x1920 pixels**
-            3. Deixe espaço para a foto do carro
-            """)
-            return
-    
-    with col_template2:
-        # Instruções
-        st.markdown("##### 📝 **Como funciona:**")
-        st.markdown("""
-        O sistema irá:
-        1. **Buscar a foto** do veículo selecionado
-        2. **Redimensionar** para caber no espaço designado
-        3. **Centralizar** vertical e horizontalmente
-        4. **Salvar como imagem** pronta para compartilhar
-        
-        ⚡ **Novo:** Apenas a foto sobre o template
-        """)
-    
     # Divisor
     st.markdown("---")
     
@@ -865,17 +832,7 @@ def seção_gerador_stories():
     
     # Divisor
     st.markdown("---")
-    
-    # Mostrar template base
-    st.markdown("##### 🎨 Template base utilizado:")
-    
-    try:
-        template_img = Image.open("stories.png")
-        st.image("stories.png", 
-                caption="Template base (1080x1920 pixels)", 
-                use_column_width=True)
-    except:
-        st.warning("ℹ️ Usando template preto padrão (1080x1920)")
+
     
     # Botão para gerar - COM CHAVE ÚNICA BASEADA NO TEMPO
     st.markdown("---")
