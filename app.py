@@ -365,8 +365,8 @@ def gerar_story_com_template(veiculo_id):
         foto_carro = Image.open(io.BytesIO(foto_bytes))
         
         # Definir área para a foto (centralizada verticalmente e horizontalmente)
-        foto_area_width = 950  # Largura máxima da foto
-        foto_area_height = 1200  # Altura máxima da foto
+        foto_area_width = 1000  # Largura máxima da foto
+        foto_area_height = 1250  # Altura máxima da foto
         foto_area_x = (template.width - foto_area_width) // 2  # Centralizado horizontalmente
         foto_area_y = 325  # Ajuste esta posição vertical conforme seu template
         
