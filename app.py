@@ -493,76 +493,6 @@ def seção_gerador_stories():
            - Preço (em branco e maior)
         """)
     
-    # Divisor
-    st.markdown("---")
-    
-    # Botão para gerar
-    if veiculo_selecionado:
-        col_btn1, col_btn2, col_btn3 = st.columns([1, 2, 1])
-        
-        with col_btn2:
-            if st.button("✨ **Gerar Story para Instagram/Facebook**", 
-                        use_container_width=True, 
-                        type="primary",
-                        key="gerar_story_btn"):
-                
-                # Verificar se tem foto
-                foto_bytes = db.get_foto_veiculo(veiculo_id)
-                if not foto_bytes:
-                    st.error("❌ Este veículo não tem foto cadastrada!")
-                    return
-                
-                with st.spinner("🎨 **Gerando story profissional..."):
-                    nome_arquivo, erro = gerar_story_com_template(veiculo_id)
-                    
-                    if erro:
-                        st.error(f"❌ **Erro:** {erro}")
-                    else:
-                        st.success("✅ **Story gerado com sucesso!**")
-                        
-                        # Mostrar resultado
-                        st.markdown("##### 👁️ **Prévia do Resultado Final**")
-                        
-                        col_result1, col_result2 = st.columns([2, 1])
-                        
-                        with col_result1:
-                            st.image(nome_arquivo, use_column_width=True)
-                        
-                        with col_result2:
-                            # Botão de download
-                            with open(nome_arquivo, "rb") as file:
-                                st.download_button(
-                                    label="📥 **Baixar Story**",
-                                    data=file,
-                                    file_name=f"story_{veiculo['marca']}_{veiculo['modelo']}.png",
-                                    mime="image/png",
-                                    use_container_width=True,
-                                    key="download_story"
-                                )
-                            
-                            st.markdown("---")
-                            st.markdown("##### 💡 **Dicas:**")
-                            st.markdown("""
-                            - **Instagram Stories:** Compartilhe direto do celular
-                            - **Facebook Stories:** Mesmo formato
-                            - **WhatsApp Status:** Excelente para divulgação
-                            - Use hashtags: #carros #automoveis #veiculos
-                            """)
-                        
-                        # Limpar arquivo temporário após algum tempo
-                        import threading
-                        def deletar_arquivo_temporario(arquivo):
-                            time.sleep(300)  # 5 minutos
-                            try:
-                                os.remove(arquivo)
-                            except:
-                                pass
-                        
-                        thread = threading.Thread(target=deletar_arquivo_temporario, args=(nome_arquivo,))
-                        thread.start()
-    else:
-        st.info("ℹ️ **Selecione um veículo acima para gerar o story**")
-    
     # Mostrar prévia do template
     st.markdown("---")
     st.markdown("##### 🎨 **Prévia do Template**")
@@ -757,87 +687,6 @@ def seção_gerador_stories():
     # Divisor
     st.markdown("---")
     
-    if veiculo_selecionado:
-        col_btn1, col_btn2, col_btn3 = st.columns([1, 2, 1])
-        
-        with col_btn2:
-            if st.button("✨ **GERAR STORY AGORA**", 
-                        use_container_width=True, 
-                        type="primary",
-                        key="gerar_story_btn"):
-                
-                # Verificar se tem foto
-                foto_bytes = db.get_foto_veiculo(veiculo_id)
-                if not foto_bytes:
-                    st.error("❌ Este veículo não tem foto cadastrada!")
-                    return
-                
-                with st.spinner("🔄 **Gerando story com design profissional...**"):
-                    nome_arquivo, erro = gerar_story_simplificado(veiculo_id)
-                    
-                    if erro:
-                        st.error(f"❌ **Erro:** {erro}")
-                    else:
-                        st.success("✅ **Story gerado com sucesso!**")
-                        st.balloons()
-                        
-                        # Mostrar resultado
-                        st.markdown("##### 🖼️ **Resultado Final:**")
-                        
-                        # Layout para resultado
-                        col_visual, col_download = st.columns([2, 1])
-                        
-                        with col_visual:
-                            # Mostrar imagem gerada
-                            try:
-                                st.image(nome_arquivo, 
-                                        caption="Story pronto para compartilhar", 
-                                        use_column_width=True)
-                            except Exception as img_err:
-                                st.error(f"Erro ao carregar imagem: {img_err}")
-                        
-                        with col_download:
-                            st.markdown("##### 📥 **Download**")
-                            
-                            # Botão de download
-                            with open(nome_arquivo, "rb") as file:
-                                st.download_button(
-                                    label="⬇️ **BAIXAR IMAGEM**",
-                                    data=file,
-                                    file_name=f"story_{veiculo['marca']}_{veiculo['modelo']}.png",
-                                    mime="image/png",
-                                    use_container_width=True,
-                                    key="download_story_final"
-                                )
-                            
-                            st.markdown("---")
-                            st.markdown("##### 💡 **Como usar:**")
-                            st.markdown("""
-                            1. **Salve no celular**
-                            2. **Instagram:** Poste nos Stories
-                            3. **Facebook:** Compartilhe
-                            4. **WhatsApp:** Status ou grupos
-                            5. Use hashtags: #carros #automoveis
-                            """)
-                        
-                        # Limpeza automática do arquivo temporário
-                        import threading
-                        def limpar_arquivo(arquivo):
-                            time.sleep(300)  # 5 minutos
-                            try:
-                                if os.path.exists(arquivo):
-                                    os.remove(arquivo)
-                            except:
-                                pass
-                        
-                        threading.Thread(target=limpar_arquivo, args=(nome_arquivo,)).start()
-    else:
-        st.info("ℹ️ **Selecione um veículo acima para gerar o story**")
-    
-    # Mostrar prévia do template
-    st.markdown("---")
-    st.markdown("##### 🎨 **Prévia do Template**")
-    
     col_template1, col_template2 = st.columns([1, 1])
     
     with col_template1:
@@ -877,7 +726,7 @@ def seção_gerador_stories():
         col_btn1, col_btn2, col_btn3 = st.columns([1, 2, 1])
         
         with col_btn2:
-            if st.button("✨ **Gerar Story para Instagram/Facebook**", 
+            if st.button("Gerar Story para Instagram/Facebook**", 
                         use_container_width=True, 
                         type="primary",
                         key="gerar_story_btn"):
@@ -976,73 +825,6 @@ def seção_gerador_stories():
     
     # Divisor
     st.markdown("---")
-    
-    # Botão para gerar
-    if veiculo_selecionado:
-        col_btn1, col_btn2, col_btn3 = st.columns([1, 2, 1])
-        
-        with col_btn2:
-            if st.button("✨ **Gerar Story para Instagram/Facebook**", 
-                        use_container_width=True, 
-                        type="primary",
-                        key="gerar_story_btn"):
-                
-                # Verificar se tem foto
-                foto_bytes = db.get_foto_veiculo(veiculo_id)
-                if not foto_bytes:
-                    st.error("❌ Este veículo não tem foto cadastrada!")
-                    return
-                
-                with st.spinner("🎨 **Gerando story profissional..."):
-                    nome_arquivo, erro = gerar_story_com_template(veiculo_id)
-                    
-                    if erro:
-                        st.error(f"❌ **Erro:** {erro}")
-                    else:
-                        st.success("✅ **Story gerado com sucesso!**")
-                        
-                        # Mostrar resultado
-                        st.markdown("##### 👁️ **Prévia do Resultado Final**")
-                        
-                        col_result1, col_result2 = st.columns([2, 1])
-                        
-                        with col_result1:
-                            st.image(nome_arquivo, use_column_width=True)
-                        
-                        with col_result2:
-                            # Botão de download
-                            with open(nome_arquivo, "rb") as file:
-                                st.download_button(
-                                    label="📥 **Baixar Story**",
-                                    data=file,
-                                    file_name=f"story_{veiculo['marca']}_{veiculo['modelo']}.png",
-                                    mime="image/png",
-                                    use_container_width=True,
-                                    key="download_story"
-                                )
-                            
-                            st.markdown("---")
-                            st.markdown("##### 💡 **Dicas:**")
-                            st.markdown("""
-                            - **Instagram Stories:** Compartilhe direto do celular
-                            - **Facebook Stories:** Mesmo formato
-                            - **WhatsApp Status:** Excelente para divulgação
-                            - Use hashtags: #carros #automoveis #veiculos
-                            """)
-                        
-                        # Limpar arquivo temporário após algum tempo
-                        import threading
-                        def deletar_arquivo_temporario(arquivo):
-                            time.sleep(300)  # 5 minutos
-                            try:
-                                os.remove(arquivo)
-                            except:
-                                pass
-                        
-                        thread = threading.Thread(target=deletar_arquivo_temporario, args=(nome_arquivo,))
-                        thread.start()
-    else:
-        st.info("ℹ️ **Selecione um veículo acima para gerar o story**")
 
 
 # =============================================
