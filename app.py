@@ -547,7 +547,7 @@ def seção_gerador_stories():
         col_btn1, col_btn2, col_btn3 = st.columns([1, 2, 1])
         
         with col_btn2:
-            if st.button("✨ **GERAR STORY AGORA**", 
+            if st.button("GERAR STORY AGORA", 
                         use_container_width=True, 
                         type="primary",
                         key="gerar_story_btn"):
