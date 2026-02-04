@@ -413,10 +413,10 @@ def gerar_story_com_template(veiculo_id):
                 try:
                     if font_marca_modelo is None:
                         # Fonte MUITO maior para marca/modelo
-                        font_marca_modelo = ImageFont.truetype(path, 85)
+                        font_marca_modelo = ImageFont.truetype(path, 150)
                     if font_ano_cambio is None:
                         # Fonte maior para ano/câmbio
-                        font_ano_cambio = ImageFont.truetype(path, 65)
+                        font_ano_cambio = ImageFont.truetype(path, 130)
                 except:
                     continue
             
@@ -432,7 +432,7 @@ def gerar_story_com_template(veiculo_id):
             font_ano_cambio = ImageFont.load_default()
         
         # Posição Y para as informações (MUITO mais perto da foto)
-        info_start_y = foto_area_y + foto_area_height + 20  # Apenas 20px abaixo da foto
+        info_start_y = foto_area_y + foto_area_height + 5 
         
         # 1. MARCA E MODELO (em branco, fonte GRANDE)
         marca_modelo = f"{veiculo['marca']} {veiculo['modelo']}"
@@ -478,7 +478,7 @@ def gerar_story_com_template(veiculo_id):
                 ano_cambio_width = len(ano_cambio_text) * 30  # Estimativa
         
         ano_cambio_x = (template.width - ano_cambio_width) // 2
-        ano_cambio_y = marca_modelo_y + 45  # Apenas 45px abaixo da marca/modelo (ESPAÇO MÍNIMO)
+        ano_cambio_y = marca_modelo_y + 20
         
         # Escrever ano e câmbio em branco
         draw.text((ano_cambio_x, ano_cambio_y), ano_cambio_text, fill="#FFFFFF", font=font_ano_cambio)
