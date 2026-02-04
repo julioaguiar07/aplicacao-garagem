@@ -331,182 +331,141 @@ def seção_papel_timbrado():
             
 
 
-# =============================================
-# GERADOR DE STORIES COM TEMPLATE FIXO - VERSÃO CORRIGIDA
-# =============================================
-
 def gerar_story_com_template(veiculo_id):
-    """Gera um story usando template fixo stories.png com texto simplificado"""
+    """
+    Gera um story usando template fixo stories.png com:
+    - Foto centralizada
+    - Texto posicionado corretamente na área laranja
+    - Fontes ajustadas
+    """
     try:
-        # Buscar dados do veículo
+        # 1. BUSCAR DADOS
         veiculos = db.get_veiculos()
         veiculo = next((v for v in veiculos if v['id'] == veiculo_id), None)
         
         if not veiculo:
             return None, "Veículo não encontrado"
         
-        # Buscar foto do veículo
         foto_bytes = db.get_foto_veiculo(veiculo_id)
-        
         if not foto_bytes:
             return None, "Este veículo não tem foto cadastrada"
         
-        # Carregar template do story
+        # 2. CARREGAR TEMPLATE E FOTO
         try:
-            template = Image.open("stories.png")
+            template = Image.open("stories.png").convert("RGB")
         except:
-            return None, "Template stories.png não encontrado. Coloque o arquivo na mesma pasta do projeto."
+            return None, "Template 'stories.png' não encontrado."
+
+        foto_carro = Image.open(io.BytesIO(foto_bytes)).convert("RGB")
         
-        # Converter template para RGB se necessário
-        if template.mode != 'RGB':
-            template = template.convert('RGB')
+        # 3. PROCESSAR E POSICIONAR A FOTO
+        # Área reservada para a foto (baseado no seu código anterior)
+        area_w, area_h = 950, 1200
+        area_x = (template.width - area_w) // 2
+        area_y = 325 
         
-        # Carregar e processar foto do carro
-        foto_carro = Image.open(io.BytesIO(foto_bytes))
+        # Lógica de "Crop" inteligente (preencher área sem distorcer)
+        # Calcula proporções
+        img_ratio = foto_carro.width / foto_carro.height
+        target_ratio = area_w / area_h
         
-        # Definir área para a foto (centralizada verticalmente e horizontalmente)
-        foto_area_width = 950  # Largura máxima da foto
-        foto_area_height = 1200  # Altura máxima da foto
-        foto_area_x = (template.width - foto_area_width) // 2  # Centralizado horizontalmente
-        foto_area_y = 325  # Posição vertical da foto
-        
-        # Redimensionar foto mantendo proporção
-        foto_ratio = foto_carro.width / foto_carro.height
-        target_ratio = foto_area_width / foto_area_height
-        
-        if foto_ratio > target_ratio:
-            # Foto é mais larga que a área
-            new_width = foto_area_width
-            new_height = int(foto_area_width / foto_ratio)
+        if img_ratio > target_ratio:
+            # Foto mais larga que a área: ajusta pela altura
+            new_height = area_h
+            new_width = int(new_height * img_ratio)
         else:
-            # Foto é mais alta que a área
-            new_height = foto_area_height
-            new_width = int(foto_area_height * foto_ratio)
+            # Foto mais alta que a área: ajusta pela largura
+            new_width = area_w
+            new_height = int(new_width / img_ratio)
+            
+        foto_resized = foto_carro.resize((new_width, new_height), Image.Resampling.LANCZOS)
         
-        foto_carro = foto_carro.resize((new_width, new_height), Image.Resampling.LANCZOS)
+        # Centraliza o crop
+        center_x = (new_width - area_w) // 2
+        center_y = (new_height - area_h) // 2
+        foto_final = foto_resized.crop((center_x, center_y, center_x + area_w, center_y + area_h))
         
-        # Calcular posição para centralizar na área
-        pos_x = foto_area_x + (foto_area_width - new_width) // 2
-        pos_y = foto_area_y + (foto_area_height - new_height) // 2
+        # Cola a foto no template
+        template.paste(foto_final, (area_x, area_y))
         
-        # Colocar foto no template
-        template.paste(foto_carro, (pos_x, pos_y))
-        
-        # Adicionar informações do veículo (área abaixo da foto)
+        # 4. CONFIGURAÇÃO DE TEXTO E FONTES
         draw = ImageDraw.Draw(template)
         
-        # Tentar carregar fontes com tamanhos maiores
-        try:
-            # Tentar várias fontes possíveis
+        def load_safe_font(font_name, size):
+            """Tenta carregar fontes comuns ou usa padrão"""
             font_paths = [
-                "arial.ttf",
-                "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
-                "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
-                "/usr/share/fonts/truetype/ubuntu/Ubuntu-R.ttf",
-                "/usr/share/fonts/truetype/msttcorefonts/Arial.ttf"
+                font_name,  # Tenta arquivo local primeiro
+                "arialbd.ttf", "arial.ttf",  # Windows
+                "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf", # Linux
+                "/System/Library/Fonts/HelveticaNeue.ttc" # Mac
             ]
-            
-            font_marca_modelo = None
-            font_ano_cambio = None
-            
             for path in font_paths:
                 try:
-                    if font_marca_modelo is None:
-                        # Fonte MUITO maior para marca/modelo
-                        font_marca_modelo = ImageFont.truetype(path, 1500)
-                    if font_ano_cambio is None:
-                        # Fonte maior para ano/câmbio
-                        font_ano_cambio = ImageFont.truetype(path, 1480)
+                    return ImageFont.truetype(path, size)
                 except:
                     continue
-            
-            if font_marca_modelo is None:
-                # Se não encontrou nenhuma fonte, usar padrão com tamanho aumentado
-                font_marca_modelo = ImageFont.load_default()
-                font_ano_cambio = ImageFont.load_default()
-                print("⚠️ Usando fontes padrão (tamanhos podem ser menores)")
-                
-        except Exception as font_error:
-            print(f"⚠️ Erro ao carregar fontes: {font_error}")
-            font_marca_modelo = ImageFont.load_default()
-            font_ano_cambio = ImageFont.load_default()
+            return ImageFont.load_default()
+
+        # Tamanhos base para 1080px de largura
+        size_titulo = 90
+        size_subtitulo = 50
         
-        # Posição Y para as informações (MUITO mais perto da foto)
-        info_start_y = foto_area_y + foto_area_height + 5 
+        font_titulo = load_safe_font("impact.ttf", size_titulo) # Impact ou Arial Bold ficam ótimos
+        font_sub = load_safe_font("arial.ttf", size_subtitulo)
         
-        # 1. MARCA E MODELO (em branco, fonte GRANDE)
-        marca_modelo = f"{veiculo['marca']} {veiculo['modelo']}"
+        # 5. ESCREVENDO O TEXTO (Área do Hexágono Laranja)
+        # O centro vertical aproximado do hexágono laranja é Y = 1660
+        centro_hex_y = 1660
+        largura_maxima_texto = 900 # Margem de segurança lateral
         
-        # Calcular largura do texto para centralizar
-        try:
-            marca_modelo_width = draw.textlength(marca_modelo, font=font_marca_modelo)
-        except:
-            try:
-                # Método alternativo para calcular largura
-                marca_modelo_bbox = draw.textbbox((0, 0), marca_modelo, font=font_marca_modelo)
-                marca_modelo_width = marca_modelo_bbox[2] - marca_modelo_bbox[0]
-            except:
-                # Estimativa se ambos os métodos falharem
-                marca_modelo_width = len(marca_modelo) * 40  # Estimativa aproximada
+        # --- TÍTULO (MARCA MODELO) ---
+        texto_titulo = f"{veiculo['marca']} {veiculo['modelo']}".upper()
         
-        marca_modelo_x = (template.width - marca_modelo_width) // 2
-        marca_modelo_y = info_start_y
+        # Reduzir fonte se o texto for muito grande
+        while True:
+            bbox = draw.textbbox((0, 0), texto_titulo, font=font_titulo)
+            text_w = bbox[2] - bbox[0]
+            if text_w < largura_maxima_texto or size_titulo < 40:
+                break
+            size_titulo -= 5
+            font_titulo = load_safe_font("arialbd.ttf", size_titulo)
+
+        text_h = bbox[3] - bbox[1]
         
-        # Escrever marca e modelo em branco
-        draw.text((marca_modelo_x, marca_modelo_y), marca_modelo, fill="#FFFFFF", font=font_marca_modelo)
+        # Posiciona o título um pouco acima do centro
+        pos_x_titulo = (template.width - text_w) // 2
+        pos_y_titulo = centro_hex_y - text_h - 10 # 10px acima do centro
         
-        # 2. ANO E CÂMBIO (em branco, fonte maior, MUITO perto da linha acima)
-        ano_text = str(veiculo['ano'])
+        # Sombra leve para destacar no laranja
+        draw.text((pos_x_titulo + 2, pos_y_titulo + 2), texto_titulo, font=font_titulo, fill="#333333")
+        draw.text((pos_x_titulo, pos_y_titulo), texto_titulo, font=font_titulo, fill="#FFFFFF")
         
-        # Formatar texto do câmbio
-        cambio_text = veiculo['cambio'] if veiculo['cambio'] else ""
+        # --- SUBTÍTULO (ANO | CÂMBIO) ---
+        cambio = veiculo['cambio'] if veiculo['cambio'] else ""
+        texto_sub = f"{veiculo['ano']} | {cambio}"
         
-        # Juntar ano e câmbio
-        if cambio_text:
-            ano_cambio_text = f"{ano_text} | {cambio_text}"
-        else:
-            ano_cambio_text = ano_text
+        bbox_sub = draw.textbbox((0, 0), texto_sub, font=font_sub)
+        text_w_sub = bbox_sub[2] - bbox_sub[0]
         
-        # Calcular largura do texto para centralizar
-        try:
-            ano_cambio_width = draw.textlength(ano_cambio_text, font=font_ano_cambio)
-        except:
-            try:
-                ano_cambio_bbox = draw.textbbox((0, 0), ano_cambio_text, font=font_ano_cambio)
-                ano_cambio_width = ano_cambio_bbox[2] - ano_cambio_bbox[0]
-            except:
-                ano_cambio_width = len(ano_cambio_text) * 30  # Estimativa
+        pos_x_sub = (template.width - text_w_sub) // 2
+        pos_y_sub = pos_y_titulo + text_h + 20 # 20px abaixo do título
         
-        ano_cambio_x = (template.width - ano_cambio_width) // 2
-        ano_cambio_y = marca_modelo_y + 20
+        draw.text((pos_x_sub, pos_y_sub), texto_sub, font=font_sub, fill="#FFFFFF")
         
-        # Escrever ano e câmbio em branco
-        draw.text((ano_cambio_x, ano_cambio_y), ano_cambio_text, fill="#FFFFFF", font=font_ano_cambio)
+        # 6. SALVAR E RETORNAR
+        nome_arquivo = f"story_{veiculo['marca']}_{veiculo['modelo']}_{datetime.datetime.now().strftime('%H%M%S')}.png"
+        nome_arquivo = nome_arquivo.replace(" ", "_") # Evita espaços no nome
         
-        # DEBUG: Mostrar posições no console
-        print(f"📐 Posições calculadas:")
-        print(f"  Foto área: Y={foto_area_y}, Altura={foto_area_height}")
-        print(f"  Texto inicia em: Y={info_start_y}")
-        print(f"  Marca/Modelo: Y={marca_modelo_y}")
-        print(f"  Ano/Câmbio: Y={ano_cambio_y}")
-        print(f"  Distância entre linhas: {ano_cambio_y - marca_modelo_y}px")
-        
-        # Salvar imagem final
-        nome_arquivo = f"story_{veiculo['marca']}_{veiculo['modelo']}_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.png"
-        
-        # Salvar como RGB para evitar problemas
-        if template.mode == 'RGBA':
-            template = template.convert('RGB')
-        
-        template.save(nome_arquivo, quality=95, format='PNG')
+        template.save(nome_arquivo, quality=95)
         
         return nome_arquivo, None
-        
+
     except Exception as e:
-        print(f"❌ Erro ao gerar story: {e}")
         import traceback
         traceback.print_exc()
         return None, str(e)
+
+
 
 def seção_gerador_stories():
     """Seção para gerar stories de veículos para redes sociais"""
