@@ -331,7 +331,7 @@ def seção_papel_timbrado():
 
 
 def seção_gerador_stories():
-    """Seção para gerar stories - Versão Simples e Visual"""
+    """Seção para gerar stories - Versão Visual Simples"""
     st.markdown("#### 📱 Gerador de Stories - Editor Rápido")
     
     # Buscar veículos em estoque
@@ -394,19 +394,30 @@ def seção_gerador_stories():
             st.session_state.vertical_pos = 0.5  # 0.5 = centro
         
         # =============================================
-        # CONTROLE VISUAL DE POSIÇÃO VERTICAL
+        # CONTROLE VISUAL DE POSIÇÃO VERTICAL - VERSÃO SIMPLES
         # =============================================
-        st.markdown("#### 📐 **Ajuste a Posição Vertical**")
+        st.markdown("#### 📐 **Ajuste a Posição**")
         
-        col_control, col_explain = st.columns([2, 1])
+        # Explicação visual
+        col_explain1, col_explain2, col_explain3 = st.columns([1, 2, 1])
         
-        with col_control:
-            # Controle visual com slider vertical estilizado
+        with col_explain2:
             st.markdown("""
-            <div style="text-align: center; margin-bottom: 10px;">
-                <span style="color: #e88e1b;">⬆️ Mover para CIMA</span>
+            <div style="text-align: center; background: rgba(232, 142, 27, 0.1); 
+                     padding: 15px; border-radius: 10px; margin-bottom: 20px;">
+                <h4 style="margin: 0; color: #e88e1b;">⬆️ Arraste para cima/baixo ⬇️</h4>
+                <p style="margin: 5px 0 0 0; color: #666; font-size: 0.9em;">
+                    Ajuste sutilmente para mostrar a melhor parte da foto
+                </p>
             </div>
             """, unsafe_allow_html=True)
+        
+        # Slider visual e sensível
+        col_slider1, col_slider2, col_slider3 = st.columns([1, 3, 1])
+        
+        with col_slider2:
+            # Slider com melhor sensibilidade
+            st.markdown('<div style="height: 10px;"></div>', unsafe_allow_html=True)
             
             # Slider vertical personalizado
             vertical_pos = st.slider(
@@ -414,47 +425,26 @@ def seção_gerador_stories():
                 min_value=0.0,
                 max_value=1.0,
                 value=st.session_state.vertical_pos,
-                step=0.01,
+                step=0.01,  # Sensibilidade boa - nem muito pouco, nem muito
                 format="",
                 label_visibility="collapsed",
                 key="vertical_slider"
             )
             
+            # Atualizar estado
             st.session_state.vertical_pos = vertical_pos
             
-            st.markdown("""
-            <div style="text-align: center; margin-top: 10px;">
-                <span style="color: #e88e1b;">⬇️ Mover para BAIXO</span>
-            </div>
-            """, unsafe_allow_html=True)
+            # Indicador visual abaixo do slider
+            pos_percent = int(vertical_pos * 100)
+            indicator_color = "#27AE60" if 40 <= pos_percent <= 60 else "#F39C12"
             
-            # Botões de posição rápida
-            col_pos1, col_pos2, col_pos3, col_pos4 = st.columns(4)
-            with col_pos1:
-                if st.button("⬆️ Cima", use_container_width=True):
-                    st.session_state.vertical_pos = max(0.0, vertical_pos - 0.1)
-                    st.rerun()
-            with col_pos2:
-                if st.button("⏫ Mais Cima", use_container_width=True):
-                    st.session_state.vertical_pos = max(0.0, vertical_pos - 0.2)
-                    st.rerun()
-            with col_pos3:
-                if st.button("⬇️ Baixo", use_container_width=True):
-                    st.session_state.vertical_pos = min(1.0, vertical_pos + 0.1)
-                    st.rerun()
-            with col_pos4:
-                if st.button("⏬ Mais Baixo", use_container_width=True):
-                    st.session_state.vertical_pos = min(1.0, vertical_pos + 0.2)
-                    st.rerun()
-        
-        with col_explain:
-            st.markdown("""
-            <div style="background: rgba(232, 142, 27, 0.1); padding: 15px; border-radius: 10px;">
-            <h4>🎯 Como usar:</h4>
-            <p><strong>Deslize para cima/baixo</strong> para ajustar qual parte da foto será mostrada.</p>
-            <p><strong>Valor 0.5</strong> = Centro da foto</p>
-            <p><strong>Valor menor</strong> = Mostra mais do TOPO</p>
-            <p><strong>Valor maior</strong> = Mostra mais da BASE</p>
+            st.markdown(f"""
+            <div style="text-align: center; margin-top: 10px;">
+                <div style="display: inline-block; background: {indicator_color}; 
+                     color: white; padding: 8px 20px; border-radius: 20px; font-weight: bold;">
+                    📍 Posição: {pos_percent}% {'' if 40 <= pos_percent <= 60 else '| '}
+                    {'CENTRO' if 40 <= pos_percent <= 60 else 'AJUSTADO'}
+                </div>
             </div>
             """, unsafe_allow_html=True)
         
@@ -467,46 +457,43 @@ def seção_gerador_stories():
         # Configurações do recorte 4:3 horizontal
         TARGET_RATIO = 4/3  # 4:3 horizontal
         AREA_LARGURA = 950  # Largura no template
-        AREA_ALTURA = int(AREA_LARGURA * 3/4)  # Altura 4:3
         
         # Calcular recorte
-        crop_width, crop_height = width, int(width / TARGET_RATIO)
+        crop_width = min(width, int(height * TARGET_RATIO))
+        crop_height = int(crop_width / TARGET_RATIO)
         
-        # Calcular posição vertical com o ajuste do usuário
-        max_vertical_offset = max(0, height - crop_height)
-        vertical_offset = int(max_vertical_offset * vertical_pos)
-        
-        # Garantir que não ultrapasse os limites
-        top = min(vertical_offset, height - crop_height)
-        bottom = top + crop_height
-        
-        # Se a foto for mais alta que o necessário, cortar
-        if height > crop_height:
-            left = 0
-            right = width
-        else:
-            # Se a foto for mais baixa, manter proporção
-            crop_height = height
+        # Se a foto for mais larga que a proporção 4:3
+        if width > height * TARGET_RATIO:
             crop_width = int(height * TARGET_RATIO)
+            crop_height = height
             left = (width - crop_width) // 2
             right = left + crop_width
             top = 0
             bottom = height
+        else:
+            # Foto mais alta - ajustar posição vertical
+            left = 0
+            right = width
+            max_vertical_offset = max(0, height - crop_height)
+            vertical_offset = int(max_vertical_offset * vertical_pos)
+            top = min(vertical_offset, height - crop_height)
+            bottom = top + crop_height
         
-        # Criar visualização
-        col_view1, col_view2, col_view3 = st.columns([1, 2, 1])
+        # Criar visualização COMPACTA
+        col_view1, col_view2, col_view3 = st.columns([1, 3, 1])
         
         with col_view2:  # Coluna central
-            # Criar imagem de visualização menor
-            preview_size = 500  # Tamanho fixo para visualização
+            # Tamanho fixo e compacto para visualização
+            preview_size = 350  # Menor que antes
             
             # Calcular proporção para visualização
-            if crop_width > crop_height:
+            display_ratio = crop_width / crop_height
+            if display_ratio > 1:
                 preview_width = preview_size
-                preview_height = int(preview_size * crop_height / crop_width)
+                preview_height = int(preview_size / display_ratio)
             else:
                 preview_height = preview_size
-                preview_width = int(preview_size * crop_width / crop_height)
+                preview_width = int(preview_size * display_ratio)
             
             # Fazer o recorte
             img_cropped = image.crop((left, top, right, bottom))
@@ -514,36 +501,40 @@ def seção_gerador_stories():
             # Redimensionar para visualização
             img_preview = img_cropped.resize((preview_width, preview_height), Image.Resampling.LANCZOS)
             
-            # Adicionar borda para visualização
+            # Adicionar borda sutil
             from PIL import ImageOps
-            img_with_border = ImageOps.expand(img_preview, border=2, fill='#e88e1b')
+            img_with_border = ImageOps.expand(img_preview, border=3, fill='#e88e1b')
             
+            # Mostrar imagem compacta
             st.image(img_with_border, 
-                    caption=f"Recorte 4:3 | {crop_width}x{crop_height}px | Posição: {vertical_pos:.2f}",
+                    caption=f"Recorte 4:3 | {crop_width}x{crop_height}px",
                     use_column_width=False)
             
-            # Indicador de posição
+            # Mini indicador de qualidade
+            coverage = (crop_width * crop_height) / (width * height) * 100
+            
+            if coverage > 60:
+                quality_indicator = "✅ Ótima qualidade"
+                quality_color = "#27AE60"
+            elif coverage > 40:
+                quality_indicator = "⚠️ Boa qualidade"
+                quality_color = "#F39C12"
+            else:
+                quality_indicator = "📏 Pequena área"
+                quality_color = "#E74C3C"
+            
             st.markdown(f"""
             <div style="text-align: center; margin-top: 10px;">
-                <div style="display: inline-block; background: {'#27AE60' if 0.4 <= vertical_pos <= 0.6 else '#F39C12'}; 
-                     color: white; padding: 5px 15px; border-radius: 20px; font-weight: bold;">
-                    📍 Posição: {vertical_pos:.2f} | {'CENTRO' if 0.4 <= vertical_pos <= 0.6 else 'DESLOCADO'}
+                <div style="display: inline-block; background: rgba(0,0,0,0.05); 
+                     padding: 8px 15px; border-radius: 10px; font-size: 0.9em;">
+                    <span style="color: {quality_color}; font-weight: bold;">{quality_indicator}</span> | 
+                    Área utilizada: <strong>{coverage:.1f}%</strong>
                 </div>
             </div>
             """, unsafe_allow_html=True)
         
-        # Informações técnicas
-        with st.expander("📊 **Informações Técnicas**", expanded=False):
-            col_info1, col_info2 = st.columns(2)
-            with col_info1:
-                st.metric("📐 Proporção", "4:3 Horizontal")
-                st.metric("📏 Tamanho Recorte", f"{crop_width}×{crop_height}")
-            with col_info2:
-                st.metric("📍 Posição Vertical", f"{vertical_pos:.2f}")
-                st.metric("🎯 Área Utilizada", f"{(crop_width*crop_height)/(width*height)*100:.1f}%")
-        
         # =============================================
-        # PRÉ-VISUALIZAÇÃO NO TEMPLATE
+        # PRÉ-VISUALIZAÇÃO NO TEMPLATE (COMPACTA)
         # =============================================
         st.markdown("---")
         st.markdown("#### 🎨 **Pré-visualização no Template**")
@@ -557,6 +548,7 @@ def seção_gerador_stories():
             AREA_TEMPLATE_ALTURA = 1200
             AREA_TEMPLATE_POS_Y = 325
             
+            # Calcular tamanho para template
             if crop_width / crop_height > AREA_TEMPLATE_LARGURA / AREA_TEMPLATE_ALTURA:
                 nova_largura = AREA_TEMPLATE_LARGURA
                 nova_altura = int(nova_largura * crop_height / crop_width)
@@ -574,30 +566,23 @@ def seção_gerador_stories():
             template_preview = template.copy()
             template_preview.paste(img_for_template, (pos_x, pos_y))
             
-            # Mostrar em tamanho menor
-            col_temp1, col_temp2 = st.columns([2, 1])
+            # Mostrar em tamanho COMPACTO
+            col_temp1, col_temp2, col_temp3 = st.columns([1, 3, 1])
             
-            with col_temp1:
-                # Redimensionar template para visualização menor
-                template_display_width = 400
+            with col_temp2:
+                # Redimensionar template para visualização compacta
+                template_display_width = 300  # Muito menor
                 template_display_height = int(template_display_width * template.height / template.width)
                 template_display = template_preview.resize((template_display_width, template_display_height), Image.Resampling.LANCZOS)
                 
-                st.image(template_display, caption="Pré-visualização (reduzida)", use_column_width=False)
-            
-            with col_temp2:
-                st.markdown("""
-                <div style="background: rgba(39, 174, 96, 0.1); padding: 15px; border-radius: 10px;">
-                <h4>✅ Tudo Pronto!</h4>
-                <p><strong>Recorte 4:3 Horizontal</strong></p>
-                <p>Posição ajustada visualmente</p>
-                <p>Pronto para gerar o story!</p>
-                </div>
-                """, unsafe_allow_html=True)
+                st.image(template_display, caption="Visualização do Story", use_column_width=False)
                 
-                # Botão para gerar
-                if st.button("✨ **Gerar Story Agora**", 
-                           use_container_width=True, type="primary",
+                # Botão para gerar - CENTRALIZADO
+                st.markdown('<div style="height: 20px;"></div>', unsafe_allow_html=True)
+                
+                if st.button("✨ **GERAR STORY AGORA**", 
+                           use_container_width=True, 
+                           type="primary",
                            key="gerar_story_simple"):
                     
                     config_corte = {
@@ -619,27 +604,27 @@ def seção_gerador_stories():
                         st.error(f"❌ Erro: {erro}")
                     else:
                         st.success("✅ Story gerado com sucesso!")
-                        st.balloons()
                         
-                        # Mostrar e download
+                        # Mostrar e download em colunas
                         col_result1, col_result2 = st.columns(2)
                         
                         with col_result1:
-                            # Mostrar em tamanho reduzido
+                            # Mostrar resultado compacto
                             result_img = Image.open(nome_arquivo)
-                            display_width = 300
+                            display_width = 250
                             display_height = int(display_width * result_img.height / result_img.width)
                             result_display = result_img.resize((display_width, display_height), Image.Resampling.LANCZOS)
-                            st.image(result_display, caption="Story Gerado")
+                            st.image(result_display, caption="Story Pronto!")
                         
                         with col_result2:
                             with open(nome_arquivo, "rb") as file:
                                 st.download_button(
-                                    label="📥 **Baixar Story**",
+                                    label="📥 **BAIXAR STORY**",
                                     data=file,
                                     file_name=f"story_{veiculo['marca']}_{veiculo['modelo']}.png",
                                     mime="image/png",
-                                    use_container_width=True
+                                    use_container_width=True,
+                                    type="primary"
                                 )
         
         except Exception as e:
