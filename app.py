@@ -516,9 +516,20 @@ def seção_gerador_stories():
                 fill="yellow", outline="black"
             )
         
-        # Desenhar linhas de guia
-        draw.line([(width//2, 0), (width//2, height)], fill="blue", width=1, dash=(5, 5))
-        draw.line([(0, height//2), (width, height//2)], fill="blue", width=1, dash=(5, 5))
+        # CORREÇÃO: Remover o parâmetro 'dash' que causa erro
+        # Desenhar linhas de guia (linhas sólidas em vez de tracejadas)
+        draw.line([(width//2, 0), (width//2, height)], fill="blue", width=1)  # Removido: dash=(5, 5)
+        draw.line([(0, height//2), (width, height//2)], fill="blue", width=1)  # Removido: dash=(5, 5)
+        
+        # Adicionar pontos ao longo das linhas para simular tracejado (opcional)
+        point_spacing = 10
+        for i in range(0, height, point_spacing * 2):
+            # Pontos na linha vertical
+            draw.rectangle([width//2 - 1, i, width//2 + 1, i + point_spacing], fill="blue")
+        
+        for i in range(0, width, point_spacing * 2):
+            # Pontos na linha horizontal
+            draw.rectangle([i, height//2 - 1, i + point_spacing, height//2 + 1], fill="blue")
         
         # Converter para bytes para exibição
         img_bytes = io.BytesIO()
@@ -703,67 +714,6 @@ def seção_gerador_stories():
     
     else:
         st.info("📸 **Carregue uma foto para começar a editar**")
-
-def gerar_story_final(veiculo_id, config_corte):
-    """Gera story final com recorte configurado"""
-    try:
-        # Buscar dados do veículo
-        veiculos = db.get_veiculos()
-        veiculo = next((v for v in veiculos if v['id'] == veiculo_id), None)
-        
-        if not veiculo:
-            return None, "Veículo não encontrado"
-        
-        # Carregar template
-        try:
-            template = Image.open("stories.png").convert('RGB')
-        except:
-            return None, "Template não encontrado"
-        
-        # Carregar e recortar foto
-        image = Image.open(io.BytesIO(config_corte['foto_bytes']))
-        
-        # Aplicar recorte
-        img_cropped = image.crop(
-            (config_corte['x'],
-             config_corte['y'],
-             config_corte['x'] + config_corte['width'],
-             config_corte['y'] + config_corte['height'])
-        )
-        
-        # =============================================
-        # CONFIGURAÇÕES DO TEMPLATE
-        # =============================================
-        AREA_LARGURA = 950
-        AREA_ALTURA = 1200
-        AREA_POS_Y = 325
-        
-        # Redimensionar para caber na área
-        if img_cropped.width / img_cropped.height > AREA_LARGURA / AREA_ALTURA:
-            nova_largura = AREA_LARGURA
-            nova_altura = int(nova_largura * img_cropped.height / img_cropped.width)
-        else:
-            nova_altura = AREA_ALTURA
-            nova_largura = int(nova_altura * img_cropped.width / img_cropped.height)
-        
-        img_final = img_cropped.resize((nova_largura, nova_altura), Image.Resampling.LANCZOS)
-        
-        # Posicionar no template
-        pos_x = (template.width - nova_largura) // 2
-        pos_y = AREA_POS_Y + (AREA_ALTURA - nova_altura) // 2
-        
-        # Colar no template
-        template.paste(img_final, (pos_x, pos_y))
-        
-        # Salvar
-        nome_arquivo = f"story_{veiculo['marca']}_{veiculo['modelo']}_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.png"
-        template.save(nome_arquivo, quality=95, format='PNG')
-        
-        return nome_arquivo, None
-        
-    except Exception as e:
-        print(f"❌ Erro ao gerar story: {e}")
-        return None, str(e)
     
     # Divisor
     st.markdown("---")
