@@ -332,7 +332,7 @@ def seção_papel_timbrado():
 
 
 def gerar_story_com_template(veiculo_id, foto_upload):
-    """Gera story com foto personalizada fornecida pelo usuário"""
+    """Gera story com foto personalizada - VERSÃO 4:3 HORIZONTAL"""
     try:
         # Buscar dados do veículo
         veiculos = db.get_veiculos()
@@ -348,103 +348,98 @@ def gerar_story_com_template(veiculo_id, foto_upload):
         try:
             template = Image.open("stories.png")
         except:
-            return None, "Template stories.png não encontrado. Coloque o arquivo na mesma pasta do projeto."
+            return None, "Template stories.png não encontrado."
         
         # Converter template para RGB se necessário
         if template.mode != 'RGB':
             template = template.convert('RGB')
         
-        # Carregar e processar foto fornecida pelo usuário
+        # Carregar foto fornecida pelo usuário
         foto_carro = Image.open(io.BytesIO(foto_upload))
         
-        # Verificar orientação da foto e rotacionar se necessário
-        try:
-            # Verificar se a foto tem metadados de orientação (EXIF)
-            exif = foto_carro._getexif()
-            if exif:
-                orientation = exif.get(274)  # Tag 274 é Orientation
-                if orientation:
-                    if orientation == 3:
-                        foto_carro = foto_carro.rotate(180, expand=True)
-                    elif orientation == 6:
-                        foto_carro = foto_carro.rotate(270, expand=True)
-                    elif orientation == 8:
-                        foto_carro = foto_carro.rotate(90, expand=True)
-        except:
-            pass  # Se não conseguir ler EXIF, continua normalmente
+        # =============================================
+        # 🎯 CONFIGURAÇÕES PARA 4:3 HORIZONTAL
+        # =============================================
+        # 4:3 HORIZONTAL significa: largura 4, altura 3
+        # Exemplo: 1200x900, 800x600, 400x300
+        
+        # 1. DIMENSÕES DA ÁREA DISPONÍVEL
+        AREA_LARGURA_TOTAL = 950      # Largura total disponível no template
+        AREA_ALTURA_DISPONIVEL = 500  # Altura que queremos usar (ajuste conforme necessidade)
+        AREA_POS_Y = 400              # Posição Y no template (ajuste para centralizar verticalmente)
+        
+        # 2. CALCULAR DIMENSÕES 4:3
+        # Para ocupar toda a largura: largura = AREA_LARGURA_TOTAL
+        # Altura = largura * 3/4 (porque 4:3 = largura 4, altura 3)
+        LARGURA_FINAL = AREA_LARGURA_TOTAL
+        ALTURA_FINAL = int(LARGURA_FINAL * 3 / 4)  # 4:3 horizontal
+        
+        print(f"🔧 CONFIGURAÇÃO 4:3 HORIZONTAL:")
+        print(f"   Largura: {LARGURA_FINAL}px")
+        print(f"   Altura: {ALTURA_FINAL}px (3/4 da largura)")
+        print(f"   Proporção: 4:3 horizontal")
+        print(f"   Posição Y: {AREA_POS_Y}px")
         
         # =============================================
-        # NOVO: CORTE PARA 4:3 VERTICAL
+        # PROCESSAMENTO DA FOTO
         # =============================================
         
-        # Proporção desejada: 4:3 vertical (exemplo: 1080x1440)
-        target_width = 1080  # Largura padrão para stories
-        target_height = 1440  # Altura para proporção 4:3 vertical (1080 * 4/3)
-        
-        # Calcula as dimensões de corte para proporção 4:3
+        # 1. CORTAR PARA PROPORÇÃO 4:3 HORIZONTAL
         foto_width, foto_height = foto_carro.size
         
-        # Determinar qual dimensão é limitante
-        foto_ratio = foto_width / foto_height
-        target_ratio = 3/4  # 3:4 na verdade (vertical) -> 1080:1440 = 0.75
+        # Para 4:3 HORIZONTAL, queremos largura/altura = 4/3 ≈ 1.333
+        target_ratio = 4/3  # 1.333...
         
-        if foto_ratio > target_ratio:
-            # Foto é mais larga que a proporção desejada
-            # Cortar as laterais
-            new_width = int(foto_height * target_ratio)
-            left = (foto_width - new_width) // 2
-            top = 0
-            right = left + new_width
-            bottom = foto_height
+        if foto_width / foto_height > target_ratio:
+            # Foto é MAIS LARGA que 4:3 - cortar LATERAIS
+            nova_altura = foto_height
+            nova_largura = int(nova_altura * target_ratio)
+            
+            left = (foto_width - nova_largura) // 2
+            right = left + nova_largura
+            
+            foto_carro = foto_carro.crop((left, 0, right, nova_altura))
+            print(f"   Corte: LATERAIS | Nova: {nova_largura}x{nova_altura}")
+            
         else:
-            # Foto é mais alta que a proporção desejada
-            # Cortar topo e base
-            new_height = int(foto_width / target_ratio)
-            left = 0
-            top = (foto_height - new_height) // 2
-            right = foto_width
-            bottom = top + new_height
+            # Foto é MAIS ALTA que 4:3 - cortar TOPO/BASE
+            nova_largura = foto_width
+            nova_altura = int(nova_largura / target_ratio)
+            
+            top = (foto_height - nova_altura) // 2
+            bottom = top + nova_altura
+            
+            foto_carro = foto_carro.crop((0, top, nova_largura, bottom))
+            print(f"   Corte: TOPO/BASE | Nova: {nova_largura}x{nova_altura}")
         
-        # Realizar o corte para proporção 4:3 vertical
-        foto_carro = foto_carro.crop((left, top, right, bottom))
-        
-        # Redimensionar para caber na área do template
-        area_width = 700  # Largura máxima da foto no template
-        area_height = 950  # Altura máxima da foto no template
-        
-        # Redimensionar mantendo proporção 4:3
-        if foto_carro.width > foto_carro.height:
-            # Se ainda estiver na horizontal após corte (impossível com 4:3, mas por segurança)
-            new_height = area_height
-            new_width = int(new_height * 3/4)  # Mantém 4:3
-        else:
-            # Vertical - redimensiona pela altura
-            new_height = area_height
-            new_width = int(new_height * 3/4)  # 3:4 = 0.75
-        
-        foto_carro = foto_carro.resize((new_width, new_height), Image.Resampling.LANCZOS)
+        # 2. REDIMENSIONAR PARA TAMANHO FINAL
+        foto_carro = foto_carro.resize((LARGURA_FINAL, ALTURA_FINAL), Image.Resampling.LANCZOS)
+        print(f"   Redimensionado para: {LARGURA_FINAL}x{ALTURA_FINAL}")
         
         # =============================================
         # POSICIONAMENTO NO TEMPLATE
         # =============================================
         
-        # Área para a foto (centralizada verticalmente e horizontalmente)
-        area_x = (template.width - area_width) // 2  # Centralizado horizontalmente
-        area_y = 325  # Posição vertical da foto
+        # Centralizar horizontalmente
+        pos_x = (template.width - LARGURA_FINAL) // 2
         
-        # Calcular posição para centralizar na área
-        pos_x = area_x + (area_width - new_width) // 2
-        pos_y = area_y + (area_height - new_height) // 2
+        # Posição vertical (você pode ajustar AREA_POS_Y)
+        pos_y = AREA_POS_Y
+        
+        print(f"   Posição no template: ({pos_x}, {pos_y})")
+        
+        # Verificar se cabe
+        if pos_y + ALTURA_FINAL > template.height:
+            print(f"   ⚠️ ATENÇÃO: Altura excede template! Template: {template.height}, Necessário: {pos_y + ALTURA_FINAL}")
         
         # Colocar foto no template
         template.paste(foto_carro, (pos_x, pos_y))
         
-        # NÃO ADICIONAR TEXTOS - APENAS A FOTO NO TEMPLATE
-        
-        # Salvar imagem final
+        # =============================================
+        # SALVAR IMAGEM FINAL
+        # =============================================
         nome_arquivo = f"story_{veiculo['marca']}_{veiculo['modelo']}_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.png"
         
-        # Salvar como RGB para evitar problemas
         if template.mode == 'RGBA':
             template = template.convert('RGB')
         
