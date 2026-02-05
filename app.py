@@ -331,21 +331,6 @@ def seção_papel_timbrado():
 
 
 def seção_gerador_stories():
-    """Seção para gerar stories - Versão Universal"""
-    st.markdown("#### 📱 Gerador de Stories Universal")
-    
-    st.markdown("""
-    <div style="background: rgba(232, 142, 27, 0.1); padding: 20px; border-radius: 10px; margin-bottom: 20px;">
-        <h4 style="margin: 0; color: #e88e1b;">✨ Crie stories para qualquer conteúdo!</h4>
-        <p style="margin: 10px 0 0 0; color: #666;">
-            Use qualquer foto - não precisa ser de um veículo cadastrado. Ideal para divulgação!
-        </p>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    # =============================================
-    # UPLOAD DA FOTO (sem seleção de veículo)
-    # =============================================
     st.markdown("#### 📸 **Escolha a Foto**")
     
     foto_story = st.file_uploader(
@@ -517,7 +502,7 @@ def seção_gerador_stories():
             # Redimensionar para caber na área do template
             AREA_TEMPLATE_LARGURA = 950
             AREA_TEMPLATE_ALTURA = 1200
-            AREA_TEMPLATE_POS_Y = 290
+            AREA_TEMPLATE_POS_Y = 260
             
             # Calcular tamanho para template
             if crop_width / crop_height > AREA_TEMPLATE_LARGURA / AREA_TEMPLATE_ALTURA:
