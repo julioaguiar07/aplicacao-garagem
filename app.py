@@ -409,8 +409,8 @@ def gerar_story_com_template(veiculo_id, foto_upload):
         foto_carro = foto_carro.crop((left, top, right, bottom))
         
         # Redimensionar para caber na área do template
-        area_width = 850  # Largura máxima da foto no template
-        area_height = 1100  # Altura máxima da foto no template
+        area_width = 700  # Largura máxima da foto no template
+        area_height = 950  # Altura máxima da foto no template
         
         # Redimensionar mantendo proporção 4:3
         if foto_carro.width > foto_carro.height:
