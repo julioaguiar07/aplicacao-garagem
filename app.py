@@ -331,57 +331,28 @@ def seção_papel_timbrado():
 
 
 def seção_gerador_stories():
-    """Seção para gerar stories - Versão Visual Simples"""
-    st.markdown("#### 📱 Gerador de Stories - Editor Rápido")
+    """Seção para gerar stories - Versão Universal"""
+    st.markdown("#### 📱 Gerador de Stories Universal")
     
-    # Buscar veículos em estoque
-    veiculos_estoque = [v for v in db.get_veiculos() if v['status'] == 'Em estoque']
-    
-    if not veiculos_estoque:
-        st.warning("⚠️ Não há veículos em estoque para gerar stories!")
-        return
-    
-    # Layout principal
-    col_sel, col_info = st.columns([2, 1])
-    
-    with col_sel:
-        # Seleção do veículo
-        veiculos_options = {f"{v['id']} - {v['marca']} {v['modelo']} ({v['ano']})": v for v in veiculos_estoque}
-        veiculo_selecionado = st.selectbox(
-            "🚗 **Selecione o veículo para divulgar:**",
-            options=list(veiculos_options.keys()),
-            key="story_veiculo_select"
-        )
-        
-        if veiculo_selecionado:
-            veiculo_id = int(veiculo_selecionado.split(" - ")[0])
-            veiculo = veiculos_options[veiculo_selecionado]
-    
-    with col_info:
-        st.markdown("##### 📋 **Prévia das Informações**")
-        
-        if veiculo_selecionado:
-            st.markdown(f"""
-            **Marca:** {veiculo['marca']}  
-            **Modelo:** {veiculo['modelo']}  
-            **Ano:** {veiculo['ano']}  
-            **Cor:** {veiculo['cor']}  
-            **KM:** {veiculo['km']:,}  
-            **Preço:** R$ {veiculo['preco_venda']:,.2f}
-            """)
-    
-    st.markdown("---")
+    st.markdown("""
+    <div style="background: rgba(232, 142, 27, 0.1); padding: 20px; border-radius: 10px; margin-bottom: 20px;">
+        <h4 style="margin: 0; color: #e88e1b;">✨ Crie stories para qualquer conteúdo!</h4>
+        <p style="margin: 10px 0 0 0; color: #666;">
+            Use qualquer foto - não precisa ser de um veículo cadastrado. Ideal para divulgação!
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
     
     # =============================================
-    # UPLOAD DA FOTO
+    # UPLOAD DA FOTO (sem seleção de veículo)
     # =============================================
     st.markdown("#### 📸 **Escolha a Foto**")
     
     foto_story = st.file_uploader(
-        "📤 **Carregue uma foto para o story:**",
+        "📤 **Carregue qualquer foto para criar um story:**",
         type=['jpg', 'jpeg', 'png'],
         help="Foto vertical fica melhor para stories",
-        key="foto_story_simple"
+        key="foto_story_universal"
     )
     
     if foto_story is not None:
@@ -394,7 +365,7 @@ def seção_gerador_stories():
             st.session_state.vertical_pos = 0.5  # 0.5 = centro
         
         # =============================================
-        # CONTROLE VISUAL DE POSIÇÃO VERTICAL - VERSÃO SIMPLES
+        # CONTROLE VISUAL DE POSIÇÃO VERTICAL
         # =============================================
         st.markdown("#### 📐 **Ajuste a Posição**")
         
@@ -428,7 +399,7 @@ def seção_gerador_stories():
                 step=0.01,  # Sensibilidade boa - nem muito pouco, nem muito
                 format="",
                 label_visibility="collapsed",
-                key="vertical_slider"
+                key="vertical_slider_universal"
             )
             
             # Atualizar estado
@@ -577,13 +548,31 @@ def seção_gerador_stories():
                 
                 st.image(template_display, caption="Visualização do Story", use_column_width=False)
                 
-                # Botão para gerar - CENTRALIZADO
+                # Campo para nome do arquivo
                 st.markdown('<div style="height: 20px;"></div>', unsafe_allow_html=True)
                 
+                col_name1, col_name2 = st.columns([1, 1])
+                with col_name1:
+                    nome_personalizado = st.text_input(
+                        "Nome do arquivo (opcional):",
+                        placeholder="meu_story",
+                        help="Deixe em branco para nome automático"
+                    )
+                
+                with col_name2:
+                    data_atual = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+                    if nome_personalizado:
+                        nome_sugerido = f"{nome_personalizado}_{data_atual}.png"
+                    else:
+                        nome_sugerido = f"story_{data_atual}.png"
+                    
+                    st.info(f"📁 **Salvar como:** `{nome_sugerido}`")
+                
+                # Botão para gerar - CENTRALIZADO
                 if st.button("✨ **GERAR STORY AGORA**", 
                            use_container_width=True, 
                            type="primary",
-                           key="gerar_story_simple"):
+                           key="gerar_story_universal"):
                     
                     config_corte = {
                         'left': left,
@@ -595,9 +584,9 @@ def seção_gerador_stories():
                         'posicao_vertical': vertical_pos
                     }
                     
-                    nome_arquivo, erro = gerar_story_simples(
-                        veiculo_id, 
-                        config_corte
+                    nome_arquivo, erro = gerar_story_universal(
+                        config_corte,
+                        nome_personalizado if nome_personalizado else f"story_{data_atual}"
                     )
                     
                     if erro:
@@ -621,7 +610,7 @@ def seção_gerador_stories():
                                 st.download_button(
                                     label="📥 **BAIXAR STORY**",
                                     data=file,
-                                    file_name=f"story_{veiculo['marca']}_{veiculo['modelo']}.png",
+                                    file_name=os.path.basename(nome_arquivo),
                                     mime="image/png",
                                     use_container_width=True,
                                     type="primary"
@@ -633,16 +622,9 @@ def seção_gerador_stories():
     else:
         st.info("📸 **Carregue uma foto para começar a criar seu story**")
 
-def gerar_story_simples(veiculo_id, config_corte):
-    """Gera story simples com recorte 4:3 horizontal"""
+def gerar_story_universal(config_corte, nome_base="story"):
+    """Gera story universal para qualquer foto"""
     try:
-        # Buscar dados do veículo
-        veiculos = db.get_veiculos()
-        veiculo = next((v for v in veiculos if v['id'] == veiculo_id), None)
-        
-        if not veiculo:
-            return None, "Veículo não encontrado"
-        
         # Carregar template
         try:
             template = Image.open("stories.png").convert('RGB')
@@ -680,8 +662,8 @@ def gerar_story_simples(veiculo_id, config_corte):
         # Colar no template
         template.paste(img_final, (pos_x, pos_y))
         
-        # Salvar
-        nome_arquivo = f"story_{veiculo['marca']}_{veiculo['modelo']}_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.png"
+        # Salvar com nome personalizado
+        nome_arquivo = f"{nome_base}_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.png"
         template.save(nome_arquivo, quality=95, format='PNG')
         
         return nome_arquivo, None
