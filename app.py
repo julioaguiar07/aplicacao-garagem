@@ -517,7 +517,7 @@ def seção_gerador_stories():
             # Redimensionar para caber na área do template
             AREA_TEMPLATE_LARGURA = 950
             AREA_TEMPLATE_ALTURA = 1200
-            AREA_TEMPLATE_POS_Y = 325
+            AREA_TEMPLATE_POS_Y = 290
             
             # Calcular tamanho para template
             if crop_width / crop_height > AREA_TEMPLATE_LARGURA / AREA_TEMPLATE_ALTURA:
