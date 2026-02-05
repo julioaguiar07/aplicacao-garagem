@@ -331,131 +331,9 @@ def seção_papel_timbrado():
             
 
 
-def gerar_story_com_template(veiculo_id, foto_upload):
-    """Gera story com foto personalizada - VERSÃO 4:3 HORIZONTAL"""
-    try:
-        # Buscar dados do veículo
-        veiculos = db.get_veiculos()
-        veiculo = next((v for v in veiculos if v['id'] == veiculo_id), None)
-        
-        if not veiculo:
-            return None, "Veículo não encontrado"
-        
-        if not foto_upload:
-            return None, "É necessário fornecer uma foto para o story"
-        
-        # Carregar template do story
-        try:
-            template = Image.open("stories.png")
-        except:
-            return None, "Template stories.png não encontrado."
-        
-        # Converter template para RGB se necessário
-        if template.mode != 'RGB':
-            template = template.convert('RGB')
-        
-        # Carregar foto fornecida pelo usuário
-        foto_carro = Image.open(io.BytesIO(foto_upload))
-        
-        # =============================================
-        # 🎯 CONFIGURAÇÕES PARA 4:3 HORIZONTAL
-        # =============================================
-        # 4:3 HORIZONTAL significa: largura 4, altura 3
-        # Exemplo: 1200x900, 800x600, 400x300
-        
-        # 1. DIMENSÕES DA ÁREA DISPONÍVEL
-        AREA_LARGURA_TOTAL = 950      # Largura total disponível no template
-        AREA_ALTURA_DISPONIVEL = 500  # Altura que queremos usar (ajuste conforme necessidade)
-        AREA_POS_Y = 400              # Posição Y no template (ajuste para centralizar verticalmente)
-        
-        # 2. CALCULAR DIMENSÕES 4:3
-        # Para ocupar toda a largura: largura = AREA_LARGURA_TOTAL
-        # Altura = largura * 3/4 (porque 4:3 = largura 4, altura 3)
-        LARGURA_FINAL = AREA_LARGURA_TOTAL
-        ALTURA_FINAL = int(LARGURA_FINAL * 3 / 4)  # 4:3 horizontal
-        
-        print(f"🔧 CONFIGURAÇÃO 4:3 HORIZONTAL:")
-        print(f"   Largura: {LARGURA_FINAL}px")
-        print(f"   Altura: {ALTURA_FINAL}px (3/4 da largura)")
-        print(f"   Proporção: 4:3 horizontal")
-        print(f"   Posição Y: {AREA_POS_Y}px")
-        
-        # =============================================
-        # PROCESSAMENTO DA FOTO
-        # =============================================
-        
-        # 1. CORTAR PARA PROPORÇÃO 4:3 HORIZONTAL
-        foto_width, foto_height = foto_carro.size
-        
-        # Para 4:3 HORIZONTAL, queremos largura/altura = 4/3 ≈ 1.333
-        target_ratio = 4/3  # 1.333...
-        
-        if foto_width / foto_height > target_ratio:
-            # Foto é MAIS LARGA que 4:3 - cortar LATERAIS
-            nova_altura = foto_height
-            nova_largura = int(nova_altura * target_ratio)
-            
-            left = (foto_width - nova_largura) // 2
-            right = left + nova_largura
-            
-            foto_carro = foto_carro.crop((left, 0, right, nova_altura))
-            print(f"   Corte: LATERAIS | Nova: {nova_largura}x{nova_altura}")
-            
-        else:
-            # Foto é MAIS ALTA que 4:3 - cortar TOPO/BASE
-            nova_largura = foto_width
-            nova_altura = int(nova_largura / target_ratio)
-            
-            top = (foto_height - nova_altura) // 2
-            bottom = top + nova_altura
-            
-            foto_carro = foto_carro.crop((0, top, nova_largura, bottom))
-            print(f"   Corte: TOPO/BASE | Nova: {nova_largura}x{nova_altura}")
-        
-        # 2. REDIMENSIONAR PARA TAMANHO FINAL
-        foto_carro = foto_carro.resize((LARGURA_FINAL, ALTURA_FINAL), Image.Resampling.LANCZOS)
-        print(f"   Redimensionado para: {LARGURA_FINAL}x{ALTURA_FINAL}")
-        
-        # =============================================
-        # POSICIONAMENTO NO TEMPLATE
-        # =============================================
-        
-        # Centralizar horizontalmente
-        pos_x = (template.width - LARGURA_FINAL) // 2
-        
-        # Posição vertical (você pode ajustar AREA_POS_Y)
-        pos_y = AREA_POS_Y
-        
-        print(f"   Posição no template: ({pos_x}, {pos_y})")
-        
-        # Verificar se cabe
-        if pos_y + ALTURA_FINAL > template.height:
-            print(f"   ⚠️ ATENÇÃO: Altura excede template! Template: {template.height}, Necessário: {pos_y + ALTURA_FINAL}")
-        
-        # Colocar foto no template
-        template.paste(foto_carro, (pos_x, pos_y))
-        
-        # =============================================
-        # SALVAR IMAGEM FINAL
-        # =============================================
-        nome_arquivo = f"story_{veiculo['marca']}_{veiculo['modelo']}_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.png"
-        
-        if template.mode == 'RGBA':
-            template = template.convert('RGB')
-        
-        template.save(nome_arquivo, quality=95, format='PNG')
-        
-        return nome_arquivo, None
-        
-    except Exception as e:
-        print(f"❌ Erro ao gerar story: {e}")
-        import traceback
-        traceback.print_exc()
-        return None, str(e)
-
 def seção_gerador_stories():
-    """Seção para gerar stories de veículos para redes sociais"""
-    st.markdown("#### 📱 Gerador de Stories - Divulgação de Veículos")
+    """Seção para gerar stories com ferramenta de recorte interativa"""
+    st.markdown("#### 📱 Gerador de Stories - Com Editor de Foto Integrado")
     
     # Buscar veículos em estoque
     veiculos_estoque = [v for v in db.get_veiculos() if v['status'] == 'Em estoque']
@@ -464,7 +342,7 @@ def seção_gerador_stories():
         st.warning("⚠️ Não há veículos em estoque para gerar stories!")
         return
     
-    # Layout em duas colunas
+    # Layout principal
     col_sel, col_info = st.columns([2, 1])
     
     with col_sel:
@@ -493,168 +371,359 @@ def seção_gerador_stories():
             **Preço:** R$ {veiculo['preco_venda']:,.2f}
             """)
     
-    # Divisor
     st.markdown("---")
     
-    # SEÇÃO DE UPLOAD DA FOTO PERSONALIZADA
-    st.markdown("#### 📸 Escolha a Foto para o Story")
-    st.markdown("""
-    <div style="background: rgba(232, 142, 27, 0.1); padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
-        <h4 style="margin:0; color: #e88e1b;">📝 Requisitos da Foto:</h4>
-        <ul style="margin: 0.5rem 0 0 0; padding-left: 1.5rem;">
-            <li><strong>Formato:</strong> JPG ou PNG</li>
-            <li><strong>Orientacão:</strong> Vertical (retrato)</li>
-            <li><strong>Proporção recomendada:</strong> 4:3 vertical (ex: 1080x1440)</li>
-            <li><strong>Qualidade:</strong> Boa iluminação, fundo limpo</li>
-        </ul>
-        <p style="margin: 0.5rem 0 0 0; color: #a0a0a0; font-size: 0.9rem;">
-            <strong>💡 Dica:</strong> A foto será automaticamente cortada para proporção 4:3
-        </p>
-    </div>
-    """, unsafe_allow_html=True)
+    # =============================================
+    # EDITOR DE FOTO INTERATIVO
+    # =============================================
+    st.markdown("#### ✂️ **Editor de Foto - Selecione a Área Desejada**")
     
     # Upload da foto
     foto_story = st.file_uploader(
-        "📤 **Faça upload da foto que deseja usar no story:**",
+        "📤 **Carregue uma foto para editar:**",
         type=['jpg', 'jpeg', 'png'],
-        help="Selecione uma foto vertical de boa qualidade para o story"
+        help="Selecione uma foto para escolher a área que será mostrada",
+        key="foto_editor"
     )
     
-    # Mostrar prévia da foto
     if foto_story is not None:
-        try:
-            image = Image.open(foto_story)
-            st.image(image, caption="📸 **Prévia da Foto Selecionada**", use_column_width=True)
-            
-            # Verificar dimensões
-            width, height = image.size
-            st.info(f"📏 **Dimensões da foto:** {width} x {height} pixels")
-            
-            # Verificar proporção
-            ratio = width / height
-            if ratio > 0.8:  # Se for muito quadrada ou horizontal
-                st.warning("⚠️ **Atenção:** Esta foto pode não ser ideal para stories. Recomenda-se foto vertical.")
-            
-        except Exception as e:
-            st.error(f"❌ Erro ao carregar a foto: {e}")
-    
-    # Divisor
-    st.markdown("---")
-    
-    col_template1, col_template2 = st.columns([1, 1])
-    
-    with col_template1:
-        try:
-            # Mostrar template stories.png
-            st.image("stories.png", caption="🎨 **Template Base (stories.png)**", use_column_width=True)
-        except:
-            st.error("❌ **Arquivo 'stories.png' não encontrado!**")
-            st.info("""
-            **Para usar esta funcionalidade:**
-            1. Coloque o arquivo **stories.png** na mesma pasta do projeto
-            2. O template deve ter tamanho **1080x1920 pixels**
-            3. Deixe espaço para a foto do carro (aproximadamente 950x1200 pixels no centro)
-            """)
-            return
-    
-    with col_template2:
-        # Instruções
-        st.markdown("##### 📝 **Como funciona:**")
-        st.markdown("""
-        O sistema irá:
-        1. **Processar sua foto** escolhida
-        2. **Cortar automaticamente** para proporção 4:3 vertical
-        3. **Centralizar** vertical e horizontalmente no template
-        4. **Gerar o story** pronto para compartilhar
+        # Carregar a imagem
+        image = Image.open(foto_story)
         
-        **🎯 Área da foto no template:**
-        - **Posição:** Centralizada
-        - **Tamanho máximo:** 950x1200 pixels
-        - **Proporção final:** 4:3 vertical
-        """)
+        # Criar uma cópia para editar
+        img_edit = image.copy()
         
-        # Informações sobre o veículo selecionado
-        if veiculo_selecionado:
-            st.markdown("##### 🚗 **Veículo Selecionado:**")
-            st.markdown(f"""
-            **{veiculo['marca']} {veiculo['modelo']} {veiculo['ano']}**
-            - Cor: {veiculo['cor']}
-            - KM: {veiculo['km']:,}
-            - Preço: R$ {veiculo['preco_venda']:,.2f}
-            """)
-    
-    # Divisor
-    st.markdown("---")
-    
-    # Botão para gerar
-    if veiculo_selecionado:
-        col_btn1, col_btn2, col_btn3 = st.columns([1, 2, 1])
+        # Converter para RGB se necessário
+        if img_edit.mode != 'RGB':
+            img_edit = img_edit.convert('RGB')
         
-        with col_btn2:
-            # Verificar se tem foto antes de habilitar o botão
-            if foto_story is None:
-                st.error("❌ **É necessário selecionar uma foto para gerar o story!**")
+        # Mostrar informações da foto
+        col_info1, col_info2 = st.columns(2)
+        with col_info1:
+            st.info(f"📏 **Original:** {image.width} x {image.height} pixels")
+        with col_info2:
+            st.info(f"🎯 **Proporção:** {image.width/image.height:.2f}:1")
+        
+        # =============================================
+        # CONFIGURAÇÕES DO RECORTE
+        # =============================================
+        st.markdown("##### ⚙️ **Configurações do Recorte**")
+        
+        col_config1, col_config2 = st.columns(2)
+        
+        with col_config1:
+            # Formato do recorte
+            formato_recorte = st.selectbox(
+                "**Formato do Recorte:**",
+                ["1:1 Quadrado", "4:3 Horizontal", "4:3 Vertical", "16:9 Horizontal", "Personalizado"],
+                help="Selecione a proporção da área de recorte"
+            )
+            
+            # Tamanho da área de recorte
+            tamanho_recorte = st.slider(
+                "**Tamanho do Recorte (% da foto):**",
+                min_value=30,
+                max_value=100,
+                value=70,
+                help="Quanto da foto original será usado no recorte"
+            )
+        
+        with col_config2:
+            # Posição inicial do recorte
+            pos_x = st.slider(
+                "**Posição Horizontal (%):**",
+                min_value=0,
+                max_value=100,
+                value=50,
+                help="Posição horizontal do centro do recorte"
+            )
+            
+            pos_y = st.slider(
+                "**Posição Vertical (%):**",
+                min_value=0,
+                max_value=100,
+                value=50,
+                help="Posição vertical do centro do recorte"
+            )
+            
+            # Rotação
+            rotacao = st.slider(
+                "**Rotação (graus):**",
+                min_value=-15,
+                max_value=15,
+                value=0
+            )
+        
+        # =============================================
+        # CALCULAR DIMENSÕES DO RECORTE
+        # =============================================
+        # Converter proporção para valores
+        if formato_recorte == "1:1 Quadrado":
+            ratio_largura, ratio_altura = 1, 1
+        elif formato_recorte == "4:3 Horizontal":
+            ratio_largura, ratio_altura = 4, 3
+        elif formato_recorte == "4:3 Vertical":
+            ratio_largura, ratio_altura = 3, 4
+        elif formato_recorte == "16:9 Horizontal":
+            ratio_largura, ratio_altura = 16, 9
+        else:  # Personalizado
+            col_custom1, col_custom2 = st.columns(2)
+            with col_custom1:
+                ratio_largura = st.number_input("Largura", min_value=1, value=1)
+            with col_custom2:
+                ratio_altura = st.number_input("Altura", min_value=1, value=1)
+        
+        # Calcular tamanho do recorte baseado na foto original
+        largura_max = image.width * (tamanho_recorte / 100)
+        altura_max = image.height * (tamanho_recorte / 100)
+        
+        # Determinar dimensões mantendo proporção
+        if largura_max / altura_max > ratio_largura / ratio_altura:
+            # Limitação é a altura
+            altura_recorte = altura_max
+            largura_recorte = altura_recorte * ratio_largura / ratio_altura
+        else:
+            # Limitação é a largura
+            largura_recorte = largura_max
+            altura_recorte = largura_recorte * ratio_altura / ratio_largura
+        
+        # Converter para inteiros
+        largura_recorte = int(largura_recorte)
+        altura_recorte = int(altura_recorte)
+        
+        # Calcular posição do recorte
+        x_center = int(image.width * pos_x / 100)
+        y_center = int(image.height * pos_y / 100)
+        
+        left = max(0, x_center - largura_recorte // 2)
+        top = max(0, y_center - altura_recorte // 2)
+        right = min(image.width, left + largura_recorte)
+        bottom = min(image.height, top + altura_recorte)
+        
+        # Ajustar se ultrapassar bordas
+        if right > image.width:
+            right = image.width
+            left = right - largura_recorte
+        
+        if bottom > image.height:
+            bottom = image.height
+            top = bottom - altura_recorte
+        
+        # =============================================
+        # VISUALIZAÇÃO DO RECORTE
+        # =============================================
+        st.markdown("##### 👁️ **Pré-visualização do Recorte**")
+        
+        col_prev1, col_prev2 = st.columns(2)
+        
+        with col_prev1:
+            st.markdown("**📐 Área Selecionada:**")
+            
+            # Criar uma cópia da imagem com retângulo mostrando área de recorte
+            img_with_rect = image.copy()
+            draw = ImageDraw.Draw(img_with_rect)
+            
+            # Desenhar retângulo da área de recorte
+            draw.rectangle([left, top, right, bottom], outline="red", width=3)
+            
+            # Desenhar linhas de guia
+            draw.line([(image.width//2, 0), (image.width//2, image.height)], 
+                     fill="yellow", width=1)
+            draw.line([(0, image.height//2), (image.width, image.height//2)], 
+                     fill="yellow", width=1)
+            
+            st.image(img_with_rect, use_column_width=True, 
+                    caption=f"Área selecionada: {largura_recorte}x{altura_recorte}")
+        
+        with col_prev2:
+            st.markdown("**✂️ Resultado do Recorte:**")
+            
+            # Aplicar recorte
+            img_cropped = image.crop((left, top, right, bottom))
+            
+            # Aplicar rotação se necessário
+            if rotacao != 0:
+                img_cropped = img_cropped.rotate(rotacao, expand=True, resample=Image.Resampling.BICUBIC)
+            
+            # Redimensionar para tamanho de exibição
+            display_size = 400
+            if img_cropped.width > img_cropped.height:
+                display_width = display_size
+                display_height = int(display_size * img_cropped.height / img_cropped.width)
             else:
-                if st.button("✨ **Gerar Story para Instagram/Facebook**", 
-                            use_container_width=True, 
-                            type="primary",
-                            key="gerar_story_btn",
-                            help="Clique para gerar o story com a foto selecionada"):
+                display_height = display_size
+                display_width = int(display_size * img_cropped.width / img_cropped.height)
+            
+            img_display = img_cropped.resize((display_width, display_height), Image.Resampling.LANCZOS)
+            
+            st.image(img_display, use_column_width=False,
+                    caption=f"Recorte: {img_cropped.width}x{img_cropped.height}")
+            
+            # Informações do recorte
+            st.markdown(f"""
+            **📊 Informações:**
+            - Tamanho: {largura_recorte} x {altura_recorte}
+            - Proporção: {ratio_largura}:{ratio_altura}
+            - Posição: X={pos_x}%, Y={pos_y}%
+            """)
+        
+        # =============================================
+        # PRÉ-VISUALIZAÇÃO NO TEMPLATE
+        # =============================================
+        st.markdown("---")
+        st.markdown("##### 🎨 **Pré-visualização no Template**")
+        
+        try:
+            # Carregar template
+            template = Image.open("stories.png").convert('RGB')
+            
+            # Redimensionar recorte para caber no template
+            AREA_LARGURA = 950
+            AREA_ALTURA = 1200
+            AREA_POS_Y = 325
+            
+            # Determinar como redimensionar
+            if img_cropped.width / img_cropped.height > AREA_LARGURA / AREA_ALTURA:
+                # Imagem é mais larga - limitar pela largura
+                nova_largura = AREA_LARGURA
+                nova_altura = int(nova_largura * img_cropped.height / img_cropped.width)
+            else:
+                # Imagem é mais alta - limitar pela altura
+                nova_altura = AREA_ALTURA
+                nova_largura = int(nova_altura * img_cropped.width / img_cropped.height)
+            
+            img_for_template = img_cropped.resize((nova_largura, nova_altura), Image.Resampling.LANCZOS)
+            
+            # Calcular posição para centralizar
+            pos_x_template = (template.width - nova_largura) // 2
+            pos_y_template = AREA_POS_Y + (AREA_ALTURA - nova_altura) // 2
+            
+            # Criar cópia do template e colar a imagem
+            template_preview = template.copy()
+            template_preview.paste(img_for_template, (pos_x_template, pos_y_template))
+            
+            # Mostrar pré-visualização
+            col_temp1, col_temp2 = st.columns([2, 1])
+            
+            with col_temp1:
+                st.image(template_preview, use_column_width=True, caption="Story Final")
+            
+            with col_temp2:
+                st.markdown("**✅ Configurações:**")
+                st.markdown(f"""
+                - **Tamanho no template:** {nova_largura}x{nova_altura}
+                - **Posição:** X={pos_x_template}, Y={pos_y_template}
+                - **Cobertura:** {(nova_largura*nova_altura)/(AREA_LARGURA*AREA_ALTURA)*100:.1f}%
+                """)
+                
+                # Botão para gerar story final
+                if st.button("✨ **Gerar Story com Esta Configuração**", 
+                           use_container_width=True, type="primary"):
                     
-                    with st.spinner("🎨 **Processando foto e gerando story profissional..."):
-                        # Ler os bytes da foto
-                        foto_bytes = foto_story.getvalue()
-                        nome_arquivo, erro = gerar_story_com_template(veiculo_id, foto_bytes)
+                    # Salvar configurações atuais
+                    config_corte = {
+                        'left': left,
+                        'top': top,
+                        'right': right,
+                        'bottom': bottom,
+                        'rotacao': rotacao,
+                        'largura_original': img_cropped.width,
+                        'altura_original': img_cropped.height,
+                        'proporcao': f"{ratio_largura}:{ratio_altura}"
+                    }
+                    
+                    # Chamar função de geração com recorte
+                    nome_arquivo, erro = gerar_story_com_recorte_personalizado(
+                        veiculo_id, 
+                        foto_story.getvalue(), 
+                        config_corte
+                    )
+                    
+                    if erro:
+                        st.error(f"❌ Erro: {erro}")
+                    else:
+                        st.success("✅ Story gerado com sucesso!")
                         
-                        if erro:
-                            st.error(f"❌ **Erro:** {erro}")
-                        else:
-                            st.success("✅ **Story gerado com sucesso!**")
-                            
-                            # Mostrar resultado
-                            st.markdown("##### 👁️ **Prévia do Resultado Final**")
-                            
-                            col_result1, col_result2 = st.columns([2, 1])
-                            
-                            with col_result1:
-                                st.image(nome_arquivo, use_column_width=True)
-                            
-                            with col_result2:
-                                # Botão de download
-                                with open(nome_arquivo, "rb") as file:
-                                    st.download_button(
-                                        label="📥 **Baixar Story**",
-                                        data=file,
-                                        file_name=f"story_{veiculo['marca']}_{veiculo['modelo']}.png",
-                                        mime="image/png",
-                                        use_container_width=True,
-                                        key="download_story"
-                                    )
-                                
-                                st.markdown("---")
-                                st.markdown("##### 💡 **Dicas de Uso:**")
-                                st.markdown("""
-                                - **Instagram Stories:** Compartilhe direto do celular
-                                - **Facebook Stories:** Mesmo formato
-                                - **WhatsApp Status:** Excelente para divulgação
-                                - **Hashtags sugeridas:** 
-                                  #carros #automoveis #veiculos 
-                                  #{veiculo['marca']} #{veiculo['modelo']}
-                                """)
-                            
-                            # Limpar arquivo temporário após algum tempo
-                            import threading
-                            def deletar_arquivo_temporario(arquivo):
-                                time.sleep(300)  # 5 minutos
-                                try:
-                                    os.remove(arquivo)
-                                except:
-                                    pass
-                            
-                            thread = threading.Thread(target=deletar_arquivo_temporario, args=(nome_arquivo,))
-                            thread.start()
+                        # Botão de download
+                        with open(nome_arquivo, "rb") as file:
+                            st.download_button(
+                                label="📥 Baixar Story",
+                                data=file,
+                                file_name=f"story_{veiculo['marca']}_{veiculo['modelo']}.png",
+                                mime="image/png",
+                                use_container_width=True
+                            )
+        
+        except Exception as e:
+            st.error(f"❌ Erro ao carregar template: {e}")
+    
     else:
-        st.info("ℹ️ **Selecione um veículo acima para gerar o story**")
+        st.info("📸 **Carregue uma foto para começar a editar**")
+
+def gerar_story_com_recorte_personalizado(veiculo_id, foto_bytes, config_corte):
+    """Gera story com recorte personalizado"""
+    try:
+        # Buscar dados do veículo
+        veiculos = db.get_veiculos()
+        veiculo = next((v for v in veiculos if v['id'] == veiculo_id), None)
+        
+        if not veiculo:
+            return None, "Veículo não encontrado"
+        
+        # Carregar template
+        try:
+            template = Image.open("stories.png").convert('RGB')
+        except:
+            return None, "Template não encontrado"
+        
+        # Carregar e processar foto
+        image = Image.open(io.BytesIO(foto_bytes))
+        
+        # Aplicar recorte personalizado
+        img_cropped = image.crop(
+            (config_corte['left'], 
+             config_corte['top'], 
+             config_corte['right'], 
+             config_corte['bottom'])
+        )
+        
+        # Aplicar rotação
+        if config_corte.get('rotacao', 0) != 0:
+            img_cropped = img_cropped.rotate(config_corte['rotacao'], expand=True)
+        
+        # =============================================
+        # CONFIGURAÇÕES DO TEMPLATE
+        # =============================================
+        AREA_LARGURA = 950
+        AREA_ALTURA = 1200
+        AREA_POS_Y = 325
+        
+        # Redimensionar para caber na área
+        if img_cropped.width / img_cropped.height > AREA_LARGURA / AREA_ALTURA:
+            nova_largura = AREA_LARGURA
+            nova_altura = int(nova_largura * img_cropped.height / img_cropped.width)
+        else:
+            nova_altura = AREA_ALTURA
+            nova_largura = int(nova_altura * img_cropped.width / img_cropped.height)
+        
+        img_final = img_cropped.resize((nova_largura, nova_altura), Image.Resampling.LANCZOS)
+        
+        # Posicionar no template
+        pos_x = (template.width - nova_largura) // 2
+        pos_y = AREA_POS_Y + (AREA_ALTURA - nova_altura) // 2
+        
+        # Colar no template
+        template.paste(img_final, (pos_x, pos_y))
+        
+        # Salvar
+        nome_arquivo = f"story_{veiculo['marca']}_{veiculo['modelo']}_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.png"
+        template.save(nome_arquivo, quality=95, format='PNG')
+        
+        return nome_arquivo, None
+        
+    except Exception as e:
+        print(f"❌ Erro ao gerar story: {e}")
+        return None, str(e)
     
     # Divisor
     st.markdown("---")
@@ -5234,7 +5303,6 @@ with tab7:
     st.markdown("---")
     seção_gerador_stories()
     
-    st.markdown("---")
     st.markdown("#### 🔐 Alterar Minha Senha")
     
     with st.form("alterar_senha_form", clear_on_submit=True):
