@@ -331,8 +331,8 @@ def seção_papel_timbrado():
             
 
 
-def gerar_story_com_template(veiculo_id):
-    """Gera story simplificado sem textos abaixo da foto"""
+def gerar_story_com_template(veiculo_id, foto_upload):
+    """Gera story com foto personalizada fornecida pelo usuário"""
     try:
         # Buscar dados do veículo
         veiculos = db.get_veiculos()
@@ -341,11 +341,8 @@ def gerar_story_com_template(veiculo_id):
         if not veiculo:
             return None, "Veículo não encontrado"
         
-        # Buscar foto do veículo
-        foto_bytes = db.get_foto_veiculo(veiculo_id)
-        
-        if not foto_bytes:
-            return None, "Este veículo não tem foto cadastrada"
+        if not foto_upload:
+            return None, "É necessário fornecer uma foto para o story"
         
         # Carregar template do story
         try:
@@ -357,33 +354,87 @@ def gerar_story_com_template(veiculo_id):
         if template.mode != 'RGB':
             template = template.convert('RGB')
         
-        # Carregar e processar foto do carro
-        foto_carro = Image.open(io.BytesIO(foto_bytes))
+        # Carregar e processar foto fornecida pelo usuário
+        foto_carro = Image.open(io.BytesIO(foto_upload))
         
-        # Definir área para a foto (centralizada verticalmente e horizontalmente)
-        foto_area_width = 950  # Largura máxima da foto
-        foto_area_height = 1200  # Altura máxima da foto
-        foto_area_x = (template.width - foto_area_width) // 2  # Centralizado horizontalmente
-        foto_area_y = 325  # Posição vertical da foto
+        # Verificar orientação da foto e rotacionar se necessário
+        try:
+            # Verificar se a foto tem metadados de orientação (EXIF)
+            exif = foto_carro._getexif()
+            if exif:
+                orientation = exif.get(274)  # Tag 274 é Orientation
+                if orientation:
+                    if orientation == 3:
+                        foto_carro = foto_carro.rotate(180, expand=True)
+                    elif orientation == 6:
+                        foto_carro = foto_carro.rotate(270, expand=True)
+                    elif orientation == 8:
+                        foto_carro = foto_carro.rotate(90, expand=True)
+        except:
+            pass  # Se não conseguir ler EXIF, continua normalmente
         
-        # Redimensionar foto mantendo proporção
-        foto_ratio = foto_carro.width / foto_carro.height
-        target_ratio = foto_area_width / foto_area_height
+        # =============================================
+        # NOVO: CORTE PARA 4:3 VERTICAL
+        # =============================================
+        
+        # Proporção desejada: 4:3 vertical (exemplo: 1080x1440)
+        target_width = 1080  # Largura padrão para stories
+        target_height = 1440  # Altura para proporção 4:3 vertical (1080 * 4/3)
+        
+        # Calcula as dimensões de corte para proporção 4:3
+        foto_width, foto_height = foto_carro.size
+        
+        # Determinar qual dimensão é limitante
+        foto_ratio = foto_width / foto_height
+        target_ratio = 3/4  # 3:4 na verdade (vertical) -> 1080:1440 = 0.75
         
         if foto_ratio > target_ratio:
-            # Foto é mais larga que a área
-            new_width = foto_area_width
-            new_height = int(foto_area_width / foto_ratio)
+            # Foto é mais larga que a proporção desejada
+            # Cortar as laterais
+            new_width = int(foto_height * target_ratio)
+            left = (foto_width - new_width) // 2
+            top = 0
+            right = left + new_width
+            bottom = foto_height
         else:
-            # Foto é mais alta que a área
-            new_height = foto_area_height
-            new_width = int(foto_area_height * foto_ratio)
+            # Foto é mais alta que a proporção desejada
+            # Cortar topo e base
+            new_height = int(foto_width / target_ratio)
+            left = 0
+            top = (foto_height - new_height) // 2
+            right = foto_width
+            bottom = top + new_height
+        
+        # Realizar o corte para proporção 4:3 vertical
+        foto_carro = foto_carro.crop((left, top, right, bottom))
+        
+        # Redimensionar para caber na área do template
+        area_width = 950  # Largura máxima da foto no template
+        area_height = 1200  # Altura máxima da foto no template
+        
+        # Redimensionar mantendo proporção 4:3
+        if foto_carro.width > foto_carro.height:
+            # Se ainda estiver na horizontal após corte (impossível com 4:3, mas por segurança)
+            new_height = area_height
+            new_width = int(new_height * 3/4)  # Mantém 4:3
+        else:
+            # Vertical - redimensiona pela altura
+            new_height = area_height
+            new_width = int(new_height * 3/4)  # 3:4 = 0.75
         
         foto_carro = foto_carro.resize((new_width, new_height), Image.Resampling.LANCZOS)
         
+        # =============================================
+        # POSICIONAMENTO NO TEMPLATE
+        # =============================================
+        
+        # Área para a foto (centralizada verticalmente e horizontalmente)
+        area_x = (template.width - area_width) // 2  # Centralizado horizontalmente
+        area_y = 325  # Posição vertical da foto
+        
         # Calcular posição para centralizar na área
-        pos_x = foto_area_x + (foto_area_width - new_width) // 2
-        pos_y = foto_area_y + (foto_area_height - new_height) // 2
+        pos_x = area_x + (area_width - new_width) // 2
+        pos_y = area_y + (area_height - new_height) // 2
         
         # Colocar foto no template
         template.paste(foto_carro, (pos_x, pos_y))
@@ -406,10 +457,6 @@ def gerar_story_com_template(veiculo_id):
         import traceback
         traceback.print_exc()
         return None, str(e)
-
-def gerar_story_simplificado(veiculo_id):
-    """Versão ainda mais simplificada - apenas foto no template"""
-    return gerar_story_com_template(veiculo_id)
 
 def seção_gerador_stories():
     """Seção para gerar stories de veículos para redes sociais"""
@@ -450,28 +497,68 @@ def seção_gerador_stories():
             **KM:** {veiculo['km']:,}  
             **Preço:** R$ {veiculo['preco_venda']:,.2f}
             """)
+    
+    # Divisor
+    st.markdown("---")
+    
+    # SEÇÃO DE UPLOAD DA FOTO PERSONALIZADA
+    st.markdown("#### 📸 Escolha a Foto para o Story")
+    st.markdown("""
+    <div style="background: rgba(232, 142, 27, 0.1); padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
+        <h4 style="margin:0; color: #e88e1b;">📝 Requisitos da Foto:</h4>
+        <ul style="margin: 0.5rem 0 0 0; padding-left: 1.5rem;">
+            <li><strong>Formato:</strong> JPG ou PNG</li>
+            <li><strong>Orientacão:</strong> Vertical (retrato)</li>
+            <li><strong>Proporção recomendada:</strong> 4:3 vertical (ex: 1080x1440)</li>
+            <li><strong>Qualidade:</strong> Boa iluminação, fundo limpo</li>
+        </ul>
+        <p style="margin: 0.5rem 0 0 0; color: #a0a0a0; font-size: 0.9rem;">
+            <strong>💡 Dica:</strong> A foto será automaticamente cortada para proporção 4:3
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Upload da foto
+    foto_story = st.file_uploader(
+        "📤 **Faça upload da foto que deseja usar no story:**",
+        type=['jpg', 'jpeg', 'png'],
+        help="Selecione uma foto vertical de boa qualidade para o story"
+    )
+    
+    # Mostrar prévia da foto
+    if foto_story is not None:
+        try:
+            image = Image.open(foto_story)
+            st.image(image, caption="📸 **Prévia da Foto Selecionada**", use_column_width=True)
             
-            # Verificar se tem foto
-            foto_bytes = db.get_foto_veiculo(veiculo_id)
-            if foto_bytes:
-                st.success("✅ **Foto disponível**")
-            else:
-                st.error("❌ **Sem foto cadastrada**")
- 
+            # Verificar dimensões
+            width, height = image.size
+            st.info(f"📏 **Dimensões da foto:** {width} x {height} pixels")
+            
+            # Verificar proporção
+            ratio = width / height
+            if ratio > 0.8:  # Se for muito quadrada ou horizontal
+                st.warning("⚠️ **Atenção:** Esta foto pode não ser ideal para stories. Recomenda-se foto vertical.")
+            
+        except Exception as e:
+            st.error(f"❌ Erro ao carregar a foto: {e}")
+    
+    # Divisor
+    st.markdown("---")
     
     col_template1, col_template2 = st.columns([1, 1])
     
     with col_template1:
         try:
             # Mostrar template stories.png
-            st.image("stories.png", caption="Template Base (stories.png)", use_column_width=True)
+            st.image("stories.png", caption="🎨 **Template Base (stories.png)**", use_column_width=True)
         except:
             st.error("❌ **Arquivo 'stories.png' não encontrado!**")
             st.info("""
             **Para usar esta funcionalidade:**
             1. Coloque o arquivo **stories.png** na mesma pasta do projeto
             2. O template deve ter tamanho **1080x1920 pixels**
-            3. Deixe espaço para a foto do carro e textos
+            3. Deixe espaço para a foto do carro (aproximadamente 950x1200 pixels no centro)
             """)
             return
     
@@ -480,17 +567,27 @@ def seção_gerador_stories():
         st.markdown("##### 📝 **Como funciona:**")
         st.markdown("""
         O sistema irá:
-        1. **Buscar a foto** do veículo selecionado
-        2. **Redimensionar** para caber no espaço designado
-        3. **Centralizar** vertical e horizontalmente
-        4. **Adicionar informações** abaixo da foto:
-           - Marca e Modelo (em branco)
-           - Ano, Cor e KM (em laranja)
-           - Combustível/Câmbio (em cinza)
-           - Preço (em branco e maior)
+        1. **Processar sua foto** escolhida
+        2. **Cortar automaticamente** para proporção 4:3 vertical
+        3. **Centralizar** vertical e horizontalmente no template
+        4. **Gerar o story** pronto para compartilhar
+        
+        **🎯 Área da foto no template:**
+        - **Posição:** Centralizada
+        - **Tamanho máximo:** 950x1200 pixels
+        - **Proporção final:** 4:3 vertical
         """)
+        
+        # Informações sobre o veículo selecionado
+        if veiculo_selecionado:
+            st.markdown("##### 🚗 **Veículo Selecionado:**")
+            st.markdown(f"""
+            **{veiculo['marca']} {veiculo['modelo']} {veiculo['ano']}**
+            - Cor: {veiculo['cor']}
+            - KM: {veiculo['km']:,}
+            - Preço: R$ {veiculo['preco_venda']:,.2f}
+            """)
     
-  
     # Divisor
     st.markdown("---")
     
@@ -499,65 +596,68 @@ def seção_gerador_stories():
         col_btn1, col_btn2, col_btn3 = st.columns([1, 2, 1])
         
         with col_btn2:
-            if st.button("✨ **Gerar Story para Instagram/Facebook**", 
-                        use_container_width=True, 
-                        type="primary",
-                        key="gerar_story_btn"):
-                
-                # Verificar se tem foto
-                foto_bytes = db.get_foto_veiculo(veiculo_id)
-                if not foto_bytes:
-                    st.error("❌ Este veículo não tem foto cadastrada!")
-                    return
-                
-                with st.spinner("🎨 **Gerando story profissional..."):
-                    nome_arquivo, erro = gerar_story_com_template(veiculo_id)
+            # Verificar se tem foto antes de habilitar o botão
+            if foto_story is None:
+                st.error("❌ **É necessário selecionar uma foto para gerar o story!**")
+            else:
+                if st.button("✨ **Gerar Story para Instagram/Facebook**", 
+                            use_container_width=True, 
+                            type="primary",
+                            key="gerar_story_btn",
+                            help="Clique para gerar o story com a foto selecionada"):
                     
-                    if erro:
-                        st.error(f"❌ **Erro:** {erro}")
-                    else:
-                        st.success("✅ **Story gerado com sucesso!**")
+                    with st.spinner("🎨 **Processando foto e gerando story profissional..."):
+                        # Ler os bytes da foto
+                        foto_bytes = foto_story.getvalue()
+                        nome_arquivo, erro = gerar_story_com_template(veiculo_id, foto_bytes)
                         
-                        # Mostrar resultado
-                        st.markdown("##### 👁️ **Prévia do Resultado Final**")
-                        
-                        col_result1, col_result2 = st.columns([2, 1])
-                        
-                        with col_result1:
-                            st.image(nome_arquivo, use_column_width=True)
-                        
-                        with col_result2:
-                            # Botão de download
-                            with open(nome_arquivo, "rb") as file:
-                                st.download_button(
-                                    label="📥 **Baixar Story**",
-                                    data=file,
-                                    file_name=f"story_{veiculo['marca']}_{veiculo['modelo']}.png",
-                                    mime="image/png",
-                                    use_container_width=True,
-                                    key="download_story"
-                                )
+                        if erro:
+                            st.error(f"❌ **Erro:** {erro}")
+                        else:
+                            st.success("✅ **Story gerado com sucesso!**")
                             
-                            st.markdown("---")
-                            st.markdown("##### 💡 **Dicas:**")
-                            st.markdown("""
-                            - **Instagram Stories:** Compartilhe direto do celular
-                            - **Facebook Stories:** Mesmo formato
-                            - **WhatsApp Status:** Excelente para divulgação
-                            - Use hashtags: #carros #automoveis #veiculos
-                            """)
-                        
-                        # Limpar arquivo temporário após algum tempo
-                        import threading
-                        def deletar_arquivo_temporario(arquivo):
-                            time.sleep(300)  # 5 minutos
-                            try:
-                                os.remove(arquivo)
-                            except:
-                                pass
-                        
-                        thread = threading.Thread(target=deletar_arquivo_temporario, args=(nome_arquivo,))
-                        thread.start()
+                            # Mostrar resultado
+                            st.markdown("##### 👁️ **Prévia do Resultado Final**")
+                            
+                            col_result1, col_result2 = st.columns([2, 1])
+                            
+                            with col_result1:
+                                st.image(nome_arquivo, use_column_width=True)
+                            
+                            with col_result2:
+                                # Botão de download
+                                with open(nome_arquivo, "rb") as file:
+                                    st.download_button(
+                                        label="📥 **Baixar Story**",
+                                        data=file,
+                                        file_name=f"story_{veiculo['marca']}_{veiculo['modelo']}.png",
+                                        mime="image/png",
+                                        use_container_width=True,
+                                        key="download_story"
+                                    )
+                                
+                                st.markdown("---")
+                                st.markdown("##### 💡 **Dicas de Uso:**")
+                                st.markdown("""
+                                - **Instagram Stories:** Compartilhe direto do celular
+                                - **Facebook Stories:** Mesmo formato
+                                - **WhatsApp Status:** Excelente para divulgação
+                                - **Hashtags sugeridas:** 
+                                  #carros #automoveis #veiculos 
+                                  #{veiculo['marca']} #{veiculo['modelo']}
+                                """)
+                            
+                            # Limpar arquivo temporário após algum tempo
+                            import threading
+                            def deletar_arquivo_temporario(arquivo):
+                                time.sleep(300)  # 5 minutos
+                                try:
+                                    os.remove(arquivo)
+                                except:
+                                    pass
+                            
+                            thread = threading.Thread(target=deletar_arquivo_temporario, args=(nome_arquivo,))
+                            thread.start()
     else:
         st.info("ℹ️ **Selecione um veículo acima para gerar o story**")
     
