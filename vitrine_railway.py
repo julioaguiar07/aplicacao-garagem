@@ -1936,13 +1936,7 @@ footer {{
     <div class="footer-inner">
       <div class="footer-brand">
         <a class="logo" href="#">
-          {%
-          if logo_base64:
-            %}<img src="data:image/png;base64,{logo_base64}" alt="Carmelo Multimarcas" style="height: 50px; width: auto; border-radius: 8px; margin-bottom: 10px;">{%
-          else:
-            %}<div class="logo-icon">CM</div>
-          <div class="logo-text">Carmelo<span>Multimarcas</span></div>{%
-          endif %}
+          {f'<img src="data:image/png;base64,{logo_base64}" alt="Carmelo Multimarcas" style="height: 50px; width: auto; border-radius: 8px; margin-bottom: 10px;">' if logo_base64 else '<div class="logo-icon">CM</div><div class="logo-text">Carmelo<span>Multimarcas</span></div>'}
         </a>
         <p>Especialistas em veículos seminovos e novos em Mossoró/RN. Qualidade, transparência e os melhores preços do mercado.</p>
       </div>
@@ -1966,10 +1960,7 @@ footer {{
       <div class="footer-col">
         <h5>Powered by</h5>
         <div style="display: flex; flex-direction: column; gap: 10px;">
-          {%
-          if autocore_logo_base64:
-            %}<img src="data:image/png;base64,{autocore_logo_base64}" alt="AutoCore" style="height: 40px; width: auto; border-radius: 4px; margin-bottom: 5px;">{%
-          endif %}
+          {f'<img src="data:image/png;base64,{autocore_logo_base64}" alt="AutoCore" style="height: 40px; width: auto; border-radius: 4px; margin-bottom: 5px;">' if autocore_logo_base64 else ''}
           <span style="font-size: 14px; color: var(--white-soft);">Júlio Aguiar</span>
           <span style="font-size: 12px; color: var(--gray-light);">Desenvolvimento & Soluções</span>
         </div>
