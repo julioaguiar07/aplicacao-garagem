@@ -1645,7 +1645,7 @@ input[type="range"] {{
 
 .no-results p {{ color: var(--gray); }}
 
-/* ===== FOOTER ===== */
+/* =====  ===== */
 footer {{
   margin-top: 60px;
   background: var(--dark2);
@@ -1936,11 +1936,17 @@ footer {{
     <div class="footer-inner">
       <div class="footer-brand">
         <a class="logo" href="#">
-          <div class="logo-icon">CM</div>
-          <div class="logo-text">Carmelo<span>Multimarcas</span></div>
+          {%
+          if logo_base64:
+            %}<img src="data:image/png;base64,{logo_base64}" alt="Carmelo Multimarcas" style="height: 50px; width: auto; border-radius: 8px; margin-bottom: 10px;">{%
+          else:
+            %}<div class="logo-icon">CM</div>
+          <div class="logo-text">Carmelo<span>Multimarcas</span></div>{%
+          endif %}
         </a>
         <p>Especialistas em veículos seminovos e novos em Mossoró/RN. Qualidade, transparência e os melhores preços do mercado.</p>
       </div>
+      
       <div class="footer-col">
         <h5>Navegação</h5>
         <a href="#" onclick="showPage('home')">Início</a>
@@ -1948,6 +1954,7 @@ footer {{
         <a href="#" onclick="showComparePage()">Comparar</a>
         <a href="#" onclick="showPage('about')">Sobre nós</a>
       </div>
+      
       <div class="footer-col">
         <h5>Contato</h5>
         <div class="contact-info">📍 Av. Lauro Monte, 475 - Mossoró/RN</div>
@@ -1955,10 +1962,22 @@ footer {{
         <div class="contact-info">📧 contato@carmelomultimarcas.com.br</div>
         <div class="contact-info">🕐 Seg–Sex: 8h–18h, Sáb: 8h–12h</div>
       </div>
+      
+      <div class="footer-col">
+        <h5>Powered by</h5>
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+          {%
+          if autocore_logo_base64:
+            %}<img src="data:image/png;base64,{autocore_logo_base64}" alt="AutoCore" style="height: 40px; width: auto; border-radius: 4px; margin-bottom: 5px;">{%
+          endif %}
+          <span style="font-size: 14px; color: var(--white-soft);">Júlio Aguiar</span>
+          <span style="font-size: 12px; color: var(--gray-light);">Desenvolvimento & Soluções</span>
+        </div>
+      </div>
     </div>
+    
     <div class="footer-bottom">
       <span>© {datetime.now().year} Carmelo Multimarcas. Todos os direitos reservados.</span>
-      <span>Powered by Júlio Aguiar</span>
     </div>
   </footer>
 
