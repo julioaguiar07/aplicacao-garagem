@@ -2130,6 +2130,9 @@ footer {{
 // ===== DATA =====
 const vehicles = {veiculos_json};
 
+console.log('Veículos carregados:', vehicles);
+console.log('Primeiro veículo:', vehicles[0]);
+
 // ===== STATE =====
 let compareList = [];
 let currentVehicle = null;
@@ -2192,7 +2195,7 @@ function renderVehicles(list) {{
           </div>
         </div>
         ${{v.oldPrice ? `<div class="card-price-old">${{formatPrice(v.oldPrice)}}</div>` : ''}}
-        <div class="card-price">${{formatPrice(v.price)}}</div>
+        <div class="card-price">${{formatPrice(v.preco_venda)}}</div>
         <div class="card-actions" onclick="event.stopPropagation()">
           <button class="btn-primary" onclick="openDetail(${{v.id}})">Ver detalhes</button>
           <button class="btn-secondary" onclick="openWhatsApp(${{v.id}})" title="WhatsApp">
