@@ -1780,8 +1780,7 @@ footer {{
 <header id="header">
   <div class="header-inner">
     <a class="logo" href="#" onclick="showPage('home')">
-      <div class="logo-icon">CM</div>
-      <div class="logo-text">Carmelo<span>Multimarcas</span></div>
+      <img src="data:image/png;base64,{logo_base64}" alt="Carmelo Multimarcas" style="height: 50px; width: auto; border-radius: 8px;">
     </a>
     <nav>
       <a href="#" class="active" onclick="showPage('home')">Início</a>
