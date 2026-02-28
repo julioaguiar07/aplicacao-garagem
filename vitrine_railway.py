@@ -1979,7 +1979,7 @@ footer {{
         <h5>Powered by</h5>
         <div style="display: flex; flex-direction: column; gap: 10px;">
           {f'<img src="data:image/png;base64,{autocore_logo_base64}" alt="AutoCore" style="height: 40px; width: auto; border-radius: 4px; margin-bottom: 5px;">' if autocore_logo_base64 else ''}
-          <span style="font-size: 14px; color: var(--white-soft);">Júlio Aguiar</span>
+          <span style="font-size: 14px; color: var(--white-soft);">@autocore.app on Instagram</span>
           <span style="font-size: 12px; color: var(--gray-light);">Desenvolvimento & Soluções</span>
         </div>
       </div>
