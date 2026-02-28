@@ -204,6 +204,24 @@ def get_logo_base64():
 
     return None
 
+def get_autocore_logo_base64():
+    """Tenta carregar logo da AutoCore"""
+    try:
+        possible_paths = [
+            "autocore.png",
+            "./autocore.png",
+            "/app/autocore.png"
+        ]
+
+        for path in possible_paths:
+            if os.path.exists(path):
+                with open(path, "rb") as f:
+                    return base64.b64encode(f.read()).decode('utf-8')
+    except Exception as e:
+        print(f"⚠️ Não foi possível carregar logo AutoCore: {e}")
+
+    return None
+
 # =============================================
 # ROTAS DA API
 # =============================================
@@ -250,7 +268,7 @@ def home():
     """Página principal da vitrine premium"""
     veiculos, marcas = get_veiculos_estoque()
     logo_base64 = get_logo_base64()
-
+    autocore_logo_base64 = get_autocore_logo_base64()
     # Estatísticas
     total_veiculos = len(veiculos)
     valor_total = sum(v['preco_venda'] for v in veiculos)
