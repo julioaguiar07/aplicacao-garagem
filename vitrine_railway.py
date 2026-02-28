@@ -1853,14 +1853,14 @@ footer {{
         <div class="filter-group">
           <label>Câmbio</label>
           <div class="filter-chips" id="transmissionFilter">
-            {''.join([f'<div class="chip" onclick="toggleChip(this,\\'transmission\\')">{t}</div>' for t in transmissoes])}
+            {''.join([f'<div class="chip" onclick="toggleChip(this, &quot;transmission&quot;)">{t}</div>' for t in transmissoes])}
           </div>
         </div>
 
         <div class="filter-group">
           <label>Combustível</label>
           <div class="filter-chips" id="fuelFilter">
-            {''.join([f'<div class="chip" onclick="toggleChip(this,\\'fuel\\')">{c}</div>' for c in combustiveis[:5]])}
+            {''.join([f'<div class="chip" onclick="toggleChip(this, &quot;fuel&quot;)">{c}</div>' for c in combustiveis[:5]])}
           </div>
         </div>
 
