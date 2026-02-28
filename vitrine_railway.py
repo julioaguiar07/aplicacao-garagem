@@ -1816,7 +1816,7 @@ footer {{
 
 <!-- HOME PAGE -->
 <div id="home-page">
-
+    
   <!-- HERO -->
   <section class="hero">
     <div class="hero-content">
@@ -1827,14 +1827,6 @@ footer {{
         <div class="hero-stat">
           <strong>{total_veiculos}+</strong>
           <span>Veículos</span>
-        </div>
-        <div class="hero-stat">
-          <strong>{len(marcas)}</strong>
-          <span>Marcas</span>
-        </div>
-        <div class="hero-stat">
-          <strong>5★</strong>
-          <span>Avaliação</span>
         </div>
       </div>
     </div>
