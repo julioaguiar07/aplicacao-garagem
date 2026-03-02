@@ -4460,8 +4460,8 @@ with tab3:
         data_fim_mes = hoje + datetime.timedelta(days=30)
         
         parcelas_pendentes = [p for p in parcelas if p['status'] == 'Pendente']
-        parcelas_vencidas = [p for p in parcelas_pendentes if p['data_vencimento'] and processar_data_postgresql(p['data_vencimento']) < hoje]
-        parcelas_este_mes = [p for p in parcelas_pendentes if p['data_vencimento'] and processar_data_postgresql(p['data_vencimento']) <= data_fim_mes]
+        parcelas_vencidas = [p for p in parcelas_pendentes if p['data_vencimento'] and processar_timestamp_postgresql(p['data_vencimento']) < hoje]
+        parcelas_este_mes = [p for p in parcelas_pendentes if p['data_vencimento'] and processar_timestamp_postgresql(p['data_vencimento']) <= data_fim_mes]
         
         # Métricas
         col_met1, col_met2, col_met3 = st.columns(3)
@@ -4478,7 +4478,7 @@ with tab3:
             st.markdown("##### ⏰ Parcelas Vencidas")
             
             for parcela in parcelas_vencidas[:10]:
-                dias_vencido = (hoje - processar_data_postgresql(parcela['data_vencimento'])).days
+                dias_vencido = (hoje - processar_timestamp_postgresql(parcela['data_vencimento'])).days
                 
                 st.markdown(f"""
                 <div style="padding: 1rem; margin: 0.5rem 0; background: rgba(231, 76, 60, 0.1); border-radius: 8px;">
@@ -4496,7 +4496,7 @@ with tab3:
             st.markdown("##### 📈 Próximas Parcelas (30 dias)")
             
             for parcela in parcelas_este_mes[:10]:
-                dias_restantes = (processar_data_postgresql(parcela['data_vencimento']) - hoje).days
+                dias_restantes = (processar_timestamp_postgresql(parcela['data_vencimento']) - hoje).days
                 
                 st.markdown(f"""
                 <div style="padding: 1rem; margin: 0.5rem 0; background: rgba(243, 156, 18, 0.1); border-radius: 8px;">
