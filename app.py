@@ -2818,14 +2818,24 @@ with tab1:
     # =============================================
     # DASHBOARD CONSULTOR INTELIGENTE
     # =============================================
-    processar_data_postgresql = globals()['processar_data_postgresql']
+    
+    processar_timestamp_postgresql = globals()['processar_timestamp_postgresql']
+    formatar_data = globals()['formatar_data']
+
+    # =============================================
+    # FUNÇÃO AUXILIAR PARA PROCESSAR DATAS
+    # =============================================
+    def processar_data(data):
+        """Processa data para comparação (wrapper da função global)"""
+        return processar_timestamp_postgresql(data)
+
     st.markdown("""
     <div class="glass-card">
         <h2>Painel Estratégico</h2>
         <p style="color: #a0a0a0;">💰 Estou ganhando dinheiro? 🔍 Onde estou perdendo? ⏰ O que está parado? ⚡ O que fazer agora?</p>
     </div>
     """, unsafe_allow_html=True)
-    
+
     # =============================================
     # FUNÇÕES AUXILIARES PARA O DASHBOARD
     # =============================================
@@ -2883,16 +2893,9 @@ with tab1:
                 data_cadastro = veiculo['data_cadastro']
                 data_venda = venda['data_venda']
                 
-                # Converter datas
-                if hasattr(data_cadastro, 'date'):
-                    data_cadastro = data_cadastro.date()
-                elif isinstance(data_cadastro, str):
-                    data_cadastro = datetime.datetime.strptime(data_cadastro[:10], '%Y-%m-%d').date()
-                
-                if hasattr(data_venda, 'date'):
-                    data_venda = data_venda.date()
-                elif isinstance(data_venda, str):
-                    data_venda = datetime.datetime.strptime(data_venda[:10], '%Y-%m-%d').date()
+                # Usar processar_timestamp_postgresql
+                data_cadastro = processar_timestamp_postgresql(data_cadastro)
+                data_venda = processar_timestamp_postgresql(data_venda)
                 
                 dias = (data_venda - data_cadastro).days
                 if dias > 0:
@@ -2911,12 +2914,7 @@ with tab1:
         }
         
         for veiculo in estoque_atual:
-            data_cadastro = veiculo['data_cadastro']
-            if hasattr(data_cadastro, 'date'):
-                data_cadastro = data_cadastro.date()
-            elif isinstance(data_cadastro, str):
-                data_cadastro = datetime.datetime.strptime(data_cadastro[:10], '%Y-%m-%d').date()
-            
+            data_cadastro = processar_timestamp_postgresql(veiculo['data_cadastro'])
             dias_estoque = (hoje - data_cadastro).days
             
             if dias_estoque <= 30:
@@ -3107,21 +3105,13 @@ with tab1:
         
         hoje = datetime.datetime.now().date()
         
-        def processar_data(data):
-            if data is None:
-                return hoje
-            if hasattr(data, 'date'):
-                return data.date()
-            elif isinstance(data, str):
-                return datetime.datetime.strptime(data[:10], '%Y-%m-%d').date()
-            return data
-        
         # Cálculos
         total_financiado = sum(f['valor_total'] for f in financiamentos if f['status'] == 'Ativo')
         carteira_ativa = len([f for f in financiamentos if f['status'] == 'Ativo'])
         
         parcelas_pendentes = [p for p in parcelas if p['status'] == 'Pendente']
-        parcelas_vencidas = [p for p in parcelas_pendentes if processar_data(p['data_vencimento']) < hoje]
+        # Usar processar_timestamp_postgresql diretamente
+        parcelas_vencidas = [p for p in parcelas_pendentes if p['data_vencimento'] and processar_timestamp_postgresql(p['data_vencimento']) < hoje]
         
         total_pendente = sum(p['valor_parcela'] for p in parcelas_pendentes)
         total_vencido = sum(p['valor_parcela'] for p in parcelas_vencidas)
@@ -3131,7 +3121,7 @@ with tab1:
         # Dias médios de atraso
         dias_atraso = []
         for p in parcelas_vencidas:
-            dias = (hoje - processar_data(p['data_vencimento'])).days
+            dias = (hoje - processar_timestamp_postgresql(p['data_vencimento'])).days
             dias_atraso.append(dias)
         
         dias_medio_atraso = sum(dias_atraso) / len(dias_atraso) if dias_atraso else 0
@@ -3144,8 +3134,8 @@ with tab1:
             
             valor_mes = sum(
                 p['valor_parcela'] for p in parcelas_pendentes
-                if processar_data(p['data_vencimento']).year == mes.year and
-                processar_data(p['data_vencimento']).month == mes.month
+                if processar_timestamp_postgresql(p['data_vencimento']).year == mes.year and
+                processar_timestamp_postgresql(p['data_vencimento']).month == mes.month
             )
             previsao.append({
                 'mes': mes.strftime('%b/%Y'),
