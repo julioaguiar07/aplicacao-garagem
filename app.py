@@ -3598,7 +3598,7 @@ with tab1:
     # Obter a recomendação principal
     recomendacao_principal = recomendacoes[0]['descricao'] if recomendacoes else "Sistema coletando dados para recomendações"
     
-    st.markdown(f"""
+    html_resumo = f"""
     <div class="glass-card" style="background: linear-gradient(135deg, rgba(232,142,27,0.1), rgba(255,255,255,0.05)); padding: 1.5rem;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
             <div>
@@ -3642,8 +3642,9 @@ with tab1:
             </p>
         </div>
     </div>
-    """, unsafe_allow_html=True)
-
+    """
+    
+    st.markdown(html_resumo, unsafe_allow_html=True)
     st.markdown("<br>", unsafe_allow_html=True)
 
 
