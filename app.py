@@ -2818,34 +2818,13 @@ with tab1:
     # =============================================
     # DASHBOARD CONSULTOR INTELIGENTE
     # =============================================
+    processar_data_postgresql = globals()['processar_data_postgresql']
     st.markdown("""
     <div class="glass-card">
-        <h2>📊 Painel Estratégico - 4 Perguntas em 10 Segundos</h2>
+        <h2>Painel Estratégico</h2>
         <p style="color: #a0a0a0;">💰 Estou ganhando dinheiro? 🔍 Onde estou perdendo? ⏰ O que está parado? ⚡ O que fazer agora?</p>
     </div>
     """, unsafe_allow_html=True)
-
-    # =============================================
-    # FUNÇÃO AUXILIAR PARA DATAS (ADICIONAR AQUI!)
-    # =============================================
-    def processar_data_postgresql(data):
-        """Processa data do PostgreSQL para comparação"""
-        if data is None:
-            return datetime.datetime.now().date()
-        try:
-            if hasattr(data, 'date'):
-                # É um Timestamp do PostgreSQL
-                return data.date()
-            elif isinstance(data, str):
-                # É string
-                return datetime.datetime.strptime(data[:10], '%Y-%m-%d').date()
-            elif hasattr(data, 'strftime'):
-                # É datetime
-                return data.date() if hasattr(data, 'date') else data
-            else:
-                return data
-        except:
-            return datetime.datetime.now().date()
     
     # =============================================
     # FUNÇÕES AUXILIARES PARA O DASHBOARD
