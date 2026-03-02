@@ -2819,23 +2819,24 @@ with tab1:
     # DASHBOARD CONSULTOR INTELIGENTE
     # =============================================
     
+    # "Importar" as funções globais para uso local
     processar_timestamp_postgresql = globals()['processar_timestamp_postgresql']
     formatar_data = globals()['formatar_data']
-
+    
+    st.markdown("""
+    <div class="glass-card">
+        <h2>📊 Painel Estratégico - 4 Perguntas em 10 Segundos</h2>
+        <p style="color: #a0a0a0;">💰 Estou ganhando dinheiro? 🔍 Onde estou perdendo? ⏰ O que está parado? ⚡ O que fazer agora?</p>
+    </div>
+    """, unsafe_allow_html=True)
+    
     # =============================================
     # FUNÇÃO AUXILIAR PARA PROCESSAR DATAS
     # =============================================
     def processar_data(data):
         """Processa data para comparação (wrapper da função global)"""
         return processar_timestamp_postgresql(data)
-
-    st.markdown("""
-    <div class="glass-card">
-        <h2>Painel Estratégico</h2>
-        <p style="color: #a0a0a0;">💰 Estou ganhando dinheiro? 🔍 Onde estou perdendo? ⏰ O que está parado? ⚡ O que fazer agora?</p>
-    </div>
-    """, unsafe_allow_html=True)
-
+    
     # =============================================
     # FUNÇÕES AUXILIARES PARA O DASHBOARD
     # =============================================
@@ -2893,7 +2894,6 @@ with tab1:
                 data_cadastro = veiculo['data_cadastro']
                 data_venda = venda['data_venda']
                 
-                # Usar processar_timestamp_postgresql
                 data_cadastro = processar_timestamp_postgresql(data_cadastro)
                 data_venda = processar_timestamp_postgresql(data_venda)
                 
@@ -2945,12 +2945,7 @@ with tab1:
         capital_parado = 0
         
         for veiculo in [v for v in veiculos if v['status'] == 'Em estoque']:
-            data_cadastro = veiculo['data_cadastro']
-            if hasattr(data_cadastro, 'date'):
-                data_cadastro = data_cadastro.date()
-            elif isinstance(data_cadastro, str):
-                data_cadastro = datetime.datetime.strptime(data_cadastro[:10], '%Y-%m-%d').date()
-            
+            data_cadastro = processar_timestamp_postgresql(veiculo['data_cadastro'])
             dias = (hoje - data_cadastro).days
             if dias > 45:
                 veiculos_parados.append(veiculo)
@@ -2967,7 +2962,6 @@ with tab1:
         dre = calcular_dre()
         if dre['lucro_liquido'] > 0:
             margem_atual = (dre['lucro_liquido'] / dre['receitas'] * 100) if dre['receitas'] > 0 else 0
-            # Comparar com período anterior (simplificado)
             if margem_atual < 10:
                 alertas.append({
                     'tipo': 'atencao',
@@ -2983,27 +2977,27 @@ with tab1:
                 'mensagem': f"Vendas caíram {abs(metricas_periodo['variacao']):.1f}% vs período anterior"
             })
         
-        # Alerta 4: Modelo de maior giro
-        if vendas:
-            modelos_vendas = {}
-            for venda in vendas:
-                modelo = f"{venda.get('marca', '')} {venda.get('modelo', '')}"
-                if modelo not in modelos_vendas:
-                    modelos_vendas[modelo] = 0
-                modelos_vendas[modelo] += 1
+        # Alerta 4: Modelo de maior giro no estoque atual
+        if veiculos:
+            modelos_estoque = {}
+            for veiculo in [v for v in veiculos if v['status'] == 'Em estoque']:
+                modelo = f"{veiculo['marca']} {veiculo['modelo']}"
+                if modelo not in modelos_estoque:
+                    modelos_estoque[modelo] = 0
+                modelos_estoque[modelo] += 1
             
-            if modelos_vendas:
-                top_modelo = max(modelos_vendas, key=modelos_vendas.get)
+            if modelos_estoque:
+                top_modelo = max(modelos_estoque, key=modelos_estoque.get)
                 alertas.append({
                     'tipo': 'positivo',
                     'icone': '🔥',
-                    'mensagem': f"Modelo {top_modelo} é o de maior giro ({modelos_vendas[top_modelo]} vendas)"
+                    'mensagem': f"Modelo {top_modelo} tem {modelos_estoque[top_modelo]} unidades em estoque"
                 })
         
         return alertas
 
-    def calcular_rentabilidade_inteligente():
-        """Ranking de rentabilidade por modelo/marca"""
+    def calcular_rentabilidade_inteligente(tipo_analise="Vendidos"):
+        """Ranking de rentabilidade por modelo/marca - com opção de análise"""
         veiculos = db.get_veiculos()
         vendas = db.get_vendas()
         gastos = db.get_gastos()
@@ -3011,40 +3005,72 @@ with tab1:
         modelos = {}
         marcas = {}
         
-        for veiculo in veiculos:
-            if veiculo['status'] == 'Vendido':
-                # Calcular custo total
-                gastos_veiculo = [g for g in gastos if g['veiculo_id'] == veiculo['id']]
-                total_gastos = sum(g['valor'] for g in gastos_veiculo)
-                custo_total = veiculo['preco_entrada'] + total_gastos
-                
-                # Buscar venda
-                venda = next((v for v in vendas if v['veiculo_id'] == veiculo['id']), None)
-                if venda:
-                    lucro = venda['valor_venda'] - custo_total
-                    margem = (lucro / custo_total * 100) if custo_total > 0 else 0
+        if tipo_analise == "Vendidos":
+            # Analisar veículos já vendidos (histórico real)
+            for veiculo in veiculos:
+                if veiculo['status'] == 'Vendido':
+                    # Calcular custo total
+                    gastos_veiculo = [g for g in gastos if g['veiculo_id'] == veiculo['id']]
+                    total_gastos = sum(g['valor'] for g in gastos_veiculo)
+                    custo_total = veiculo['preco_entrada'] + total_gastos
+                    
+                    # Buscar venda
+                    venda = next((v for v in vendas if v['veiculo_id'] == veiculo['id']), None)
+                    if venda:
+                        lucro = venda['valor_venda'] - custo_total
+                        margem = (lucro / custo_total * 100) if custo_total > 0 else 0
+                        
+                        # Por modelo
+                        modelo_key = f"{veiculo['marca']} {veiculo['modelo']}"
+                        if modelo_key not in modelos:
+                            modelos[modelo_key] = {'lucro_total': 0, 'margens': [], 'qtd': 0, 'preco_medio': 0}
+                        modelos[modelo_key]['lucro_total'] += lucro
+                        modelos[modelo_key]['margens'].append(margem)
+                        modelos[modelo_key]['qtd'] += 1
+                        modelos[modelo_key]['preco_medio'] = (modelos[modelo_key]['preco_medio'] * (modelos[modelo_key]['qtd'] - 1) + venda['valor_venda']) / modelos[modelo_key]['qtd']
+                        
+                        # Por marca
+                        if veiculo['marca'] not in marcas:
+                            marcas[veiculo['marca']] = {'lucro_total': 0, 'margens': [], 'qtd': 0}
+                        marcas[veiculo['marca']]['lucro_total'] += lucro
+                        marcas[veiculo['marca']]['margens'].append(margem)
+                        marcas[veiculo['marca']]['qtd'] += 1
+        
+        else:  # Em Estoque - analisar potencial
+            for veiculo in veiculos:
+                if veiculo['status'] == 'Em estoque':
+                    # Calcular custo total
+                    gastos_veiculo = [g for g in gastos if g['veiculo_id'] == veiculo['id']]
+                    total_gastos = sum(g['valor'] for g in gastos_veiculo)
+                    custo_total = veiculo['preco_entrada'] + total_gastos
+                    
+                    # Calcular margem potencial (baseada no preço de venda atual)
+                    lucro_potencial = veiculo['preco_venda'] - custo_total
+                    margem_potencial = (lucro_potencial / custo_total * 100) if custo_total > 0 else 0
                     
                     # Por modelo
                     modelo_key = f"{veiculo['marca']} {veiculo['modelo']}"
                     if modelo_key not in modelos:
-                        modelos[modelo_key] = {'lucro_total': 0, 'margens': [], 'qtd': 0}
-                    modelos[modelo_key]['lucro_total'] += lucro
-                    modelos[modelo_key]['margens'].append(margem)
+                        modelos[modelo_key] = {'lucro_total': 0, 'margens': [], 'qtd': 0, 'investimento_total': 0}
+                    modelos[modelo_key]['lucro_total'] += lucro_potencial
+                    modelos[modelo_key]['margens'].append(margem_potencial)
                     modelos[modelo_key]['qtd'] += 1
+                    modelos[modelo_key]['investimento_total'] += custo_total
                     
                     # Por marca
                     if veiculo['marca'] not in marcas:
-                        marcas[veiculo['marca']] = {'lucro_total': 0, 'margens': [], 'qtd': 0}
-                    marcas[veiculo['marca']]['lucro_total'] += lucro
-                    marcas[veiculo['marca']]['margens'].append(margem)
+                        marcas[veiculo['marca']] = {'lucro_total': 0, 'margens': [], 'qtd': 0, 'investimento_total': 0}
+                    marcas[veiculo['marca']]['lucro_total'] += lucro_potencial
+                    marcas[veiculo['marca']]['margens'].append(margem_potencial)
                     marcas[veiculo['marca']]['qtd'] += 1
+                    marcas[veiculo['marca']]['investimento_total'] += custo_total
         
         # Calcular médias
         for modelo in modelos:
-            modelos[modelo]['margem_media'] = sum(modelos[modelo]['margens']) / len(modelos[modelo]['margens'])
+            modelos[modelo]['margem_media'] = sum(modelos[modelo]['margens']) / len(modelos[modelo]['margens']) if modelos[modelo]['margens'] else 0
         
         for marca in marcas:
-            marcas[marca]['margem_media'] = sum(marcas[marca]['margens']) / len(marcas[marca]['margens'])
+            marcas[marca]['margem_media'] = sum(marcas[marca]['margens']) / len(marcas[marca]['margens']) if marcas[marca]['margens'] else 0
         
         return {
             'modelos': modelos,
@@ -3052,51 +3078,54 @@ with tab1:
         }
 
     def gerar_recomendacoes():
-        """Gera recomendações automáticas baseadas em dados"""
+        """Gera recomendações automáticas baseadas em dados de estoque e vendas"""
         recomendacoes = []
-        rentabilidade = calcular_rentabilidade_inteligente()
+        rentabilidade_vendidos = calcular_rentabilidade_inteligente("Vendidos")
+        rentabilidade_estoque = calcular_rentabilidade_inteligente("Em Estoque")
         giro = calcular_giro_estoque()
         veiculos = db.get_veiculos()
+        gastos = db.get_gastos()
         
-        # Recomendação 1: Priorizar modelo de maior margem
-        if rentabilidade['modelos']:
-            top_modelo = max(rentabilidade['modelos'].items(), key=lambda x: x[1]['margem_media'])
+        # Recomendação 1: Modelo com melhor margem histórica para priorizar compras
+        if rentabilidade_vendidos['modelos']:
+            top_modelo_historico = max(rentabilidade_vendidos['modelos'].items(), key=lambda x: x[1]['margem_media'])
             recomendacoes.append({
-                'icone': '📢',
-                'titulo': 'Priorizar anúncios',
-                'descricao': f"Modelo {top_modelo[0]} tem melhor margem ({top_modelo[1]['margem_media']:.1f}%)"
+                'icone': '📈',
+                'titulo': 'Foco em compras',
+                'descricao': f"Modelo {top_modelo_historico[0]} tem melhor margem histórica ({top_modelo_historico[1]['margem_media']:.1f}%)"
             })
         
-        # Recomendação 2: Reduzir preço de modelos lentos
+        # Recomendação 2: Veículos com melhor margem potencial no estoque
+        if rentabilidade_estoque['modelos']:
+            top_modelo_estoque = max(rentabilidade_estoque['modelos'].items(), key=lambda x: x[1]['margem_media'])
+            recomendacoes.append({
+                'icone': '💰',
+                'titulo': 'Priorizar vendas',
+                'descricao': f"Modelo {top_modelo_estoque[0]} tem melhor margem potencial no estoque"
+            })
+        
+        # Recomendação 3: Reduzir preço de modelos lentos
         veiculos_lentos = giro['faixas']['61+ dias']
         if veiculos_lentos:
-            valor_total_lentos = sum(v['preco_venda'] for v in veiculos_lentos)
+            # Calcular preço médio dos lentos
+            preco_medio_lentos = sum(v['preco_venda'] for v in veiculos_lentos) / len(veiculos_lentos)
             recomendacoes.append({
                 'icone': '🏷️',
                 'titulo': 'Acelerar giro',
-                'descricao': f"Reduzir preço de {len(veiculos_lentos)} veículos parados (R$ {valor_total_lentos:,.0f})"
+                'descricao': f"Reduzir preço de {len(veiculos_lentos)} veículos parados (média R$ {preco_medio_lentos:,.0f})"
             })
         
-        # Recomendação 3: Marca para investir
-        if rentabilidade['marcas']:
-            melhor_marca = max(rentabilidade['marcas'].items(), key=lambda x: x[1]['margem_media'])
-            recomendacoes.append({
-                'icone': '💎',
-                'titulo': 'Foco em compras',
-                'descricao': f"Marca {melhor_marca[0]} tem melhor histórico de margem ({melhor_marca[1]['margem_media']:.1f}%)"
-            })
-        
-        # Recomendação 4: Revisar modelos ruins
-        modelos_ruins = [m for m in rentabilidade['modelos'].items() if m[1]['margem_media'] < 5]
+        # Recomendação 4: Modelos com baixo desempenho para revisar estratégia
+        modelos_ruins = [m for m in rentabilidade_estoque['modelos'].items() if m[1]['margem_media'] < 5 and m[1]['qtd'] > 0]
         if modelos_ruins:
-            pior_modelo = min(rentabilidade['modelos'].items(), key=lambda x: x[1]['margem_media'])
+            pior_modelo = min(rentabilidade_estoque['modelos'].items(), key=lambda x: x[1]['margem_media'])
             recomendacoes.append({
                 'icone': '⚠️',
                 'titulo': 'Revisar estratégia',
-                'descricao': f"Modelo {pior_modelo[0]} com margem baixa ({pior_modelo[1]['margem_media']:.1f}%)"
+                'descricao': f"Modelo {pior_modelo[0]} com margem potencial baixa ({pior_modelo[1]['margem_media']:.1f}%)"
             })
         
-        return recomendacoes[:4]  # Top 4 recomendações
+        return recomendacoes[:4]
 
     def calcular_saude_financeira():
         """Calcula indicadores de saúde financeira"""
@@ -3105,12 +3134,10 @@ with tab1:
         
         hoje = datetime.datetime.now().date()
         
-        # Cálculos
         total_financiado = sum(f['valor_total'] for f in financiamentos if f['status'] == 'Ativo')
         carteira_ativa = len([f for f in financiamentos if f['status'] == 'Ativo'])
         
         parcelas_pendentes = [p for p in parcelas if p['status'] == 'Pendente']
-        # Usar processar_timestamp_postgresql diretamente
         parcelas_vencidas = [p for p in parcelas_pendentes if p['data_vencimento'] and processar_timestamp_postgresql(p['data_vencimento']) < hoje]
         
         total_pendente = sum(p['valor_parcela'] for p in parcelas_pendentes)
@@ -3118,7 +3145,6 @@ with tab1:
         
         taxa_inadimplencia = (total_vencido / total_pendente * 100) if total_pendente > 0 else 0
         
-        # Dias médios de atraso
         dias_atraso = []
         for p in parcelas_vencidas:
             dias = (hoje - processar_timestamp_postgresql(p['data_vencimento'])).days
@@ -3126,7 +3152,6 @@ with tab1:
         
         dias_medio_atraso = sum(dias_atraso) / len(dias_atraso) if dias_atraso else 0
         
-        # Previsão 3 meses
         previsao = []
         for i in range(1, 4):
             mes = hoje.replace(day=1) + datetime.timedelta(days=32*i)
@@ -3162,7 +3187,12 @@ with tab1:
     metricas_periodo = calcular_metricas_periodo(30)
     giro = calcular_giro_estoque()
     alertas = calcular_alarmes()
-    rentabilidade = calcular_rentabilidade_inteligente()
+    
+    # Estado para o seletor de análise
+    if 'tipo_analise_rentabilidade' not in st.session_state:
+        st.session_state.tipo_analise_rentabilidade = "Vendidos"
+    
+    rentabilidade = calcular_rentabilidade_inteligente(st.session_state.tipo_analise_rentabilidade)
     recomendacoes = gerar_recomendacoes()
     saude = calcular_saude_financeira()
 
@@ -3178,7 +3208,6 @@ with tab1:
     </div>
     """, unsafe_allow_html=True)
 
-    # Linha 1 – Indicadores Vitais
     col1, col2, col3, col4, col5 = st.columns(5)
 
     with col1:
@@ -3209,7 +3238,6 @@ with tab1:
         """, unsafe_allow_html=True)
 
     with col4:
-        # Lucro Líquido em destaque (MAIOR)
         cor_lucro = "#27AE60" if dre['lucro_liquido'] >= 0 else "#E74C3C"
         variacao = metricas_periodo['variacao']
         seta = "▲" if variacao >= 0 else "▼"
@@ -3248,7 +3276,6 @@ with tab1:
     </div>
     """, unsafe_allow_html=True)
 
-    # Container para alertas
     st.markdown("""
     <style>
         .alerta-card {
@@ -3312,7 +3339,6 @@ with tab1:
             <h4 style="margin-top: 0;">📊 Distribuição por Faixa</h4>
         """, unsafe_allow_html=True)
         
-        # Gráfico de barras horizontal
         faixas = ['0–30 dias', '31–60 dias', '61+ dias']
         valores = [
             len(giro['faixas']['0-30 dias']),
@@ -3346,7 +3372,7 @@ with tab1:
         st.markdown("</div>", unsafe_allow_html=True)
 
     # =============================================
-    # BLOCO 4 – RENTABILIDADE INTELIGENTE
+    # BLOCO 4 – RENTABILIDADE INTELIGENTE (COM SELETOR)
     # =============================================
     
     st.markdown("---")
@@ -3356,6 +3382,33 @@ with tab1:
         <span style="margin-left: 1rem; color: #a0a0a0; font-size: 0.9rem;">Onde ganhamos mais</span>
     </div>
     """, unsafe_allow_html=True)
+
+    # Seletor de análise
+    col_sel1, col_sel2, col_sel3 = st.columns([1, 1, 2])
+    with col_sel1:
+        novo_tipo = st.selectbox(
+            "Analisar:",
+            ["Vendidos", "Em Estoque"],
+            index=0 if st.session_state.tipo_analise_rentabilidade == "Vendidos" else 1,
+            key="seletor_rentabilidade"
+        )
+        if novo_tipo != st.session_state.tipo_analise_rentabilidade:
+            st.session_state.tipo_analise_rentabilidade = novo_tipo
+            st.rerun()
+    
+    with col_sel2:
+        if st.session_state.tipo_analise_rentabilidade == "Em Estoque":
+            st.markdown("""
+            <div style="background: rgba(232, 142, 27, 0.1); padding: 0.5rem; border-radius: 8px; text-align: center;">
+                <small>💰 <strong>Potencial</strong></small>
+            </div>
+            """, unsafe_allow_html=True)
+        else:
+            st.markdown("""
+            <div style="background: rgba(39, 174, 96, 0.1); padding: 0.5rem; border-radius: 8px; text-align: center;">
+                <small>✅ <strong>Realizado</strong></small>
+            </div>
+            """, unsafe_allow_html=True)
 
     col_rent1, col_rent2, col_rent3 = st.columns([1, 1, 1])
 
@@ -3374,6 +3427,8 @@ with tab1:
                     <span style="color: #27AE60; font-weight: bold;">{dados['margem_media']:.1f}%</span>
                 </div>
                 """, unsafe_allow_html=True)
+            if st.session_state.tipo_analise_rentabilidade == "Em Estoque":
+                st.caption(f"📊 Baseado em {sum(d['qtd'] for d in rentabilidade['modelos'].values())} veículos em estoque")
         else:
             st.info("Dados insuficientes")
         
@@ -3394,6 +3449,9 @@ with tab1:
                     <span style="color: #27AE60; font-weight: bold;">{dados['margem_media']:.1f}%</span>
                 </div>
                 """, unsafe_allow_html=True)
+            if st.session_state.tipo_analise_rentabilidade == "Em Estoque":
+                total_investido = sum(d.get('investimento_total', 0) for d in rentabilidade['marcas'].values())
+                st.caption(f"💰 Investimento: R$ {total_investido:,.0f}")
         else:
             st.info("Dados insuficientes")
         
@@ -3402,7 +3460,7 @@ with tab1:
     with col_rent3:
         st.markdown("""
         <div class="glass-card" style="padding: 1.5rem;">
-            <h4 style="margin-top: 0;">🎯 Destaques do Mês</h4>
+            <h4 style="margin-top: 0;">🎯 Destaques</h4>
         """, unsafe_allow_html=True)
         
         if rentabilidade['modelos']:
@@ -3422,9 +3480,11 @@ with tab1:
             </div>
             """, unsafe_allow_html=True)
             
-            # Botão de simulação
             if st.button("💰 Simular preço ideal", use_container_width=True, key="simular_preco"):
-                st.info("💡 Funcionalidade em desenvolvimento: Simulação de preços baseada em margem histórica")
+                if st.session_state.tipo_analise_rentabilidade == "Em Estoque":
+                    st.info("📊 Simulação baseada na margem histórica dos modelos")
+                else:
+                    st.info("📊 Use a análise 'Em Estoque' para simular preços ideais")
         else:
             st.info("Dados insuficientes")
         
@@ -3483,7 +3543,6 @@ with tab1:
     with col_saude4:
         st.metric("⏰ Dias Médio Atraso", f"{saude['dias_medio_atraso']:.0f} dias")
 
-    # Gráfico de previsão
     st.markdown("""
     <div class="glass-card" style="margin-top: 1rem; padding: 1.5rem;">
         <h4 style="margin-top: 0;">📅 Previsão de Recebíveis - Próximos 3 Meses</h4>
@@ -3525,7 +3584,12 @@ with tab1:
     # =============================================
     
     st.markdown("---")
-    st.markdown("""
+    
+    # Calcular totais do estoque para o resumo
+    total_investido_estoque = sum(v['preco_entrada'] for v in veiculos if v['status'] == 'Em estoque')
+    total_potencial_estoque = sum(v['preco_venda'] for v in veiculos if v['status'] == 'Em estoque')
+    
+    st.markdown(f"""
     <div class="glass-card" style="background: linear-gradient(135deg, rgba(232,142,27,0.1), rgba(255,255,255,0.05));">
         <div style="display: flex; justify-content: space-between; align-items: center;">
             <div>
@@ -3536,7 +3600,7 @@ with tab1:
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-top: 1rem;">
             <div>
                 <p style="color: #27AE60; margin-bottom: 0.2rem;">💰 Estou ganhando dinheiro?</p>
-                <p style="color: white;">{dre['lucro_liquido']:,.0f} de lucro • {margem_geral:.1f}% de margem</p>
+                <p style="color: white;">R$ {dre['lucro_liquido']:,.0f} de lucro • {margem_geral:.1f}% de margem</p>
                 
                 <p style="color: #E74C3C; margin: 1rem 0 0.2rem 0;">🔍 Onde estou perdendo?</p>
                 <p style="color: white;">{len(giro['faixas']['61+ dias'])} veículos parados • R$ {sum(v['preco_entrada'] for v in giro['faixas']['61+ dias']):,.0f} parado</p>
@@ -3549,11 +3613,15 @@ with tab1:
                 <p style="color: white;">{recomendacoes[0]['descricao'] if recomendacoes else "Sistema coletando dados para recomendações"}</p>
             </div>
         </div>
+        <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.1);">
+            <p style="color: #a0a0a0; margin:0;">📊 Estoque atual: <strong>R$ {total_investido_estoque:,.0f}</strong> investido | Potencial de venda: <strong>R$ {total_potencial_estoque:,.0f}</strong></p>
+        </div>
     </div>
     """, unsafe_allow_html=True)
 
-    # Pequeno espaço no final
     st.markdown("<br>", unsafe_allow_html=True)
+
+
 with tab2:
     # GESTÃO DE VEÍCULOS
     st.markdown("""
