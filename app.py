@@ -2815,1156 +2815,754 @@ with st.container():
     st.markdown('</div>', unsafe_allow_html=True)
 
 with tab1:
-    # DASHBOARD COMPLETO
+    # =============================================
+    # DASHBOARD CONSULTOR INTELIGENTE
+    # =============================================
     st.markdown("""
     <div class="glass-card">
-        <h2>📊 Dashboard Gerencial</h2>
-        <p style="color: #a0a0a0;">Visão completa do seu negócio em tempo real</p>
+        <h2>📊 Painel Estratégico - 4 Perguntas em 10 Segundos</h2>
+        <p style="color: #a0a0a0;">💰 Estou ganhando dinheiro? 🔍 Onde estou perdendo? ⏰ O que está parado? ⚡ O que fazer agora?</p>
     </div>
     """, unsafe_allow_html=True)
 
-    # Métricas principais
+    # =============================================
+    # FUNÇÕES AUXILIARES PARA O DASHBOARD
+    # =============================================
+    
+    def calcular_metricas_periodo(dias=30):
+        """Calcula métricas comparativas com período anterior"""
+        hoje = datetime.datetime.now()
+        data_inicio = hoje - datetime.timedelta(days=dias)
+        data_anterior_inicio = data_inicio - datetime.timedelta(days=dias)
+        
+        # Buscar vendas do período atual e anterior
+        todas_vendas = db.get_vendas()
+        vendas_periodo = []
+        vendas_anterior = []
+        
+        for venda in todas_vendas:
+            data_venda = venda['data_venda']
+            if hasattr(data_venda, 'date'):
+                data_venda = data_venda.date()
+            elif isinstance(data_venda, str):
+                data_venda = datetime.datetime.strptime(data_venda[:10], '%Y-%m-%d').date()
+            
+            if data_inicio.date() <= data_venda <= hoje.date():
+                vendas_periodo.append(venda)
+            elif data_anterior_inicio.date() <= data_venda < data_inicio.date():
+                vendas_anterior.append(venda)
+        
+        faturamento_atual = sum(v['valor_venda'] for v in vendas_periodo)
+        faturamento_anterior = sum(v['valor_venda'] for v in vendas_anterior)
+        
+        # Calcular variação
+        if faturamento_anterior > 0:
+            variacao = ((faturamento_atual - faturamento_anterior) / faturamento_anterior) * 100
+        else:
+            variacao = 100 if faturamento_atual > 0 else 0
+        
+        return {
+            'faturamento_atual': faturamento_atual,
+            'faturamento_anterior': faturamento_anterior,
+            'variacao': variacao,
+            'qtd_vendas': len(vendas_periodo),
+            'qtd_anterior': len(vendas_anterior)
+        }
+
+    def calcular_giro_estoque():
+        """Calcula métricas de giro de estoque"""
+        veiculos = db.get_veiculos()
+        vendas = db.get_vendas()
+        
+        # Calcular tempo médio em estoque para vendidos
+        tempos_estoque = []
+        for venda in vendas:
+            veiculo = next((v for v in veiculos if v['id'] == venda['veiculo_id']), None)
+            if veiculo:
+                data_cadastro = veiculo['data_cadastro']
+                data_venda = venda['data_venda']
+                
+                # Converter datas
+                if hasattr(data_cadastro, 'date'):
+                    data_cadastro = data_cadastro.date()
+                elif isinstance(data_cadastro, str):
+                    data_cadastro = datetime.datetime.strptime(data_cadastro[:10], '%Y-%m-%d').date()
+                
+                if hasattr(data_venda, 'date'):
+                    data_venda = data_venda.date()
+                elif isinstance(data_venda, str):
+                    data_venda = datetime.datetime.strptime(data_venda[:10], '%Y-%m-%d').date()
+                
+                dias = (data_venda - data_cadastro).days
+                if dias > 0:
+                    tempos_estoque.append(dias)
+        
+        tempo_medio = sum(tempos_estoque) / len(tempos_estoque) if tempos_estoque else 0
+        
+        # Classificar veículos atuais por tempo
+        hoje = datetime.datetime.now().date()
+        estoque_atual = [v for v in veiculos if v['status'] == 'Em estoque']
+        
+        faixas = {
+            '0-30 dias': [],
+            '31-60 dias': [],
+            '61+ dias': []
+        }
+        
+        for veiculo in estoque_atual:
+            data_cadastro = veiculo['data_cadastro']
+            if hasattr(data_cadastro, 'date'):
+                data_cadastro = data_cadastro.date()
+            elif isinstance(data_cadastro, str):
+                data_cadastro = datetime.datetime.strptime(data_cadastro[:10], '%Y-%m-%d').date()
+            
+            dias_estoque = (hoje - data_cadastro).days
+            
+            if dias_estoque <= 30:
+                faixas['0-30 dias'].append(veiculo)
+            elif dias_estoque <= 60:
+                faixas['31-60 dias'].append(veiculo)
+            else:
+                faixas['61+ dias'].append(veiculo)
+        
+        return {
+            'tempo_medio': tempo_medio,
+            'faixas': faixas,
+            'total_estoque': len(estoque_atual)
+        }
+
+    def calcular_alarmes():
+        """Gera alertas inteligentes"""
+        veiculos = db.get_veiculos()
+        vendas = db.get_vendas()
+        gastos = db.get_gastos()
+        metricas_periodo = calcular_metricas_periodo(30)
+        
+        alertas = []
+        
+        # Alerta 1: Veículos parados > 45 dias
+        hoje = datetime.datetime.now().date()
+        veiculos_parados = []
+        capital_parado = 0
+        
+        for veiculo in [v for v in veiculos if v['status'] == 'Em estoque']:
+            data_cadastro = veiculo['data_cadastro']
+            if hasattr(data_cadastro, 'date'):
+                data_cadastro = data_cadastro.date()
+            elif isinstance(data_cadastro, str):
+                data_cadastro = datetime.datetime.strptime(data_cadastro[:10], '%Y-%m-%d').date()
+            
+            dias = (hoje - data_cadastro).days
+            if dias > 45:
+                veiculos_parados.append(veiculo)
+                capital_parado += veiculo['preco_entrada']
+        
+        if veiculos_parados:
+            alertas.append({
+                'tipo': 'critico',
+                'icone': '⚠️',
+                'mensagem': f"{len(veiculos_parados)} veículos acima de 45 dias em estoque (R$ {capital_parado:,.0f} em capital parado)"
+            })
+        
+        # Alerta 2: Margem em queda
+        dre = calcular_dre()
+        if dre['lucro_liquido'] > 0:
+            margem_atual = (dre['lucro_liquido'] / dre['receitas'] * 100) if dre['receitas'] > 0 else 0
+            # Comparar com período anterior (simplificado)
+            if margem_atual < 10:
+                alertas.append({
+                    'tipo': 'atencao',
+                    'icone': '📉',
+                    'mensagem': f"Margem em {margem_atual:.1f}% - abaixo da meta recomendada (15%)"
+                })
+        
+        # Alerta 3: Queda de vendas
+        if metricas_periodo['variacao'] < 0:
+            alertas.append({
+                'tipo': 'atencao',
+                'icone': '⬇️',
+                'mensagem': f"Vendas caíram {abs(metricas_periodo['variacao']):.1f}% vs período anterior"
+            })
+        
+        # Alerta 4: Modelo de maior giro
+        if vendas:
+            modelos_vendas = {}
+            for venda in vendas:
+                modelo = f"{venda.get('marca', '')} {venda.get('modelo', '')}"
+                if modelo not in modelos_vendas:
+                    modelos_vendas[modelo] = 0
+                modelos_vendas[modelo] += 1
+            
+            if modelos_vendas:
+                top_modelo = max(modelos_vendas, key=modelos_vendas.get)
+                alertas.append({
+                    'tipo': 'positivo',
+                    'icone': '🔥',
+                    'mensagem': f"Modelo {top_modelo} é o de maior giro ({modelos_vendas[top_modelo]} vendas)"
+                })
+        
+        return alertas
+
+    def calcular_rentabilidade_inteligente():
+        """Ranking de rentabilidade por modelo/marca"""
+        veiculos = db.get_veiculos()
+        vendas = db.get_vendas()
+        gastos = db.get_gastos()
+        
+        modelos = {}
+        marcas = {}
+        
+        for veiculo in veiculos:
+            if veiculo['status'] == 'Vendido':
+                # Calcular custo total
+                gastos_veiculo = [g for g in gastos if g['veiculo_id'] == veiculo['id']]
+                total_gastos = sum(g['valor'] for g in gastos_veiculo)
+                custo_total = veiculo['preco_entrada'] + total_gastos
+                
+                # Buscar venda
+                venda = next((v for v in vendas if v['veiculo_id'] == veiculo['id']), None)
+                if venda:
+                    lucro = venda['valor_venda'] - custo_total
+                    margem = (lucro / custo_total * 100) if custo_total > 0 else 0
+                    
+                    # Por modelo
+                    modelo_key = f"{veiculo['marca']} {veiculo['modelo']}"
+                    if modelo_key not in modelos:
+                        modelos[modelo_key] = {'lucro_total': 0, 'margens': [], 'qtd': 0}
+                    modelos[modelo_key]['lucro_total'] += lucro
+                    modelos[modelo_key]['margens'].append(margem)
+                    modelos[modelo_key]['qtd'] += 1
+                    
+                    # Por marca
+                    if veiculo['marca'] not in marcas:
+                        marcas[veiculo['marca']] = {'lucro_total': 0, 'margens': [], 'qtd': 0}
+                    marcas[veiculo['marca']]['lucro_total'] += lucro
+                    marcas[veiculo['marca']]['margens'].append(margem)
+                    marcas[veiculo['marca']]['qtd'] += 1
+        
+        # Calcular médias
+        for modelo in modelos:
+            modelos[modelo]['margem_media'] = sum(modelos[modelo]['margens']) / len(modelos[modelo]['margens'])
+        
+        for marca in marcas:
+            marcas[marca]['margem_media'] = sum(marcas[marca]['margens']) / len(marcas[marca]['margens'])
+        
+        return {
+            'modelos': modelos,
+            'marcas': marcas
+        }
+
+    def gerar_recomendacoes():
+        """Gera recomendações automáticas baseadas em dados"""
+        recomendacoes = []
+        rentabilidade = calcular_rentabilidade_inteligente()
+        giro = calcular_giro_estoque()
+        veiculos = db.get_veiculos()
+        
+        # Recomendação 1: Priorizar modelo de maior margem
+        if rentabilidade['modelos']:
+            top_modelo = max(rentabilidade['modelos'].items(), key=lambda x: x[1]['margem_media'])
+            recomendacoes.append({
+                'icone': '📢',
+                'titulo': 'Priorizar anúncios',
+                'descricao': f"Modelo {top_modelo[0]} tem melhor margem ({top_modelo[1]['margem_media']:.1f}%)"
+            })
+        
+        # Recomendação 2: Reduzir preço de modelos lentos
+        veiculos_lentos = giro['faixas']['61+ dias']
+        if veiculos_lentos:
+            valor_total_lentos = sum(v['preco_venda'] for v in veiculos_lentos)
+            recomendacoes.append({
+                'icone': '🏷️',
+                'titulo': 'Acelerar giro',
+                'descricao': f"Reduzir preço de {len(veiculos_lentos)} veículos parados (R$ {valor_total_lentos:,.0f})"
+            })
+        
+        # Recomendação 3: Marca para investir
+        if rentabilidade['marcas']:
+            melhor_marca = max(rentabilidade['marcas'].items(), key=lambda x: x[1]['margem_media'])
+            recomendacoes.append({
+                'icone': '💎',
+                'titulo': 'Foco em compras',
+                'descricao': f"Marca {melhor_marca[0]} tem melhor histórico de margem ({melhor_marca[1]['margem_media']:.1f}%)"
+            })
+        
+        # Recomendação 4: Revisar modelos ruins
+        modelos_ruins = [m for m in rentabilidade['modelos'].items() if m[1]['margem_media'] < 5]
+        if modelos_ruins:
+            pior_modelo = min(rentabilidade['modelos'].items(), key=lambda x: x[1]['margem_media'])
+            recomendacoes.append({
+                'icone': '⚠️',
+                'titulo': 'Revisar estratégia',
+                'descricao': f"Modelo {pior_modelo[0]} com margem baixa ({pior_modelo[1]['margem_media']:.1f}%)"
+            })
+        
+        return recomendacoes[:4]  # Top 4 recomendações
+
+    def calcular_saude_financeira():
+        """Calcula indicadores de saúde financeira"""
+        financiamentos = db.get_financiamentos()
+        parcelas = db.get_parcelas()
+        
+        hoje = datetime.datetime.now().date()
+        
+        def processar_data(data):
+            if data is None:
+                return hoje
+            if hasattr(data, 'date'):
+                return data.date()
+            elif isinstance(data, str):
+                return datetime.datetime.strptime(data[:10], '%Y-%m-%d').date()
+            return data
+        
+        # Cálculos
+        total_financiado = sum(f['valor_total'] for f in financiamentos if f['status'] == 'Ativo')
+        carteira_ativa = len([f for f in financiamentos if f['status'] == 'Ativo'])
+        
+        parcelas_pendentes = [p for p in parcelas if p['status'] == 'Pendente']
+        parcelas_vencidas = [p for p in parcelas_pendentes if processar_data(p['data_vencimento']) < hoje]
+        
+        total_pendente = sum(p['valor_parcela'] for p in parcelas_pendentes)
+        total_vencido = sum(p['valor_parcela'] for p in parcelas_vencidas)
+        
+        taxa_inadimplencia = (total_vencido / total_pendente * 100) if total_pendente > 0 else 0
+        
+        # Dias médios de atraso
+        dias_atraso = []
+        for p in parcelas_vencidas:
+            dias = (hoje - processar_data(p['data_vencimento'])).days
+            dias_atraso.append(dias)
+        
+        dias_medio_atraso = sum(dias_atraso) / len(dias_atraso) if dias_atraso else 0
+        
+        # Previsão 3 meses
+        previsao = []
+        for i in range(1, 4):
+            mes = hoje.replace(day=1) + datetime.timedelta(days=32*i)
+            mes = mes.replace(day=1)
+            
+            valor_mes = sum(
+                p['valor_parcela'] for p in parcelas_pendentes
+                if processar_data(p['data_vencimento']).year == mes.year and
+                processar_data(p['data_vencimento']).month == mes.month
+            )
+            previsao.append({
+                'mes': mes.strftime('%b/%Y'),
+                'valor': valor_mes
+            })
+        
+        return {
+            'total_financiado': total_financiado,
+            'carteira_ativa': carteira_ativa,
+            'taxa_inadimplencia': taxa_inadimplencia,
+            'dias_medio_atraso': dias_medio_atraso,
+            'previsao': previsao,
+            'total_pendente': total_pendente
+        }
+
+    # =============================================
+    # BUSCAR TODOS OS DADOS NECESSÁRIOS
+    # =============================================
+    
     veiculos = db.get_veiculos()
     vendas = db.get_vendas()
-    gastos = db.get_gastos()
     dre = calcular_dre()
     stats = calcular_estatisticas_veiculos()
+    metricas_periodo = calcular_metricas_periodo(30)
+    giro = calcular_giro_estoque()
+    alertas = calcular_alarmes()
+    rentabilidade = calcular_rentabilidade_inteligente()
+    recomendacoes = gerar_recomendacoes()
+    saude = calcular_saude_financeira()
+
+    # =============================================
+    # BLOCO 1 – KPIs ESTRATÉGICOS (Topo da Página)
+    # =============================================
     
+    st.markdown("---")
+    st.markdown("""
+    <div style="display: flex; align-items: center; margin-bottom: 1rem;">
+        <h3 style="margin:0; color: #e88e1b;">📊 INDICADORES VITAIS</h3>
+        <span style="margin-left: 1rem; color: #a0a0a0; font-size: 0.9rem;">vs período anterior</span>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # Linha 1 – Indicadores Vitais
     col1, col2, col3, col4, col5 = st.columns(5)
-    
+
     with col1:
         st.markdown(f"""
         <div class="metric-card">
-            <h4>Estoque</h4>
-            <h2>{stats['veiculos_estoque']}</h2>
+            <h4 style="color: #a0a0a0;">🚗 Estoque</h4>
+            <h2 style="font-size: 2rem;">{stats['veiculos_estoque']}</h2>
             <p style="color: #a0a0a0; font-size: 0.8rem;">veículos</p>
         </div>
         """, unsafe_allow_html=True)
-    
+
     with col2:
         st.markdown(f"""
         <div class="metric-card">
-            <h4>Vendas</h4>
-            <h2 style="color: #27AE60;">{stats['veiculos_vendidos']}</h2>
+            <h4 style="color: #a0a0a0;">📦 Vendas</h4>
+            <h2 style="font-size: 2rem;">{stats['veiculos_vendidos']}</h2>
             <p style="color: #a0a0a0; font-size: 0.8rem;">realizadas</p>
         </div>
         """, unsafe_allow_html=True)
-    
+
     with col3:
         st.markdown(f"""
         <div class="metric-card">
-            <h4>Faturamento</h4>
-            <h2 style="color: #27AE60;">R$ {dre['receitas']:,.0f}</h2>
+            <h4 style="color: #a0a0a0;">💰 Faturamento</h4>
+            <h2 style="font-size: 2rem; color: #27AE60;">R$ {dre['receitas']:,.0f}</h2>
             <p style="color: #a0a0a0; font-size: 0.8rem;">total</p>
         </div>
         """, unsafe_allow_html=True)
-    
+
     with col4:
+        # Lucro Líquido em destaque (MAIOR)
+        cor_lucro = "#27AE60" if dre['lucro_liquido'] >= 0 else "#E74C3C"
+        variacao = metricas_periodo['variacao']
+        seta = "▲" if variacao >= 0 else "▼"
+        cor_variacao = "#27AE60" if variacao >= 0 else "#E74C3C"
+        
         st.markdown(f"""
-        <div class="metric-card">
-            <h4>Gastos</h4>
-            <h2 style="color: #E74C3C;">R$ {dre['despesas']:,.0f}</h2>
-            <p style="color: #a0a0a0; font-size: 0.8rem;">totais</p>
+        <div class="metric-card" style="border: 2px solid {cor_lucro};">
+            <h4 style="color: #a0a0a0;">💎 LUCRO LÍQUIDO</h4>
+            <h2 style="font-size: 2.5rem; color: {cor_lucro};">R$ {dre['lucro_liquido']:,.0f}</h2>
+            <div style="display: flex; justify-content: center; align-items: center; gap: 0.5rem;">
+                <span style="color: {cor_variacao}; font-weight: bold;">{seta} {abs(variacao):.1f}%</span>
+                <span style="color: #a0a0a0; font-size: 0.8rem;">vs mês anterior</span>
+            </div>
         </div>
         """, unsafe_allow_html=True)
-    
+
     with col5:
+        margem_geral = (dre['lucro_liquido'] / dre['receitas'] * 100) if dre['receitas'] > 0 else 0
         st.markdown(f"""
         <div class="metric-card">
-            <h4>Lucro</h4>
-            <h2 style="color: {'#27AE60' if dre['lucro_liquido'] >= 0 else '#E74C3C'}">R$ {dre['lucro_liquido']:,.0f}</h2>
-            <p style="color: #a0a0a0; font-size: 0.8rem;">líquido</p>
+            <h4 style="color: #a0a0a0;">📊 Margem Geral</h4>
+            <h2 style="font-size: 2rem;">{margem_geral:.1f}%</h2>
+            <p style="color: #a0a0a0; font-size: 0.8rem;">sobre faturamento</p>
         </div>
         """, unsafe_allow_html=True)
 
     # =============================================
-    # ANÁLISE ESTRATÉGICA DO ESTOQUE - VISÃO AVANÇADA
+    # BLOCO 2 – ALERTAS INTELIGENTES
     # =============================================
     
     st.markdown("---")
     st.markdown("""
-    <div class="glass-card">
-        <h2>📊 Análise Inteligente do Estoque</h2>
-        <p style="color: #a0a0a0;">Insights estratégicos sobre sua carteira de veículos</p>
+    <div style="display: flex; align-items: center; margin-bottom: 1rem;">
+        <h3 style="margin:0; color: #e88e1b;">🚨 ALERTAS INTELIGENTES</h3>
+        <span style="margin-left: 1rem; color: #a0a0a0; font-size: 0.9rem;">O que merece sua atenção agora</span>
     </div>
     """, unsafe_allow_html=True)
-    
-    # Buscar e processar dados
-    veiculos_estoque = [v for v in veiculos if v['status'] == 'Em estoque']
-    veiculos_com_custos = []
-    
-    for veiculo in veiculos_estoque:
-        gastos_veiculo = db.get_gastos(veiculo['id'])
-        total_gastos = sum(g['valor'] for g in gastos_veiculo)
-        custo_total = veiculo['preco_entrada'] + total_gastos
-        lucro_potencial = veiculo['preco_venda'] - custo_total
-        # ✅ MARGEM AJUSTADA: 0-20% conforme solicitado pelo cliente
-        margem_potencial = (lucro_potencial / custo_total * 100) if custo_total > 0 else 0
-        
-        veiculos_com_custos.append({
-            **veiculo,
-            'total_gastos': total_gastos,
-            'custo_total': custo_total,
-            'lucro_potencial': lucro_potencial,
-            'margem_potencial': margem_potencial
-        })
-    
-    if veiculos_com_custos:
-        # ANÁLISE 1: TABELA DETALHADA POR MARCA - COM CABEÇALHO CLARO
-        st.markdown("#### 📋 Performance por Marca - Visão Detalhada")
-        
-        # CABEÇALHO EXPLICATIVO DA TABELA
-        st.markdown("""
-        <div style="background: rgba(232, 142, 27, 0.1); padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
-            <h4 style="margin:0; color: #e88e1b;">📖 Legenda da Tabela:</h4>
-            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr 1fr 1fr; gap: 1rem; margin-top: 0.5rem; font-size: 0.9rem;">
-                <div><strong>Marca</strong></div>
-                <div><strong>Qtd Veículos</strong></div>
-                <div><strong>Investimento Total</strong></div>
-                <div><strong>Margem Média</strong></div>
-                <div><strong>Lucro Potencial</strong></div>
-                <div><strong>Status Margem</strong></div>
-            </div>
-            <div style="font-size: 0.8rem; color: #a0a0a0; margin-top: 0.5rem;">
-                ✅ Boa (≥11%) • ⚠️ Média (5-10%) • ❌ Baixa (<5%)
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-        
-        # Agrupar por marca
-        dados_marca = {}
-        for veiculo in veiculos_com_custos:
-            marca = veiculo['marca']
-            if marca not in dados_marca:
-                dados_marca[marca] = {
-                    'quantidade': 0,
-                    'investimento_total': 0,
-                    'gastos_total': 0,
-                    'compra_total': 0,
-                    'margem_media': 0,
-                    'lucro_total': 0,
-                    'veiculos': []
-                }
-            
-            dados_marca[marca]['quantidade'] += 1
-            dados_marca[marca]['investimento_total'] += veiculo['custo_total']
-            dados_marca[marca]['gastos_total'] += veiculo['total_gastos']
-            dados_marca[marca]['compra_total'] += veiculo['preco_entrada']
-            dados_marca[marca]['margem_media'] += veiculo['margem_potencial']
-            dados_marca[marca]['lucro_total'] += veiculo['lucro_potencial']
-            dados_marca[marca]['veiculos'].append(veiculo)
-        
-        # Calcular médias
-        for marca in dados_marca:
-            dados_marca[marca]['margem_media'] /= dados_marca[marca]['quantidade']
-        
-        # Criar DataFrame para tabela
-        tabela_dados = []
-        for marca, dados in dados_marca.items():
-            tabela_dados.append({
-                'Marca': marca,
-                'Quantidade': dados['quantidade'],
-                'Investimento_Total': dados['investimento_total'],
-                'Compra_Total': dados['compra_total'],
-                'Gastos_Total': dados['gastos_total'],
-                'Margem_Media': dados['margem_media'],
-                'Lucro_Potencial': dados['lucro_total']
-            })
-        
-        # Ordenar por investimento total (maior primeiro)
-        tabela_dados.sort(key=lambda x: x['Investimento_Total'], reverse=True)
-        
-        # CABEÇALHO DA TABELA
-        st.markdown("""
-        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr 1fr 1fr; gap: 1rem; padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 8px; margin-bottom: 0.5rem; font-weight: bold;">
-            <div>🚗 MARCA</div>
-            <div>📦 QTD VEÍCULOS</div>
-            <div>💰 INVESTIMENTO TOTAL</div>
-            <div>📊 MARGEM MÉDIA</div>
-            <div>💵 LUCRO POTENCIAL</div>
-            <div>🎯 STATUS</div>
-        </div>
-        """, unsafe_allow_html=True)
-        
-        # Mostrar tabela estilizada
-        for i, linha in enumerate(tabela_dados):
-            cor_fundo = "rgba(255,255,255,0.02)" if i % 2 == 0 else "rgba(255,255,255,0.05)"
-            
-            # ✅ CRITÉRIOS DE MARGEM AJUSTADOS: 0-20%
-            margem = linha['Margem_Media']
-            if margem >= 11:
-                cor_margem = "#27AE60"
-                emoji_status = "✅"
-                texto_status = "Boa"
-            elif margem >= 5:
-                cor_margem = "#F39C12" 
-                emoji_status = "⚠️"
-                texto_status = "Média"
-            else:
-                cor_margem = "#E74C3C"
-                emoji_status = "❌"
-                texto_status = "Baixa"
-            
+
+    # Container para alertas
+    st.markdown("""
+    <style>
+        .alerta-card {
+            padding: 1.2rem;
+            border-radius: 12px;
+            margin: 0.5rem 0;
+            border-left: 6px solid;
+            transition: all 0.3s ease;
+        }
+        .alerta-card:hover {
+            transform: translateX(5px);
+        }
+        .alerta-critico { background: rgba(231, 76, 60, 0.1); border-left-color: #E74C3C; }
+        .alerta-atencao { background: rgba(243, 156, 18, 0.1); border-left-color: #F39C12; }
+        .alerta-positivo { background: rgba(39, 174, 96, 0.1); border-left-color: #27AE60; }
+    </style>
+    """, unsafe_allow_html=True)
+
+    if alertas:
+        for alerta in alertas:
+            classe = f"alerta-{alerta['tipo']}"
             st.markdown(f"""
-            <div style="padding: 1rem; margin: 0.5rem 0; background: {cor_fundo}; border-radius: 8px; border-left: 4px solid {cor_margem};">
-                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr 1fr 1fr; gap: 1rem; align-items: center;">
-                    <div><strong>{linha['Marca']}</strong></div>
-                    <div>{linha['Quantidade']} veículos</div>
-                    <div>R$ {linha['Investimento_Total']:,.2f}</div>
-                    <div style="color: {cor_margem}; font-weight: bold;">{margem:.1f}%</div>
-                    <div>R$ {linha['Lucro_Potencial']:,.2f}</div>
-                    <div style="color: {cor_margem}; font-weight: bold;" title="Margem {texto_status}">{emoji_status} {texto_status}</div>
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
-        
-        # ANÁLISE 2: GRÁFICO DE BARRAS EMPILHADAS - COMPOSIÇÃO REAL DE CUSTOS
-        st.markdown("#### 🏗️ Composição Real de Custos por Marca")
-        
-        # Top 8 marcas por investimento
-        top_marcas = sorted(dados_marca.items(), key=lambda x: x[1]['investimento_total'], reverse=True)[:8]
-        
-        custos_compra = []
-        custos_gastos = []
-        nomes_marcas = []
-        
-        for marca, dados in top_marcas:
-            custos_compra.append(dados['compra_total'])
-            custos_gastos.append(dados['gastos_total'])
-            nomes_marcas.append(marca)
-        
-        fig = go.Figure()
-        
-        fig.add_trace(go.Bar(
-            name='💰 Custo de Compra',
-            x=nomes_marcas,
-            y=custos_compra,
-            marker_color='#e88e1b',
-            hovertemplate='<b>%{x}</b><br>Custo Compra: R$ %{y:,.2f}<extra></extra>'
-        ))
-        
-        fig.add_trace(go.Bar(
-            name='🔧 Gastos com Preparação',
-            x=nomes_marcas,
-            y=custos_gastos,
-            marker_color='#3498db',
-            hovertemplate='<b>%{x}</b><br>Gastos: R$ %{y:,.2f}<extra></extra>'
-        ))
-        
-        # ANÁLISE 3: GRÁFICO INTERATIVO - TOP MODELOS POR RENTABILIDADE
-        st.markdown("#### 📈 Top Modelos por Rentabilidade")
-        
-        # Preparar dados por modelo
-        dados_modelo = {}
-        for veiculo in veiculos_com_custos:
-            modelo_key = f"{veiculo['marca']} {veiculo['modelo']} {veiculo['ano']}"
-            if modelo_key not in dados_modelo:
-                dados_modelo[modelo_key] = {
-                    'marca': veiculo['marca'],
-                    'modelo': veiculo['modelo'],
-                    'ano': veiculo['ano'],
-                    'quantidade': 0,
-                    'investimento_total': 0,
-                    'custo_total': 0,
-                    'preco_venda_total': 0,
-                    'lucro_total': 0,
-                    'margem_media': 0,
-                    'veiculos': []
-                }
-            
-            dados_modelo[modelo_key]['quantidade'] += 1
-            dados_modelo[modelo_key]['investimento_total'] += veiculo['custo_total']
-            dados_modelo[modelo_key]['custo_total'] += veiculo['custo_total']
-            dados_modelo[modelo_key]['preco_venda_total'] += veiculo['preco_venda']
-            dados_modelo[modelo_key]['lucro_total'] += veiculo['lucro_potencial']
-            dados_modelo[modelo_key]['margem_media'] += veiculo['margem_potencial']
-            dados_modelo[modelo_key]['veiculos'].append(veiculo)
-        
-        # Calcular médias
-        for modelo in dados_modelo:
-            dados_modelo[modelo]['margem_media'] /= dados_modelo[modelo]['quantidade']
-        
-        # Converter para lista e ordenar por lucro total
-        modelos_ordenados = sorted(
-            [(modelo, dados) for modelo, dados in dados_modelo.items()], 
-            key=lambda x: x[1]['lucro_total'], 
-            reverse=True
-        )
-        
-        # Seletor de quantidade
-        col_sel1, col_sel2, col_sel3 = st.columns([2, 1, 1])
-        with col_sel1:
-            num_modelos = st.slider(
-                "**Selecione quantos modelos mostrar:**",
-                min_value=3,
-                max_value=min(15, len(modelos_ordenados)),
-                value=5,
-                step=1,
-                help="Escolha quantos modelos deseja visualizar no gráfico"
-            )
-        
-        with col_sel2:
-            ordenar_por = st.selectbox(
-                "**Ordenar por:**",
-                ["Lucro Total", "Margem Média", "Investimento"],
-                help="Selecione o critério de ordenação"
-            )
-        
-        with col_sel3:
-            tipo_grafico = st.selectbox(
-                "**Tipo de gráfico:**",
-                ["Barras + Linha", "Apenas Barras", "Apenas Linha"],
-                help="Escolha a visualização do gráfico"
-            )
-        
-        # Reordenar conforme seleção
-        if ordenar_por == "Lucro Total":
-            modelos_ordenados = sorted(modelos_ordenados, key=lambda x: x[1]['lucro_total'], reverse=True)
-        elif ordenar_por == "Margem Média":
-            modelos_ordenados = sorted(modelos_ordenados, key=lambda x: x[1]['margem_media'], reverse=True)
-        else:  # Investimento
-            modelos_ordenados = sorted(modelos_ordenados, key=lambda x: x[1]['investimento_total'], reverse=True)
-        
-        # Pegar top N modelos
-        top_modelos = modelos_ordenados[:num_modelos]
-        
-        if top_modelos:
-            # Preparar dados para o gráfico
-            nomes_modelos = [f"{dados['marca']} {dados['modelo']}\n({dados['ano']})" for modelo, dados in top_modelos]
-            valores_investimento = [dados['investimento_total'] for modelo, dados in top_modelos]
-            valores_margem = [dados['margem_media'] for modelo, dados in top_modelos]
-            valores_lucro = [dados['lucro_total'] for modelo, dados in top_modelos]
-            
-            fig = go.Figure()
-            
-            # Adicionar barras de investimento (se selecionado)
-            if tipo_grafico in ["Barras + Linha", "Apenas Barras"]:
-                fig.add_trace(go.Bar(
-                    name='💰 Investimento Total',
-                    x=nomes_modelos,
-                    y=valores_investimento,
-                    marker_color='#e88e1b',
-                    yaxis='y',
-                    opacity=0.8,
-                    hovertemplate='<b>%{x}</b><br>Investimento: R$ %{y:,.2f}<br>Lucro: R$ %{customdata:,.2f}<extra></extra>',
-                    customdata=valores_lucro
-                ))
-            
-            # Adicionar linha de margem (se selecionado)
-            if tipo_grafico in ["Barras + Linha", "Apenas Linha"]:
-                fig.add_trace(go.Scatter(
-                    name='📊 Margem Média (%)',
-                    x=nomes_modelos,
-                    y=valores_margem,
-                    mode='lines+markers+text',
-                    yaxis='y2',
-                    line=dict(color='#27AE60', width=3),
-                    marker=dict(size=10, color='#27AE60'),
-                    text=[f"{margem:.1f}%" for margem in valores_margem],
-                    textposition="top center",
-                    hovertemplate='<b>%{x}</b><br>Margem: %{y:.1f}%<extra></extra>'
-                ))
-            
-            # Configuração do layout
-            fig.update_layout(
-                plot_bgcolor='rgba(0,0,0,0)',
-                paper_bgcolor='rgba(0,0,0,0)',
-                font=dict(color='white'),
-                height=600,
-                title=f"Top {num_modelos} Modelos por {ordenar_por}",
-                xaxis=dict(
-                    title="Modelo",
-                    tickangle=-45
-                ),
-                yaxis=dict(
-                    title="Investimento Total (R$)",
-                    titlefont=dict(color='#e88e1b'),
-                    tickfont=dict(color='#e88e1b'),
-                    showgrid=True,
-                    gridcolor='rgba(255,255,255,0.1)'
-                ),
-                yaxis2=dict(
-                    title="Margem Média (%)",
-                    titlefont=dict(color='#27AE60'),
-                    tickfont=dict(color='#27AE60'),
-                    overlaying='y',
-                    side='right',
-                    range=[0, max(valores_margem) * 1.2 if valores_margem else 20],
-                    showgrid=False
-                ),
-                showlegend=True,
-                legend=dict(
-                    orientation="h",
-                    yanchor="bottom",
-                    y=1.02,
-                    xanchor="right",
-                    x=1
-                )
-            )
-            
-            # Adicionar linhas de referência para margem
-            fig.add_hline(y=15, line_dash="dash", line_color="#27AE60", opacity=0.5, 
-                          annotation_text="Meta 15%", annotation_position="top right")
-            fig.add_hline(y=10, line_dash="dash", line_color="#F39C12", opacity=0.3,
-                          annotation_text="Mínimo 10%", annotation_position="bottom right")
-            
-            st.plotly_chart(fig, use_container_width=True)
-            
-            # Tabela resumo dos modelos
-            st.markdown("#### 📋 Detalhes dos Modelos Selecionados")
-            
-            # Cabeçalho da tabela
-            st.markdown("""
-            <div style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 1fr; gap: 1rem; padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 8px; margin-bottom: 0.5rem; font-weight: bold;">
-                <div>🚗 MODELO</div>
-                <div>💰 INVESTIMENTO</div>
-                <div>💵 LUCRO</div>
-                <div>📊 MARGEM</div>
-                <div>🎯 STATUS</div>
-            </div>
-            """, unsafe_allow_html=True)
-            
-            # Dados da tabela
-            for i, (modelo_nome, dados) in enumerate(top_modelos):
-                cor_fundo = "rgba(255,255,255,0.02)" if i % 2 == 0 else "rgba(255,255,255,0.05)"
-                
-                # Critérios de margem
-                margem = dados['margem_media']
-                if margem >= 11:
-                    cor_margem = "#27AE60"
-                    emoji_status = "✅"
-                    texto_status = "Boa"
-                elif margem >= 5:
-                    cor_margem = "#F39C12" 
-                    emoji_status = "⚠️"
-                    texto_status = "Média"
-                else:
-                    cor_margem = "#E74C3C"
-                    emoji_status = "❌"
-                    texto_status = "Baixa"
-                
-                st.markdown(f"""
-                <div style="padding: 1rem; margin: 0.5rem 0; background: {cor_fundo}; border-radius: 8px; border-left: 4px solid {cor_margem};">
-                    <div style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 1fr; gap: 1rem; align-items: center;">
-                        <div>
-                            <strong>{dados['marca']} {dados['modelo']}</strong><br>
-                            <small style="color: #a0a0a0;">{dados['ano']} • {dados['quantidade']} un.</small>
-                        </div>
-                        <div>R$ {dados['investimento_total']:,.2f}</div>
-                        <div>R$ {dados['lucro_total']:,.2f}</div>
-                        <div style="color: {cor_margem}; font-weight: bold;">{margem:.1f}%</div>
-                        <div style="color: {cor_margem}; font-weight: bold;">{emoji_status} {texto_status}</div>
+            <div class="alerta-card {classe}">
+                <div style="display: flex; align-items: center;">
+                    <span style="font-size: 2rem; margin-right: 1rem;">{alerta['icone']}</span>
+                    <div>
+                        <span style="font-size: 1.1rem;">{alerta['mensagem']}</span>
                     </div>
                 </div>
-                """, unsafe_allow_html=True)
-        
-        else:
-            st.info("📝 Nenhum modelo encontrado para análise")
-        
-        # ANÁLISE 3: GRÁFICO DE BARRAS - MARGEM vs INVESTIMENTO
-        st.markdown("#### 📈 Rentabilidade vs Volume de Investimento")
-        
-        # Preparar dados
-        marcas_investimento = []
-        valores_investimento = []
-        valores_margem = []
-        
-        for marca, dados in top_marcas:
-            marcas_investimento.append(marca)
-            valores_investimento.append(dados['investimento_total'])
-            valores_margem.append(dados['margem_media'])
-        
-        fig = go.Figure()
-        
-        # Barras de investimento
-        fig.add_trace(go.Bar(
-            name='📦 Investimento Total',
-            x=marcas_investimento,
-            y=valores_investimento,
-            marker_color='#e88e1b',
-            yaxis='y',
-            opacity=0.7
-        ))
-        
-        # Linha de margem
-        fig.add_trace(go.Scatter(
-            name='📊 Margem Média (%)',
-            x=marcas_investimento,
-            y=valores_margem,
-            mode='lines+markers',
-            yaxis='y2',
-            line=dict(color='#27AE60', width=3),
-            marker=dict(size=8, color='#27AE60')
-        ))
-        
-        fig.update_layout(
-            plot_bgcolor='rgba(0,0,0,0)',
-            paper_bgcolor='rgba(0,0,0,0)',
-            font=dict(color='white'),
-            height=500,
-            title="Relação: Investimento vs Margem por Marca",
-            xaxis_title="Marca",
-            yaxis=dict(
-                title="Investimento Total (R$)",
-                titlefont=dict(color='#e88e1b'),
-                tickfont=dict(color='#e88e1b')
-            ),
-            yaxis2=dict(
-                title="Margem Média (%)",
-                titlefont=dict(color='#27AE60'),
-                tickfont=dict(color='#27AE60'),
-                overlaying='y',
-                side='right'
-            ),
-            showlegend=True
-        )
-        
-        # ✅ LINHAS DE REFERÊNCIA AJUSTADAS: 0-20%
-        fig.add_hline(y=15, line_dash="dash", line_color="#27AE60", opacity=0.5, 
-                      annotation_text="Meta 15%", annotation_position="top right")
-        fig.add_hline(y=10, line_dash="dash", line_color="#F39C12", opacity=0.3,
-                      annotation_text="Mínimo 10%", annotation_position="bottom right")
-        
-        st.plotly_chart(fig, use_container_width=True)
-        
-        # ANÁLISE 4: RESUMO EXECUTIVO
-        st.markdown("#### 🎯 Resumo Executivo do Estoque")
-        
-        total_investido = sum(dados['investimento_total'] for dados in dados_marca.values())
-        total_lucro_potencial = sum(dados['lucro_total'] for dados in dados_marca.values())
-        margem_geral = (total_lucro_potencial / total_investido * 100) if total_investido > 0 else 0
-        total_veiculos = len(veiculos_com_custos)
-        
-        col_res1, col_res2, col_res3, col_res4 = st.columns(4)
-        
-        with col_res1:
-            st.metric("🚗 Veículos em Estoque", total_veiculos)
-        
-        with col_res2:
-            st.metric("🏦 Total Investido", f"R$ {total_investido:,.2f}")
-        
-        with col_res3:
-            st.metric("📈 Lucro Potencial", f"R$ {total_lucro_potencial:,.2f}")
-        
-        with col_res4:
-            # Cor da métrica baseada na margem geral
-            delta_color = "normal"
-            if margem_geral >= 15:
-                delta_color = "normal"
-            elif margem_geral >= 10:
-                delta_color = "off"
-            else:
-                delta_color = "inverse"
-                
-            st.metric("📊 Margem Geral", f"{margem_geral:.1f}%", delta_color=delta_color)
-        
-        # Marcas com melhor performance
-        marcas_ordenadas_margem = sorted(dados_marca.items(), key=lambda x: x[1]['margem_media'], reverse=True)
-        
-        st.markdown("**🏆 Top 3 Marcas por Rentabilidade:**")
-        col_top1, col_top2, col_top3 = st.columns(3)
-        
-        for i, (marca, dados) in enumerate(marcas_ordenadas_margem[:3]):
-            with [col_top1, col_top2, col_top3][i]:
-                # Cor baseada na margem
-                if dados['margem_media'] >= 15:
-                    cor_fundo = "rgba(39, 174, 96, 0.1)"
-                    cor_texto = "#27AE60"
-                elif dados['margem_media'] >= 10:
-                    cor_fundo = "rgba(243, 156, 18, 0.1)"
-                    cor_texto = "#F39C12"
-                else:
-                    cor_fundo = "rgba(231, 76, 60, 0.1)"
-                    cor_texto = "#E74C3C"
-                    
-                st.markdown(f"""
-                <div style="padding: 1rem; background: {cor_fundo}; border-radius: 8px; text-align: center;">
-                    <h4>#{i+1} {marca}</h4>
-                    <p style="margin: 0; font-size: 1.2rem; color: {cor_texto}; font-weight: bold;">
-                        {dados['margem_media']:.1f}%
-                    </p>
-                    <p style="margin: 0; color: #a0a0a0; font-size: 0.8rem;">
-                        {dados['quantidade']} veículos • R$ {dados['lucro_total']:,.0f}
-                    </p>
-                </div>
-                """, unsafe_allow_html=True)
-    
+            </div>
+            """, unsafe_allow_html=True)
     else:
-        st.info("📝 Nenhum veículo em estoque para análise")
+        st.info("✨ Nenhum alerta crítico no momento. Tudo sob controle!")
 
-    
     # =============================================
-    # ANÁLISES ESTRATÉGICAS
+    # BLOCO 3 – GIRO DE ESTOQUE
     # =============================================
     
     st.markdown("---")
     st.markdown("""
-    <div class="glass-card">
-        <h2>📈 Análises Estratégicas e Performance</h2>
-        <p style="color: #a0a0a0;">Métricas avançadas para tomada de decisão inteligente</p>
+    <div style="display: flex; align-items: center; margin-bottom: 1rem;">
+        <h3 style="margin:0; color: #e88e1b;">🔄 GIRO DE ESTOQUE</h3>
+        <span style="margin-left: 1rem; color: #a0a0a0; font-size: 0.9rem;">Tempo é dinheiro</span>
     </div>
     """, unsafe_allow_html=True)
-    
-    # Filtros para as análises
-    col_filtro1, col_filtro2, col_filtro3 = st.columns(3)
-    with col_filtro1:
-        periodo_analise = st.selectbox("📅 Período de Análise", 
-                                     ["Últimos 30 dias", "Últimos 90 dias", "Últimos 6 meses", "Este ano", "Todo período"])
-    with col_filtro2:
-        marcas_veiculos = list(set([v['marca'] for v in veiculos]))
-        marca_filtro = st.selectbox("🚗 Filtrar por Marca", 
-                                  ["Todas"] + marcas_veiculos)
-    
-    # Calcular dados filtrados
-    data_atual = datetime.datetime.now()
-    if periodo_analise == "Últimos 30 dias":
-        data_corte = data_atual - datetime.timedelta(days=30)
-    elif periodo_analise == "Últimos 90 dias":
-        data_corte = data_atual - datetime.timedelta(days=90)
-    elif periodo_analise == "Últimos 6 meses":
-        data_corte = data_atual - datetime.timedelta(days=180)
-    elif periodo_analise == "Este ano":
-        data_corte = datetime.datetime(data_atual.year, 1, 1)
-    else:
-        data_corte = datetime.datetime(2000, 1, 1)  # Data muito antiga
-    
-    # Filtrar veículos
-    veiculos_filtrados = []
-    for veiculo in veiculos:
-        data_cadastro = veiculo['data_cadastro']
-        if isinstance(data_cadastro, str):
-            data_cadastro = datetime.datetime.strptime(data_cadastro[:10], '%Y-%m-%d')
-        elif hasattr(data_cadastro, 'date'):
-            data_cadastro = data_cadastro.date()
-            data_cadastro = datetime.datetime.combine(data_cadastro, datetime.time())
-        
-        if data_cadastro >= data_corte:
-            if marca_filtro == "Todas" or veiculo['marca'] == marca_filtro:
-                veiculos_filtrados.append(veiculo)
-    
-    # Filtrar vendas
-    vendas_filtradas = []
-    for venda in vendas:
-        data_venda = venda['data_venda']
-        
-        # ✅ CORREÇÃO: Processar data do PostgreSQL corretamente
-        if hasattr(data_venda, 'strftime'):
-            # Timestamp do PostgreSQL
-            data_venda_dt = data_venda
-        elif isinstance(data_venda, str):
-            # String do SQLite
-            data_venda_dt = datetime.datetime.strptime(data_venda[:10], '%Y-%m-%d')
-        elif hasattr(data_venda, 'date'):
-            # Date object
-            data_venda_dt = datetime.datetime.combine(data_venda, datetime.time())
-        else:
-            continue
-        
-        if data_venda_dt >= data_corte:
-            # ✅ CORREÇÃO: Usar .get() para evitar KeyError
-            venda_marca = venda.get('marca') or venda.get('veiculo_marca')
-            if marca_filtro == "Todas" or venda_marca == marca_filtro:
-                vendas_filtradas.append(venda)
 
-    
-    # ANÁLISE 1: PERFORMANCE DE MARGENS POR MODELO
-    st.markdown("#### 💰 Análise de Rentabilidade por Modelo")
-    
-    # Calcular margens por modelo
-    modelos_lucro = {}
-    for veiculo in veiculos_filtrados:
-        if veiculo['status'] == 'Vendido':
-            gastos_veiculo = db.get_gastos(veiculo['id'])
-            total_gastos = sum(g['valor'] for g in gastos_veiculo)
-            custo_total = veiculo['preco_entrada'] + total_gastos
-            
-            # Encontrar a venda correspondente
-            venda_veiculo = next((v for v in vendas if v['veiculo_id'] == veiculo['id']), None)
-            if venda_veiculo:
-                lucro = venda_veiculo['valor_venda'] - custo_total
-                margem = (lucro / custo_total * 100) if custo_total > 0 else 0
-                
-                modelo_key = f"{veiculo['marca']} {veiculo['modelo']}"
-                if modelo_key not in modelos_lucro:
-                    modelos_lucro[modelo_key] = {
-                        'lucro_total': 0,
-                        'vendas': 0,
-                        'margem_media': 0,
-                        'tempo_medio_estoque': 0
-                    }
-                
-                modelos_lucro[modelo_key]['lucro_total'] += lucro
-                modelos_lucro[modelo_key]['vendas'] += 1
-    
-    # Calcular margem média
-    for modelo in modelos_lucro:
-        if modelos_lucro[modelo]['vendas'] > 0:
-            modelos_lucro[modelo]['margem_media'] = modelos_lucro[modelo]['lucro_total'] / modelos_lucro[modelo]['vendas']
-    
-    if modelos_lucro:
-        # Gráfico de barras horizontais para margens por modelo
-        modelos_ordenados = sorted(modelos_lucro.items(), key=lambda x: x[1]['margem_media'], reverse=True)[:10]
+    col_giro1, col_giro2 = st.columns([1, 1])
+
+    with col_giro1:
+        st.markdown(f"""
+        <div class="glass-card" style="padding: 1.5rem;">
+            <h4 style="margin-top: 0;">⏱️ Tempo Médio em Estoque</h4>
+            <h2 style="font-size: 3rem; color: #e88e1b;">{giro['tempo_medio']:.0f} dias</h2>
+            <p style="color: #a0a0a0;">baseado nos últimos veículos vendidos</p>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with col_giro2:
+        st.markdown("""
+        <div class="glass-card" style="padding: 1.5rem;">
+            <h4 style="margin-top: 0;">📊 Distribuição por Faixa</h4>
+        """, unsafe_allow_html=True)
         
-        fig = px.bar(
-            x=[dados['margem_media'] for modelo, dados in modelos_ordenados],
-            y=[modelo for modelo, dados in modelos_ordenados],
+        # Gráfico de barras horizontal
+        faixas = ['0–30 dias', '31–60 dias', '61+ dias']
+        valores = [
+            len(giro['faixas']['0-30 dias']),
+            len(giro['faixas']['31-60 dias']),
+            len(giro['faixas']['61+ dias'])
+        ]
+        cores = ['#27AE60', '#F39C12', '#E74C3C']
+        
+        fig = go.Figure()
+        fig.add_trace(go.Bar(
+            y=faixas,
+            x=valores,
             orientation='h',
-            title="Top 10 Modelos por Lucro Médio",
-            color=[dados['margem_media'] for modelo, dados in modelos_ordenados],
-            color_continuous_scale='RdYlGn',
-            labels={'x': 'Lucro Médio por Venda (R$)', 'y': 'Modelo'}
-        )
+            marker_color=cores,
+            text=valores,
+            textposition='auto',
+        ))
         
         fig.update_layout(
             plot_bgcolor='rgba(0,0,0,0)',
             paper_bgcolor='rgba(0,0,0,0)',
             font=dict(color='white'),
-            height=500,
+            height=200,
+            margin=dict(l=0, r=0, t=0, b=0),
             showlegend=False,
-            xaxis=dict(showgrid=True, gridcolor='rgba(255,255,255,0.1)'),
+            xaxis=dict(showgrid=False, showticklabels=False),
             yaxis=dict(showgrid=False)
         )
         
-        col_graf1, col_graf2 = st.columns(2)
-        with col_graf1:
-            st.plotly_chart(fig, use_container_width=True)
-        
-        with col_graf2:
-            # Métricas de performance
-            st.markdown("#### 🎯 KPIs de Performance")
-            
-            lucro_total_periodo = sum(v['valor_venda'] for v in vendas_filtradas) - sum(v['preco_entrada'] for v in veiculos_filtrados if v['status'] == 'Vendido')
-            ticket_medio = sum(v['valor_venda'] for v in vendas_filtradas) / len(vendas_filtradas) if vendas_filtradas else 0
-            veiculos_em_estoque = [v for v in veiculos_filtrados if v['status'] == 'Em estoque']
-            giro_estoque = len(vendas_filtradas) / len(veiculos_em_estoque) if veiculos_em_estoque else 0
-            
-            col_kpi1, col_kpi2 = st.columns(2)
-            with col_kpi1:
-                st.metric("💰 Lucro no Período", f"R$ {lucro_total_periodo:,.0f}")
-                st.metric("📦 Ticket Médio", f"R$ {ticket_medio:,.0f}")
-            with col_kpi2:
-                st.metric("🔄 Giro de Estoque", f"{giro_estoque:.1f}x")
-                st.metric("🚗 Vendas/Mês", f"{len(vendas_filtradas)/max(1, (data_atual - data_corte).days/30):.1f}")
-    
-    # ANÁLISE 2: EFICIÊNCIA OPERACIONAL
-    st.markdown("---")
-    st.markdown("#### ⚡ Eficiência Operacional e Custos")
-    
-    col_eff1, col_eff2 = st.columns(2)
-    
-    with col_eff1:
-        # Análise de custos por categoria
-        gastos_categoria = {}
-        for veiculo in veiculos_filtrados:
-            gastos_veiculo = db.get_gastos(veiculo['id'])
-            for gasto in gastos_veiculo:
-                categoria = gasto['categoria'] or 'Outros'
-                if categoria not in gastos_categoria:
-                    gastos_categoria[categoria] = 0
-                gastos_categoria[categoria] += gasto['valor']
-        
-        if gastos_categoria:
-            # Treemap para visualização de custos
-            categorias = list(gastos_categoria.keys())
-            valores = list(gastos_categoria.values())
-            
-            fig = px.treemap(
-                names=categorias,
-                parents=[''] * len(categorias),
-                values=valores,
-                title="Distribuição de Custos por Categoria",
-                color=valores,
-                color_continuous_scale='Blues'
-            )
-            
-            fig.update_layout(
-                plot_bgcolor='rgba(0,0,0,0)',
-                paper_bgcolor='rgba(0,0,0,0)',
-                font=dict(color='white'),
-                height=400
-            )
-            
-            st.plotly_chart(fig, use_container_width=True)
-    
-    with col_eff2:
-        # Análise de tempo de estoque
-        tempos_estoque = []
-        modelos_tempo = {}
-        
-        for veiculo in veiculos_filtrados:
-            if veiculo['status'] == 'Vendido':
-                # ✅ CORREÇÃO: Lidar com Timestamp do PostgreSQL - PARA ANÁLISE
-                data_cadastro = veiculo['data_cadastro']
-                if isinstance(data_cadastro, str):
-                    # Se for string (SQLite), converter
-                    data_cadastro = datetime.datetime.strptime(data_cadastro[:10], '%Y-%m-%d')
-                elif hasattr(data_cadastro, 'date'):
-                    # Se for Timestamp (PostgreSQL), extrair a data
-                    data_cadastro = data_cadastro.date()
-                    data_cadastro = datetime.datetime.combine(data_cadastro, datetime.time())
-                
-                venda_veiculo = next((v for v in vendas if v['veiculo_id'] == veiculo['id']), None)
-                if venda_veiculo:
-                    # ✅ CORREÇÃO: Lidar com data_venda também
-                    data_venda = venda_veiculo['data_venda']
-                    if isinstance(data_venda, str):
-                        data_venda = datetime.datetime.strptime(data_venda[:10], '%Y-%m-%d')
-                    elif hasattr(data_venda, 'date'):
-                        data_venda = data_venda.date()
-                        data_venda = datetime.datetime.combine(data_venda, datetime.time())
-                    
-                    tempo_estoque = (data_venda - data_cadastro).days
-                    tempos_estoque.append(tempo_estoque)
-                    
-                    modelo_key = f"{veiculo['marca']} {veiculo['modelo']}"
-                    if modelo_key not in modelos_tempo:
-                        modelos_tempo[modelo_key] = []
-                    modelos_tempo[modelo_key].append(tempo_estoque)
-        
-        if tempos_estoque:
-            # Calcular tempo médio por modelo
-            tempo_medio_modelos = {modelo: sum(tempos)/len(tempos) for modelo, tempos in modelos_tempo.items()}
-            modelos_rapidos = sorted(tempo_medio_modelos.items(), key=lambda x: x[1])[:8]
-            
-            fig = px.bar(
-                x=[tempo for modelo, tempo in modelos_rapidos],
-                y=[modelo for modelo, tempo in modelos_rapidos],
-                orientation='h',
-                title="Modelos com Menor Tempo no Estoque (dias)",
-                color=[tempo for modelo, tempo in modelos_rapidos],
-                color_continuous_scale='Viridis'
-            )
-            
-            fig.update_layout(
-                plot_bgcolor='rgba(0,0,0,0)',
-                paper_bgcolor='rgba(0,0,0,0)',
-                font=dict(color='white'),
-                height=400,
-                showlegend=False
-            )
-            
-            st.plotly_chart(fig, use_container_width=True)
-    
-    # ANÁLISE 3: TENDÊNCIAS E SAZONALIDADE
-    st.markdown("---")
-    st.markdown("#### 📈 Tendências e Previsões")
-    
-    # Análise de sazonalidade - CORRIGIDA PARA POSTGRESQL
-    if vendas:
-        vendas_por_mes = {}
-        for venda in vendas:
-            if venda.get('data_venda'):
-                try:
-                    # ✅ CORREÇÃO PARA POSTGRESQL: Processar Timestamp corretamente
-                    data_venda = venda['data_venda']
-                    
-                    # Se for Timestamp do PostgreSQL
-                    if hasattr(data_venda, 'strftime'):
-                        mes_ano = data_venda.strftime("%Y-%m")
-                    elif isinstance(data_venda, str):
-                        # Se for string, tentar converter
-                        data_venda = datetime.datetime.strptime(data_venda[:10], '%Y-%m-%d')
-                        mes_ano = data_venda.strftime("%Y-%m")
-                    else:
-                        continue
-                        
-                    if mes_ano not in vendas_por_mes:
-                        vendas_por_mes[mes_ano] = 0
-                    vendas_por_mes[mes_ano] += venda['valor_venda']
-                except Exception as e:
-                    print(f"⚠️ Erro ao processar data da venda ({type(venda['data_venda'])}): {e}")
-                    continue
-    
-        # Ordenar por data se houver dados
-        if vendas_por_mes:
-            meses_ordenados = sorted(vendas_por_mes.items())
-            meses = [mes for mes, valor in meses_ordenados[-12:]]  # Últimos 12 meses
-            valores = [valor for mes, valor in meses_ordenados[-12:]]
-            
-            if len(valores) > 1:
-                col_trend1, col_trend2 = st.columns(2)
-                
-                with col_trend1:
-                    # Gráfico de tendência
-                    fig = px.line(
-                        x=meses,
-                        y=valores,
-                        title="Evolução de Vendas (Últimos 12 meses)",
-                        markers=True
-                    )
-                    
-                    fig.update_layout(
-                        plot_bgcolor='rgba(0,0,0,0)',
-                        paper_bgcolor='rgba(0,0,0,0)',
-                        font=dict(color='white'),
-                        height=400,
-                        xaxis_title="Mês",
-                        yaxis_title="Valor de Vendas (R$)",
-                        showlegend=False
-                    )
-                    
-                    fig.update_traces(line=dict(color='#e88e1b', width=3))
-                    
-                    st.plotly_chart(fig, use_container_width=True)
-            
-                with col_trend2:
-                    # Análise de preços médios
-                    precos_por_marca = {}
-                    for veiculo in veiculos_filtrados:
-                        if veiculo['status'] == 'Vendido':
-                            # ✅ CORREÇÃO: Lidar com Timestamp do PostgreSQL
-                            data_cadastro = veiculo['data_cadastro']
-                            if isinstance(data_cadastro, str):
-                                data_cadastro = datetime.datetime.strptime(data_cadastro[:10], '%Y-%m-%d')
-                            elif hasattr(data_cadastro, 'date'):
-                                data_cadastro = data_cadastro.date()
-                                data_cadastro = datetime.datetime.combine(data_cadastro, datetime.time())
-                            
-                            venda_veiculo = next((v for v in vendas if v['veiculo_id'] == veiculo['id']), None)
-                            if venda_veiculo:
-                                marca = veiculo['marca']
-                                if marca not in precos_por_marca:
-                                    precos_por_marca[marca] = []
-                                precos_por_marca[marca].append(venda_veiculo['valor_venda'])
-                
-       
+        st.plotly_chart(fig, use_container_width=True)
+        st.markdown("</div>", unsafe_allow_html=True)
+
     # =============================================
-    # ANÁLISES AVANÇADAS DE FINANCIAMENTOS
+    # BLOCO 4 – RENTABILIDADE INTELIGENTE
     # =============================================
     
     st.markdown("---")
     st.markdown("""
-    <div class="glass-card">
-        <h2>🏦 Análise de Recebíveis e Financiamentos</h2>
-        <p style="color: #a0a0a0;">Visão completa do seu fluxo de recebíveis e saúde financeira</p>
+    <div style="display: flex; align-items: center; margin-bottom: 1rem;">
+        <h3 style="margin:0; color: #e88e1b;">📈 RENTABILIDADE INTELIGENTE</h3>
+        <span style="margin-left: 1rem; color: #a0a0a0; font-size: 0.9rem;">Onde ganhamos mais</span>
     </div>
     """, unsafe_allow_html=True)
-    
-    # Buscar dados de financiamentos
-    financiamentos = db.get_financiamentos()
-    parcelas = db.get_parcelas()
-    
-    # ✅ CORREÇÃO: Função para processar datas do PostgreSQL
-    def processar_data_postgresql(data):
-        """Processa data do PostgreSQL (pode ser string ou date object)"""
-        if data is None:
-            return None
-        if isinstance(data, str):
-            return datetime.datetime.strptime(data, '%Y-%m-%d').date()
-        elif hasattr(data, 'date'):
-            return data.date() if hasattr(data, 'date') else data
-        return data
 
-    # Cálculos para métricas - CORRIGIDOS PARA POSTGRESQL
-    parcelas_pendentes = [p for p in parcelas if p['status'] == 'Pendente']
-    
-    # ✅ CORREÇÃO: Filtrar parcelas vencidas
-    parcelas_vencidas = [p for p in parcelas_pendentes if p['data_vencimento'] and processar_data_postgresql(p['data_vencimento']) < datetime.datetime.now().date()]
-    
-    # ✅ CORREÇÃO: Filtrar parcelas deste mês  
-    parcelas_este_mes = [p for p in parcelas_pendentes if p['data_vencimento'] and processar_data_postgresql(p['data_vencimento']).month == datetime.datetime.now().date().month]
-    
-    total_a_receber = sum(p['valor_parcela'] for p in parcelas_pendentes)
-    total_vencido = sum(p['valor_parcela'] for p in parcelas_vencidas)
-    total_este_mes = sum(p['valor_parcela'] for p in parcelas_este_mes)
-    
-    # Métricas de Financiamentos
-    col_fin1, col_fin2, col_fin3, col_fin4 = st.columns(4)
-    
-    with col_fin1:
-        st.metric(
-            "📈 Financiamentos Ativos", 
-            len([f for f in financiamentos if f['status'] == 'Ativo']),
-            delta=f"{len(financiamentos)} total"
-        )
-    
-    with col_fin2:
-        st.metric(
-            "⚠️ Parcelas Vencidas", 
-            len(parcelas_vencidas),
-            delta=f"R$ {total_vencido:,.0f}",
-            delta_color="inverse"
-        )
-    
-    with col_fin3:
-        st.metric(
-            "💰 Receber Este Mês", 
-            f"R$ {total_este_mes:,.0f}",
-            delta=f"{len(parcelas_este_mes)} parcelas"
-        )
-    
-    with col_fin4:
-        st.metric(
-            "🏦 Total a Receber", 
-            f"R$ {total_a_receber:,.0f}",
-            delta=f"{len(parcelas_pendentes)} parcelas"
-        )
-    
-    # Gráficos de Análise
-    col_anal1, col_anal2 = st.columns(2)
-    
-    with col_anal1:
-        st.markdown("""
-        <div class="glass-card">
-            <h4>📊 Distribuição de Parcelas por Status</h4>
-        """, unsafe_allow_html=True)
-        
-        if parcelas:
-            # Agrupar por status
-            status_data = {}
-            for parcela in parcelas:
-                status = parcela['status']
-                if status not in status_data:
-                    status_data[status] = 0
-                status_data[status] += parcela['valor_parcela']
-            
-            if status_data:
-                fig = px.pie(
-                    values=list(status_data.values()),
-                    names=list(status_data.keys()),
-                    title="",
-                    color_discrete_sequence=['#27AE60', '#E74C3C', '#F39C12', '#3498DB']
-                )
-                fig.update_layout(
-                    plot_bgcolor='rgba(0,0,0,0)',
-                    paper_bgcolor='rgba(0,0,0,0)',
-                    font=dict(color='white'),
-                    height=400,
-                    showlegend=True
-                )
-                st.plotly_chart(fig, use_container_width=True)
-            else:
-                st.info("📊 Nenhuma parcela registrada")
-        else:
-            st.info("📊 Nenhuma parcela registrada")
-        
-        st.markdown("</div>", unsafe_allow_html=True)
-    
-    with col_anal2:
-        st.markdown("""
-        <div class="glass-card">
-            <h4>📈 Previsão de Recebíveis (Próximos 3 Meses)</h4>
-        """, unsafe_allow_html=True)
-        
-        if parcelas_pendentes:
-            # Calcular previsão para os próximos 3 meses
-            meses_previsao = []
-            valores_previsao = []
-            
-            for i in range(3):
-                mes_data = datetime.datetime.now().date() + datetime.timedelta(days=30*i)
-                mes_nome = mes_data.strftime("%b/%Y")
-                
-            # Linha ~2654-2659 - Previsão de recebíveis (CORRIGIDA):
-            valor_mes = sum(
-                p['valor_parcela'] for p in parcelas_pendentes 
-                if p['data_vencimento'] and processar_data_postgresql(p['data_vencimento']).month == mes_data.month and
-                processar_data_postgresql(p['data_vencimento']).year == mes_data.year
-            )
+    col_rent1, col_rent2, col_rent3 = st.columns([1, 1, 1])
 
-                
-            meses_previsao.append(mes_nome)
-            valores_previsao.append(valor_mes)
-            
-            if any(valores_previsao):
-                fig = px.bar(
-                    x=meses_previsao,
-                    y=valores_previsao,
-                    title="",
-                    color=valores_previsao,
-                    color_continuous_scale='viridis'
-                )
-                fig.update_layout(
-                    plot_bgcolor='rgba(0,0,0,0)',
-                    paper_bgcolor='rgba(0,0,0,0)',
-                    font=dict(color='white'),
-                    height=400,
-                    xaxis_title="Mês",
-                    yaxis_title="Valor (R$)",
-                    showlegend=False
-                )
-                fig.update_traces(
-                    hovertemplate="<b>%{x}</b><br>R$ %{y:,.2f}<extra></extra>"
-                )
-                st.plotly_chart(fig, use_container_width=True)
-            else:
-                st.info("📈 Nenhuma parcela prevista para os próximos meses")
-        else:
-            st.info("📈 Nenhuma parcela pendente")
-        
-        st.markdown("</div>", unsafe_allow_html=True)
-    
-    # Análise de Risco e Performance
-    col_anal3, col_anal4 = st.columns(2)
-    
-    with col_anal3:
+    with col_rent1:
         st.markdown("""
-        <div class="glass-card">
-            <h4>⚡ Performance por Tipo de Financiamento</h4>
+        <div class="glass-card" style="padding: 1.5rem;">
+            <h4 style="margin-top: 0;">🏆 Ranking por Modelo</h4>
         """, unsafe_allow_html=True)
         
-        if financiamentos:
-            # Agrupar por tipo de financiamento
-            tipo_data = {}
-            for fin in financiamentos:
-                tipo = fin['tipo_financiamento']
-                if tipo not in tipo_data:
-                    tipo_data[tipo] = {
-                        'total': 0,
-                        'pendente': 0,
-                        'quantidade': 0
-                    }
-                tipo_data[tipo]['total'] += fin['valor_total']
-                tipo_data[tipo]['pendente'] += fin['total_pendente'] or 0
-                tipo_data[tipo]['quantidade'] += 1
-            
-            if tipo_data:
-                # Criar DataFrame para o gráfico
-                tipos = list(tipo_data.keys())
-                totais = [tipo_data[t]['total'] for t in tipos]
-                pendentes = [tipo_data[t]['pendente'] for t in tipos]
-                
-                fig = go.Figure(data=[
-                    go.Bar(name='Total Contratado', x=tipos, y=totais, marker_color='#e88e1b'),
-                    go.Bar(name='A Receber', x=tipos, y=pendentes, marker_color='#27AE60')
-                ])
-                
-                fig.update_layout(
-                    barmode='group',
-                    plot_bgcolor='rgba(0,0,0,0)',
-                    paper_bgcolor='rgba(0,0,0,0)',
-                    font=dict(color='white'),
-                    height=400,
-                    xaxis_title="Tipo de Financiamento",
-                    yaxis_title="Valor (R$)",
-                    showlegend=True
-                )
-                st.plotly_chart(fig, use_container_width=True)
-            else:
-                st.info("⚡ Nenhum financiamento ativo")
+        if rentabilidade['modelos']:
+            top_modelos = sorted(rentabilidade['modelos'].items(), key=lambda x: x[1]['margem_media'], reverse=True)[:5]
+            for i, (modelo, dados) in enumerate(top_modelos):
+                st.markdown(f"""
+                <div style="display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                    <span>{i+1}. {modelo}</span>
+                    <span style="color: #27AE60; font-weight: bold;">{dados['margem_media']:.1f}%</span>
+                </div>
+                """, unsafe_allow_html=True)
         else:
-            st.info("⚡ Nenhum financiamento cadastrado")
+            st.info("Dados insuficientes")
         
         st.markdown("</div>", unsafe_allow_html=True)
-    
-    with col_anal4:
+
+    with col_rent2:
         st.markdown("""
-        <div class="glass-card">
-            <h4>🎯 Indicadores de Saúde Financeira</h4>
+        <div class="glass-card" style="padding: 1.5rem;">
+            <h4 style="margin-top: 0;">🏅 Ranking por Marca</h4>
         """, unsafe_allow_html=True)
         
-        # Calcular indicadores
-        total_financiado = sum(f['valor_total'] for f in financiamentos if f['status'] == 'Ativo')
-        taxa_recebimento = ((total_a_receber - total_vencido) / total_a_receber * 100) if total_a_receber > 0 else 100
-        
-        # Cards de indicadores
-        st.metric("📦 Valor Total Financiado", f"R$ {total_financiado:,.2f}")
-        st.metric("✅ Taxa de Recebimento", f"{taxa_recebimento:.1f}%")
-        st.metric("⏰ Dias Médios de Atraso", 
-                 f"{sum((datetime.datetime.now().date() - processar_data_postgresql(p['data_vencimento']).date()).days for p in parcelas_vencidas) / len(parcelas_vencidas) if parcelas_vencidas else 0:.1f}")
-        st.metric("📋 Carteira Ativa", f"{len([f for f in financiamentos if f['status'] == 'Ativo'])} contratos")
+        if rentabilidade['marcas']:
+            top_marcas = sorted(rentabilidade['marcas'].items(), key=lambda x: x[1]['margem_media'], reverse=True)[:5]
+            for i, (marca, dados) in enumerate(top_marcas):
+                st.markdown(f"""
+                <div style="display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                    <span>{i+1}. {marca}</span>
+                    <span style="color: #27AE60; font-weight: bold;">{dados['margem_media']:.1f}%</span>
+                </div>
+                """, unsafe_allow_html=True)
+        else:
+            st.info("Dados insuficientes")
         
         st.markdown("</div>", unsafe_allow_html=True)
+
+    with col_rent3:
+        st.markdown("""
+        <div class="glass-card" style="padding: 1.5rem;">
+            <h4 style="margin-top: 0;">🎯 Destaques do Mês</h4>
+        """, unsafe_allow_html=True)
+        
+        if rentabilidade['modelos']:
+            melhor = max(rentabilidade['modelos'].items(), key=lambda x: x[1]['margem_media'])
+            pior = min(rentabilidade['modelos'].items(), key=lambda x: x[1]['margem_media'])
+            
+            st.markdown(f"""
+            <div style="margin-bottom: 1rem;">
+                <p style="color: #27AE60; margin-bottom: 0.2rem;">✅ Melhor margem</p>
+                <strong>{melhor[0]}</strong>
+                <p style="color: #27AE60;">{melhor[1]['margem_media']:.1f}%</p>
+            </div>
+            <div>
+                <p style="color: #E74C3C; margin-bottom: 0.2rem;">⚠️ Pior margem</p>
+                <strong>{pior[0]}</strong>
+                <p style="color: #E74C3C;">{pior[1]['margem_media']:.1f}%</p>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            # Botão de simulação
+            if st.button("💰 Simular preço ideal", use_container_width=True, key="simular_preco"):
+                st.info("💡 Funcionalidade em desenvolvimento: Simulação de preços baseada em margem histórica")
+        else:
+            st.info("Dados insuficientes")
+        
+        st.markdown("</div>", unsafe_allow_html=True)
+
+    # =============================================
+    # BLOCO 5 – RECOMENDAÇÕES AUTOMÁTICAS
+    # =============================================
+    
+    st.markdown("---")
+    st.markdown("""
+    <div style="display: flex; align-items: center; margin-bottom: 1rem;">
+        <h3 style="margin:0; color: #e88e1b;">💡 RECOMENDAÇÕES AUTOMÁTICAS</h3>
+        <span style="margin-left: 1rem; color: #a0a0a0; font-size: 0.9rem;">Insights baseados em dados</span>
+    </div>
+    """, unsafe_allow_html=True)
+
+    if recomendacoes:
+        cols = st.columns(len(recomendacoes))
+        for i, rec in enumerate(recomendacoes):
+            with cols[i]:
+                st.markdown(f"""
+                <div class="glass-card" style="padding: 1.5rem; height: 100%;">
+                    <div style="font-size: 2rem; text-align: center;">{rec['icone']}</div>
+                    <h4 style="text-align: center; margin: 0.5rem 0;">{rec['titulo']}</h4>
+                    <p style="text-align: center; color: #a0a0a0;">{rec['descricao']}</p>
+                </div>
+                """, unsafe_allow_html=True)
+    else:
+        st.info("📊 Continue usando o sistema para gerar recomendações personalizadas")
+
+    # =============================================
+    # BLOCO 7 – SAÚDE FINANCEIRA
+    # =============================================
+    
+    st.markdown("---")
+    st.markdown("""
+    <div style="display: flex; align-items: center; margin-bottom: 1rem;">
+        <h3 style="margin:0; color: #e88e1b;">🏦 SAÚDE FINANCEIRA</h3>
+        <span style="margin-left: 1rem; color: #a0a0a0; font-size: 0.9rem;">Recebíveis e inadimplência</span>
+    </div>
+    """, unsafe_allow_html=True)
+
+    col_saude1, col_saude2, col_saude3, col_saude4 = st.columns(4)
+
+    with col_saude1:
+        st.metric("💰 Total Financiado", f"R$ {saude['total_financiado']:,.0f}")
+
+    with col_saude2:
+        st.metric("📋 Carteira Ativa", f"{saude['carteira_ativa']} contratos")
+
+    with col_saude3:
+        cor_inad = "#E74C3C" if saude['taxa_inadimplencia'] > 10 else "#27AE60"
+        st.metric("⚠️ Inadimplência", f"{saude['taxa_inadimplencia']:.1f}%")
+
+    with col_saude4:
+        st.metric("⏰ Dias Médio Atraso", f"{saude['dias_medio_atraso']:.0f} dias")
+
+    # Gráfico de previsão
+    st.markdown("""
+    <div class="glass-card" style="margin-top: 1rem; padding: 1.5rem;">
+        <h4 style="margin-top: 0;">📅 Previsão de Recebíveis - Próximos 3 Meses</h4>
+    """, unsafe_allow_html=True)
+
+    if saude['previsao']:
+        meses = [p['mes'] for p in saude['previsao']]
+        valores = [p['valor'] for p in saude['previsao']]
+        
+        fig = px.bar(
+            x=meses,
+            y=valores,
+            title="",
+            color=valores,
+            color_continuous_scale='viridis',
+            labels={'x': 'Mês', 'y': 'Valor (R$)'}
+        )
+        
+        fig.update_layout(
+            plot_bgcolor='rgba(0,0,0,0)',
+            paper_bgcolor='rgba(0,0,0,0)',
+            font=dict(color='white'),
+            height=300,
+            showlegend=False
+        )
+        
+        fig.update_traces(
+            hovertemplate="<b>%{x}</b><br>R$ %{y:,.2f}<extra></extra>"
+        )
+        
+        st.plotly_chart(fig, use_container_width=True)
+    else:
+        st.info("📈 Nenhum recebível previsto para os próximos meses")
+
+    st.markdown("</div>", unsafe_allow_html=True)
+
+    # =============================================
+    # RESUMO EXECUTIVO
+    # =============================================
+    
+    st.markdown("---")
+    st.markdown("""
+    <div class="glass-card" style="background: linear-gradient(135deg, rgba(232,142,27,0.1), rgba(255,255,255,0.05));">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <h4 style="margin:0;">📋 Resumo Executivo</h4>
+                <p style="color: #a0a0a0; margin:0;">Respondendo às 4 perguntas em 10 segundos:</p>
+            </div>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-top: 1rem;">
+            <div>
+                <p style="color: #27AE60; margin-bottom: 0.2rem;">💰 Estou ganhando dinheiro?</p>
+                <p style="color: white;">{dre['lucro_liquido']:,.0f} de lucro • {margem_geral:.1f}% de margem</p>
+                
+                <p style="color: #E74C3C; margin: 1rem 0 0.2rem 0;">🔍 Onde estou perdendo?</p>
+                <p style="color: white;">{len(giro['faixas']['61+ dias'])} veículos parados • R$ {sum(v['preco_entrada'] for v in giro['faixas']['61+ dias']):,.0f} parado</p>
+            </div>
+            <div>
+                <p style="color: #F39C12; margin-bottom: 0.2rem;">⏰ O que está parado?</p>
+                <p style="color: white;">{giro['tempo_medio']:.0f} dias em média • {len(giro['faixas']['61+ dias'])} veículos com 61+ dias</p>
+                
+                <p style="color: #3498DB; margin: 1rem 0 0.2rem 0;">⚡ O que fazer agora?</p>
+                <p style="color: white;">{recomendacoes[0]['descricao'] if recomendacoes else "Sistema coletando dados para recomendações"}</p>
+            </div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # Pequeno espaço no final
+    st.markdown("<br>", unsafe_allow_html=True)
 with tab2:
     # GESTÃO DE VEÍCULOS
     st.markdown("""
