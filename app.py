@@ -3580,73 +3580,66 @@ with tab1:
     st.markdown("</div>", unsafe_allow_html=True)
 
     # =============================================
-    # RESUMO EXECUTIVO
+    # RESUMO EXECUTIVO (VERSÃO CORRIGIDA)
     # =============================================
     
     st.markdown("---")
     
-    # Calcular totais do estoque para o resumo
+    # Cálculos de estoque
     total_investido_estoque = sum(v['preco_entrada'] for v in veiculos if v['status'] == 'Em estoque')
     total_potencial_estoque = sum(v['preco_venda'] for v in veiculos if v['status'] == 'Em estoque')
     
-    # Formatar números para o padrão brasileiro
+    # Formatação brasileira
     lucro_formatado = f"R$ {dre['lucro_liquido']:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
     investido_formatado = f"R$ {total_investido_estoque:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
     potencial_formatado = f"R$ {total_potencial_estoque:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
     parado_formatado = f"R$ {sum(v['preco_entrada'] for v in giro['faixas']['61+ dias']):,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
     
-    # Obter a recomendação principal
-    recomendacao_principal = recomendacoes[0]['descricao'] if recomendacoes else "Sistema coletando dados para recomendações"
-    
-    # HTML sem indentação (sem os 4 espaços no início)
-    html_resumo = f"""
-<div class="glass-card" style="background: linear-gradient(135deg, rgba(232,142,27,0.1), rgba(255,255,255,0.05)); padding: 1.5rem;">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-        <div>
-            <h4 style="margin:0; color: #e88e1b;">📋 Resumo Executivo</h4>
-            <p style="color: #a0a0a0; margin:0; font-size: 0.9rem;">Respondendo às 4 perguntas em 10 segundos</p>
-        </div>
-    </div>
-    
-    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
-        <!-- Coluna 1 -->
-        <div>
-            <div style="margin-bottom: 1.5rem;">
-                <p style="color: #27AE60; margin: 0 0 0.3rem 0; font-weight: bold;">💰 Estou ganhando dinheiro?</p>
-                <p style="color: white; font-size: 1.1rem; margin: 0;">{lucro_formatado} de lucro • {margem_geral:.1f}% de margem</p>
+    recomendacao_principal = recomendacoes[0]['descricao'] if recomendacoes else "Analisando dados..."
+
+    # Usamos o textwrap.dedent para limpar espaços indesejados que quebram o HTML no Streamlit
+    import textwrap
+
+    html_resumo = textwrap.dedent(f"""
+        <div style="background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 16px; padding: 1.5rem; margin: 1rem 0;">
+            <div style="margin-bottom: 1rem;">
+                <h4 style="margin:0; color: #e88e1b;">📋 Resumo Executivo</h4>
+                <p style="color: #a0a0a0; margin:0; font-size: 0.9rem;">Respondendo às 4 perguntas em 10 segundos</p>
             </div>
             
-            <div>
-                <p style="color: #E74C3C; margin: 0 0 0.3rem 0; font-weight: bold;">🔍 Onde estou perdendo?</p>
-                <p style="color: white; margin: 0;">{len(giro['faixas']['61+ dias'])} veículos parados • {parado_formatado} parado</p>
-            </div>
-        </div>
-        
-        <!-- Coluna 2 -->
-        <div>
-            <div style="margin-bottom: 1.5rem;">
-                <p style="color: #F39C12; margin: 0 0 0.3rem 0; font-weight: bold;">⏰ O que está parado?</p>
-                <p style="color: white; margin: 0;">{giro['tempo_medio']:.0f} dias em média • {len(giro['faixas']['61+ dias'])} veículos com 61+ dias</p>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <div>
+                    <div style="margin-bottom: 15px;">
+                        <p style="color: #27AE60; margin: 0; font-weight: bold; font-size: 0.9rem;">💰 Estou ganhando dinheiro?</p>
+                        <p style="color: white; font-size: 1.1rem; margin: 0;">{lucro_formatado} de lucro • {margem_geral:.1f}% de margem</p>
+                    </div>
+                    <div>
+                        <p style="color: #E74C3C; margin: 0; font-weight: bold; font-size: 0.9rem;">🔍 Onde estou perdendo?</p>
+                        <p style="color: white; margin: 0;">{len(giro['faixas']['61+ dias'])} veículos parados • {parado_formatado} imobilizado</p>
+                    </div>
+                </div>
+                <div>
+                    <div style="margin-bottom: 15px;">
+                        <p style="color: #F39C12; margin: 0; font-weight: bold; font-size: 0.9rem;">⏰ O que está parado?</p>
+                        <p style="color: white; margin: 0;">{giro['tempo_medio']:.0f} dias em média • {len(giro['faixas']['61+ dias'])} críticos</p>
+                    </div>
+                    <div>
+                        <p style="color: #3498DB; margin: 0; font-weight: bold; font-size: 0.9rem;">⚡ O que fazer agora?</p>
+                        <p style="color: white; margin: 0;">{recomendacao_principal}</p>
+                    </div>
+                </div>
             </div>
             
-            <div>
-                <p style="color: #3498DB; margin: 0 0 0.3rem 0; font-weight: bold;">⚡ O que fazer agora?</p>
-                <p style="color: white; margin: 0;">{recomendacao_principal}</p>
+            <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.1);">
+                <p style="color: #a0a0a0; margin:0; font-size: 0.85rem;">
+                    📊 Estoque: <strong style="color: #e88e1b;">{investido_formatado}</strong> investido | 
+                    Potencial: <strong style="color: #27AE60;">{potencial_formatado}</strong>
+                </p>
             </div>
         </div>
-    </div>
-    
-    <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.1);">
-        <p style="color: #a0a0a0; margin:0;">
-            📊 Estoque atual: <strong style="color: #e88e1b;">{investido_formatado}</strong> investido | 
-            Potencial de venda: <strong style="color: #27AE60;">{potencial_formatado}</strong>
-        </p>
-    </div>
-</div>
-    """
+    """)
     
     st.markdown(html_resumo, unsafe_allow_html=True)
-    st.markdown("<br>", unsafe_allow_html=True)
 
 
 with tab2:
