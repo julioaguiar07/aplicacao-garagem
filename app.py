@@ -3589,6 +3589,11 @@ with tab1:
     total_investido_estoque = sum(v['preco_entrada'] for v in veiculos if v['status'] == 'Em estoque')
     total_potencial_estoque = sum(v['preco_venda'] for v in veiculos if v['status'] == 'Em estoque')
     
+    # Formatar números
+    lucro_formatado = f"R$ {dre['lucro_liquido']:,.0f}".replace(',', 'X').replace('.', ',').replace('X', '.')
+    investido_formatado = f"R$ {total_investido_estoque:,.0f}".replace(',', 'X').replace('.', ',').replace('X', '.')
+    potencial_formatado = f"R$ {total_potencial_estoque:,.0f}".replace(',', 'X').replace('.', ',').replace('X', '.')
+    
     st.markdown(f"""
     <div class="glass-card" style="background: linear-gradient(135deg, rgba(232,142,27,0.1), rgba(255,255,255,0.05));">
         <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -3600,7 +3605,7 @@ with tab1:
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-top: 1rem;">
             <div>
                 <p style="color: #27AE60; margin-bottom: 0.2rem;">💰 Estou ganhando dinheiro?</p>
-                <p style="color: white;">R$ {dre['lucro_liquido']:,.0f} de lucro • {margem_geral:.1f}% de margem</p>
+                <p style="color: white;">{lucro_formatado} de lucro • {margem_geral:.1f}% de margem</p>
                 
                 <p style="color: #E74C3C; margin: 1rem 0 0.2rem 0;">🔍 Onde estou perdendo?</p>
                 <p style="color: white;">{len(giro['faixas']['61+ dias'])} veículos parados • R$ {sum(v['preco_entrada'] for v in giro['faixas']['61+ dias']):,.0f} parado</p>
@@ -3614,7 +3619,7 @@ with tab1:
             </div>
         </div>
         <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.1);">
-            <p style="color: #a0a0a0; margin:0;">📊 Estoque atual: <strong>R$ {total_investido_estoque:,.0f}</strong> investido | Potencial de venda: <strong>R$ {total_potencial_estoque:,.0f}</strong></p>
+            <p style="color: #a0a0a0; margin:0;">📊 Estoque atual: <strong>{investido_formatado}</strong> investido | Potencial de venda: <strong>{potencial_formatado}</strong></p>
         </div>
     </div>
     """, unsafe_allow_html=True)
