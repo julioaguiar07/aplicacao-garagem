@@ -159,7 +159,7 @@ def get_veiculos_estoque():
                 veiculo['badgeText'] = ''
             
             # Potência simulada (para manter compatibilidade)
-            veiculo['power'] = '180 cv'  # Padrão, você pode ajustar se tiver esse dado no banco
+            veiculo['power'] = 'Consultar Loja'  # Padrão, você pode ajustar se tiver esse dado no banco
             
             # Criar array de imagens (apenas a foto disponível)
             if veiculo['foto_base64']:
