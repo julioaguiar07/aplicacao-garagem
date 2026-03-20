@@ -4960,8 +4960,6 @@ def get_base64_of_bin_file(bin_file):
     except:
         return None
 
-# Carregar a logo (assumindo que o arquivo se chama "autocore.png" ou "logoca.png")
-# Tente primeiro com autocore.png, se não existir, use logoca.png
 logo_base64 = get_base64_of_bin_file("autocore.png")
 if not logo_base64:
     logo_base64 = get_base64_of_bin_file("logoca.png")
@@ -4977,7 +4975,6 @@ footer_html = f"""
     border-radius: 16px 16px 0 0;
     margin-top: 2rem;
 ">
-    <!-- Linha decorativa superior -->
     <div style="
         width: 100px; 
         height: 3px; 
@@ -4986,10 +4983,8 @@ footer_html = f"""
         border-radius: 3px;
     "></div>
     
-    <!-- Container principal com logo e informações -->
     <div style="display: flex; flex-direction: column; align-items: center; gap: 1.5rem;">
         
-        <!-- Logo centralizada -->
         <div style="
             background: rgba(255,255,255,0.05);
             padding: 1rem 2rem;
@@ -5000,7 +4995,6 @@ footer_html = f"""
             {f'<img src="data:image/png;base64,{logo_base64}" alt="Logo" style="height: 45px; width: auto; display: block;">' if logo_base64 else '<span style="color: #e88e1b; font-weight: bold; font-size: 1.2rem;">🚗 CARMELO</span>'}
         </div>
         
-        <!-- Texto Powered by -->
         <div style="text-align: center;">
             <h5 style="
                 margin: 0 0 0.5rem 0; 
@@ -5036,7 +5030,6 @@ footer_html = f"""
         </div>
     </div>
     
-    <!-- Links rápidos (opcional) -->
     <div style="
         display: flex; 
         justify-content: center; 
@@ -5055,6 +5048,9 @@ footer_html = f"""
 """
 
 st.markdown(footer_html, unsafe_allow_html=True)
+
+# Pequeno espaço no final
+st.markdown("<br>", unsafe_allow_html=True)
 
 # Pequeno espaço no final
 st.markdown("<br>", unsafe_allow_html=True)
