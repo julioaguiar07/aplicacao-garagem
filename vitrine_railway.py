@@ -359,7 +359,7 @@ def home():
         whatsapp_number = os.environ.get('WHATSAPP_NUMBER', '558430622434')
 
         # Renderizar template
-        return render_template_string(HTML_TEMPLATE,
+        return render_template_string(html_template,
                                      veiculos_json=veiculos_json,
                                      total_veiculos=total_veiculos,
                                      logo_base64=logo_base64,
