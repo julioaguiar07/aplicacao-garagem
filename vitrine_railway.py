@@ -2206,7 +2206,7 @@ function renderVehicles(list) {{
           </div>
           <div class="card-spec">
             <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
-            <span>${{v.transmission}}</span>
+            <span>${{v.cambio}}</span>
           </div>
           <div class="card-spec">
             <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M17 14V2"/><path d="M9 18.12 10 14H4.17a2 2 0 0 1-1.92-2.56l2.33-8A2 2 0 0 1 6.5 2H20a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-2.76a2 2 0 0 0-1.79 1.11L12 22h0a3.13 3.13 0 0 1-3-3.88Z"/></svg>
@@ -2254,7 +2254,7 @@ function applyFilters() {{
     if (v.preco_venda < priceMin || v.preco_venda > priceMax) return false;
     if (v.ano < yearMin || v.ano > yearMax) return false;
     if (v.km > kmMax) return false;
-    if (activeFilters.transmission.length && !activeFilters.transmission.includes(v.transmission)) return false;
+    if (activeFilters.transmission.length && !activeFilters.transmission.includes(v.cambio)) return false;
     if (activeFilters.fuel.length && !activeFilters.fuel.includes(v.fuel)) return false;
     return true;
   }});
@@ -2326,7 +2326,7 @@ function openDetail(id) {{
       <div class="detail-specs-grid">
         <div class="detail-spec"><div class="detail-spec-label">Ano</div><div class="detail-spec-value">${{v.ano}}</div></div>
         <div class="detail-spec"><div class="detail-spec-label">Quilometragem</div><div class="detail-spec-value">${{formatKm(v.km)}}</div></div>
-        <div class="detail-spec"><div class="detail-spec-label">Câmbio</div><div class="detail-spec-value">${{v.transmission}}</div></div>
+        <div class="detail-spec"><div class="detail-spec-label">Câmbio</div><div class="detail-spec-value">${{v.cambio}}</div></div>
         <div class="detail-spec"><div class="detail-spec-label">Combustível</div><div class="detail-spec-value">${{v.fuel}}</div></div>
         <div class="detail-spec"><div class="detail-spec-label">Cor</div><div class="detail-spec-value">${{v.cor}}</div></div>
         <div class="detail-spec"><div class="detail-spec-label">Potência</div><div class="detail-spec-value">${{v.power}}</div></div>
@@ -2500,7 +2500,7 @@ function renderCompareTable() {{
     {{ key: 'Preço', fn: v => `<span class="${{v.preco_venda === minPrice ? 'highlight-best' : ''}}">${{formatPrice(v.preco_venda)}}</span>` }},
     {{ key: 'Ano', fn: v => `<span class="${{v.ano === maxYear ? 'highlight-best' : ''}}">${{v.ano}}</span>` }},
     {{ key: 'Quilometragem', fn: v => `<span class="${{v.km === minKm ? 'highlight-best' : ''}}">${{formatKm(v.km)}}</span>` }},
-    {{ key: 'Câmbio', fn: v => v.transmission }},
+    {{ key: 'Câmbio', fn: v => v.cambio }},
     {{ key: 'Combustível', fn: v => v.fuel }},
     {{ key: 'Cor', fn: v => v.cor }},
     {{ key: 'Portas', fn: v => v.portas }},
