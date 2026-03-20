@@ -27,10 +27,10 @@ def get_db_connection():
         return conn
 
 # =============================================
-# FUNÇÃO AUXILIAR PARA PROCESSAR FOTOS (CORRIGIDA)
+# FUNÇÃO AUXILIAR PARA PROCESSAR FOTOS
 # =============================================
 def processar_foto(foto_data):
-    """Processa a foto independentemente do formato - VERSÃO CORRIGIDA"""
+    """Processa a foto independentemente do formato"""
     if not foto_data:
         return None
 
@@ -43,23 +43,19 @@ def processar_foto(foto_data):
         if isinstance(foto_data, memoryview):
             return base64.b64encode(foto_data.tobytes()).decode('utf-8')
 
-        # Se for string com \x (hex string do PostgreSQL)
+        # Se for string com \x (hex string)
         if isinstance(foto_data, str):
             # String com \xffd8... (hex string)
             if foto_data.startswith('\\x'):
                 try:
-                    hex_str = foto_data[2:]  # Remove o \x
-                    # Verificar se a string tem comprimento par
-                    if len(hex_str) % 2 != 0:
-                        hex_str = '0' + hex_str
+                    hex_str = foto_data.replace('\\x', '')
                     bytes_data = bytes.fromhex(hex_str)
                     return base64.b64encode(bytes_data).decode('utf-8')
-                except Exception as e:
-                    print(f"❌ Erro ao converter hex: {e}")
+                except:
                     return None
 
             # Se já for base64
-            if len(foto_data) > 100 and any(c in foto_data for c in ['/', '+']):
+            if len(foto_data) > 100 and ('/' in foto_data or '+' in foto_data):
                 return foto_data
 
         return None
@@ -69,14 +65,13 @@ def processar_foto(foto_data):
         return None
 
 # =============================================
-# FUNÇÕES DE BANCO DE DADOS (CORRIGIDAS)
+# FUNÇÕES DE BANCO DE DADOS
 # =============================================
 def get_veiculos_estoque():
-    """Busca veículos em estoque do banco - VERSÃO CORRIGIDA"""
+    """Busca veículos em estoque do banco"""
     conn = None
     try:
         conn = get_db_connection()
-        veiculos = []
 
         if isinstance(conn, psycopg2.extensions.connection):
             # PostgreSQL
@@ -88,7 +83,7 @@ def get_veiculos_estoque():
                     v.portas, v.placa, v.chassi, v.observacoes, v.foto,
                     v.data_cadastro, v.status
                 FROM veiculos v
-                WHERE v.status = 'Em estoque' OR v.status IS NULL
+                WHERE v.status = 'Em estoque'
                 ORDER BY v.data_cadastro DESC
             ''')
             rows = cursor.fetchall()
@@ -103,7 +98,7 @@ def get_veiculos_estoque():
                     v.portas, v.placa, v.chassi, v.observacoes, v.foto,
                     v.data_cadastro, v.status
                 FROM veiculos v
-                WHERE v.status = 'Em estoque' OR v.status IS NULL
+                WHERE v.status = 'Em estoque'
                 ORDER BY v.data_cadastro DESC
             ''')
             columns = [desc[0] for desc in cursor.description]
@@ -112,148 +107,82 @@ def get_veiculos_estoque():
 
         # Processar dados
         marcas_set = set()
-        veiculos_processados = []
-
         for veiculo in veiculos:
-            veiculo_processado = {}
-
-            # ID
-            veiculo_processado['id'] = veiculo.get('id', 0)
-
-            # Nome completo
-            marca = veiculo.get('marca', 'N/I')
-            modelo = veiculo.get('modelo', 'N/I')
-            veiculo_processado['marca'] = marca
-            veiculo_processado['modelo'] = modelo
-            veiculo_processado['nome_completo'] = f"{marca} {modelo}".strip()
-
-            # Ano
-            try:
-                veiculo_processado['ano'] = int(veiculo.get('ano', 2023))
-            except:
-                veiculo_processado['ano'] = 2023
-
-            # Cor
-            veiculo_processado['cor'] = veiculo.get('cor', 'N/I')
-
-            # Preço
-            try:
-                veiculo_processado['preco_venda'] = float(veiculo.get('preco_venda', 0))
-            except:
-                veiculo_processado['preco_venda'] = 0.0
-
-            # Quilometragem
-            try:
-                veiculo_processado['km'] = int(veiculo.get('km', 0))
-            except:
-                veiculo_processado['km'] = 0
-
-            # Combustível
-            veiculo_processado['combustivel'] = veiculo.get('combustivel', 'Flex')
-            # Para compatibilidade com o template
-            veiculo_processado['fuel'] = veiculo_processado['combustivel']
-
-            # Câmbio
-            cambio = veiculo.get('cambio', 'Manual')
-            veiculo_processado['cambio'] = cambio
-            # Para compatibilidade com o template
-            veiculo_processado['transmission'] = cambio
-
-            # Portas
-            try:
-                veiculo_processado['portas'] = int(veiculo.get('portas', 4))
-            except:
-                veiculo_processado['portas'] = 4
-
-            # Placa
-            veiculo_processado['placa'] = veiculo.get('placa', '')
-
-            # Chassi
-            veiculo_processado['chassi'] = veiculo.get('chassi', '')
-
-            # Versão
-            veiculo_processado['version'] = f"{veiculo_processado['ano']} • {veiculo_processado['combustivel']}"
+            # Converter preço para float
+            veiculo['preco_venda'] = float(veiculo['preco_venda']) if veiculo.get('preco_venda') else 0.0
 
             # Processar foto
-            foto_bytes = veiculo.get('foto')
-            foto_base64 = processar_foto(foto_bytes)
+            veiculo['foto_base64'] = processar_foto(veiculo.get('foto'))
 
-            if foto_base64:
-                veiculo_processado['foto_base64'] = foto_base64
-                veiculo_processado['images'] = [
-                    f"data:image/jpeg;base64,{foto_base64}",
-                    f"data:image/jpeg;base64,{foto_base64}"  # Duplicado para ter mais de uma imagem
-                ]
-            else:
-                veiculo_processado['foto_base64'] = None
-                # Imagens placeholder
-                veiculo_processado['images'] = [
-                    "https://images.unsplash.com/photo-1580273916550-e323be2ae537?w=800&q=80",
-                    "https://images.unsplash.com/photo-1555215695-3004980ad54e?w=800&q=80"
-                ]
+            # Garantir tipos corretos
+            veiculo['km'] = int(veiculo.get('km', 0)) if veiculo.get('km') else 0
+            veiculo['portas'] = int(veiculo.get('portas', 4)) if veiculo.get('portas') else 4
+            veiculo['ano'] = int(veiculo.get('ano', 2023)) if veiculo.get('ano') else 2023
 
-            # Opcionais (baseado em observações)
-            observacoes = veiculo.get('observacoes', '')
-            opcionais = []
-
-            if observacoes:
-                if ',' in observacoes:
-                    opcionais = [item.strip() for item in observacoes.split(',')[:6]]
+            # Criar nome completo para exibição
+            veiculo['nome_completo'] = f"{veiculo['marca']} {veiculo['modelo']}"
+            
+            # Versão (para manter compatibilidade com o template)
+            veiculo['version'] = f"{veiculo['ano']} • {veiculo['combustivel']}"
+            
+            # Opcionais (simulados baseados em observações)
+            veiculo['optionals'] = []
+            if veiculo.get('observacoes'):
+                # Quebrar observações em itens se houver vírgulas
+                if ',' in veiculo['observacoes']:
+                    veiculo['optionals'] = [item.strip() for item in veiculo['observacoes'].split(',')[:8]]
                 else:
-                    opcionais = [observacoes[:50]] if observacoes else []
-
-            # Adicionar opcionais padrão
-            opcionais_base = [
-                f"Câmbio {cambio}",
-                f"{veiculo_processado['combustivel']}",
-                f"{veiculo_processado['portas']} portas"
-            ]
-            for item in opcionais_base:
-                if item not in opcionais:
-                    opcionais.append(item)
-
-            veiculo_processado['optionals'] = opcionais[:8]
-
-            # Histórico
-            if veiculo_processado['km'] < 50000:
-                veiculo_processado['history'] = f"Veículo {marca} {modelo} {veiculo_processado['ano']} em excelente estado. Documentação em dia, revisões em concessionária autorizada."
+                    veiculo['optionals'] = [veiculo['observacoes']] if veiculo['observacoes'] else []
+            
+            # Adicionar itens padrão para enriquecer
+            veiculo['optionals'].extend([
+                f"Cambio {veiculo['cambio']}",
+                f"{veiculo['combustivel']}",
+                f"{veiculo['portas']} portas"
+            ])
+            
+            # Remover duplicatas
+            veiculo['optionals'] = list(dict.fromkeys(veiculo['optionals']))[:10]
+            
+            # Histórico simulado
+            veiculo['history'] = f"Veículo {veiculo['marca']} {veiculo['modelo']} {veiculo['ano']} em excelente estado. Documentação em dia, único dono, revisões em concessionária autorizada." if veiculo['km'] < 50000 else f"Veículo {veiculo['marca']} {veiculo['modelo']} {veiculo['ano']} com {veiculo['km']} km rodados. Bem conservado, pronto para uso."
+            
+            # Badge baseado em condições
+            if veiculo['km'] < 10000:
+                veiculo['badge'] = 'new'
+                veiculo['badgeText'] = 'Zero Km'
+            elif veiculo['km'] < 30000:
+                veiculo['badge'] = 'deal'
+                veiculo['badgeText'] = 'Seminovo'
             else:
-                veiculo_processado['history'] = f"Veículo {marca} {modelo} {veiculo_processado['ano']} com {veiculo_processado['km']} km rodados. Bem conservado, pronto para uso."
-
-            # Badge
-            if veiculo_processado['km'] < 10000:
-                veiculo_processado['badge'] = 'new'
-                veiculo_processado['badgeText'] = 'Zero Km'
-            elif veiculo_processado['km'] < 30000:
-                veiculo_processado['badge'] = 'deal'
-                veiculo_processado['badgeText'] = 'Seminovo'
+                veiculo['badge'] = None
+                veiculo['badgeText'] = ''
+            
+            # Potência simulada (para manter compatibilidade)
+            veiculo['power'] = '180 cv'  # Padrão, você pode ajustar se tiver esse dado no banco
+            
+            # Criar array de imagens (apenas a foto disponível)
+            if veiculo['foto_base64']:
+                veiculo['images'] = [f"data:image/jpeg;base64,{veiculo['foto_base64']}"] * 2  # Duplicar para ter mais de uma
             else:
-                veiculo_processado['badge'] = None
-                veiculo_processado['badgeText'] = ''
+                # Imagens placeholder
+                veiculo['images'] = [
+                    "https://images.unsplash.com/photo-1503736334956-4c8f8e92946d?w=800&q=80",
+                    "https://images.unsplash.com/photo-1549317661-bd32c8ce0729?w=800&q=80"
+                ]
+            
+            # Adicionar marca ao set
+            marcas_set.add(veiculo['marca'])
 
-            # Potência simulada
-            veiculo_processado['power'] = '180 cv'
-
-            # Preço antigo (simulado)
-            veiculo_processado['oldPrice'] = None
-
-            veiculos_processados.append(veiculo_processado)
-            marcas_set.add(marca)
-
-        return veiculos_processados, sorted(list(marcas_set)) if marcas_set else []
+        return veiculos, sorted(list(marcas_set))
 
     except Exception as e:
         print(f"❌ Erro ao buscar veículos: {e}")
-        import traceback
-        traceback.print_exc()
         return [], []
     finally:
         if conn:
             conn.close()
 
-# =============================================
-# FUNÇÕES PARA LOGOS (CORRIGIDAS)
-# =============================================
 def get_logo_base64():
     """Tenta carregar logo local ou usa placeholder"""
     try:
@@ -332,14 +261,30 @@ def stats():
     })
 
 # =============================================
-# ROTA PRINCIPAL - CORRIGIDA
+# ROTA PRINCIPAL - COM HTML PREMIUM ADAPTADO
 # =============================================
 @app.route('/')
 def home():
     """Página principal da vitrine premium"""
-    
-    # HTML PREMIUM COMPLETO ADAPTADO - DEFINIDO ANTES DE USAR
-    html_template = '''<!DOCTYPE html>
+    veiculos, marcas = get_veiculos_estoque()
+    logo_base64 = get_logo_base64()
+    autocore_logo_base64 = get_autocore_logo_base64()
+    # Estatísticas
+    total_veiculos = len(veiculos)
+    valor_total = sum(v['preco_venda'] for v in veiculos)
+    media_preco = valor_total / total_veiculos if total_veiculos > 0 else 0
+
+    # Converter veículos para JSON seguro
+    veiculos_json = json.dumps(veiculos, default=str, ensure_ascii=False)
+
+    # Lista de opções para filtros
+    tipos = ["SUV", "Sedan", "Hatch", "Picape", "Coupé", "Elétrico"]
+    transmissoes = ["Automático", "Manual", "CVT"]
+    combustiveis = list(set(v['combustivel'] for v in veiculos if v.get('combustivel'))) or ["Flex", "Gasolina", "Diesel"]
+    cores = list(set(v['cor'] for v in veiculos if v.get('cor'))) or ["Preto", "Branco", "Prata", "Cinza", "Vermelho", "Azul"]
+
+    # HTML PREMIUM COMPLETO ADAPTADO
+    html_template = f'''<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
@@ -2647,44 +2592,7 @@ document.addEventListener('keydown', e => {{
 </html>
 '''
 
-    try:
-        veiculos, marcas = get_veiculos_estoque()
-        logo_base64 = get_logo_base64()
-        autocore_logo_base64 = get_autocore_logo_base64()
-
-        # Estatísticas
-        total_veiculos = len(veiculos)
-        valor_total = sum(v['preco_venda'] for v in veiculos)
-        media_preco = valor_total / total_veiculos if total_veiculos > 0 else 0
-
-        # Converter veículos para JSON seguro
-        veiculos_json = json.dumps(veiculos, default=str, ensure_ascii=False)
-
-        # Lista de opções para filtros
-        combustiveis_lista = list(set(v.get('combustivel', 'Flex') for v in veiculos if v.get('combustivel'))) or ["Flex", "Gasolina", "Diesel"]
-        transmissoes_lista = list(set(v.get('cambio', 'Manual') for v in veiculos if v.get('cambio'))) or ["Automático", "Manual", "CVT"]
-        cores_lista = list(set(v.get('cor', 'Prata') for v in veiculos if v.get('cor'))) or ["Preto", "Branco", "Prata", "Cinza", "Vermelho", "Azul"]
-
-        # Telefone WhatsApp (usar variável de ambiente ou valor padrão)
-        whatsapp_number = os.environ.get('WHATSAPP_NUMBER', '558430622434')
-
-        # Renderizar template
-        return render_template_string(html_template,
-                                     veiculos_json=veiculos_json,
-                                     total_veiculos=total_veiculos,
-                                     logo_base64=logo_base64,
-                                     autocore_logo_base64=autocore_logo_base64,
-                                     marcas=marcas,
-                                     combustiveis=combustiveis_lista,
-                                     transmissoes=transmissoes_lista,
-                                     cores=cores_lista,
-                                     whatsapp_number=whatsapp_number,
-                                     ano_atual=datetime.now().year)
-    except Exception as e:
-        print(f"❌ Erro na rota principal: {e}")
-        import traceback
-        traceback.print_exc()
-        return f"Erro ao carregar a página: {str(e)}", 500
+    return render_template_string(html_template)
 
 # =============================================
 # INICIALIZAÇÃO
@@ -2704,7 +2612,7 @@ if __name__ == "__main__":
     # Só roda servidor de desenvolvimento se não estiver no Railway
     if not os.environ.get('RAILWAY_ENVIRONMENT'):
         print("⚡ Iniciando servidor de desenvolvimento...")
-        app.run(host='0.0.0.0', port=port, debug=True)
+        app.run(host='0.0.0.0', port=port, debug=False)
     else:
         print("✅ Pronto para produção com Gunicorn")
         print(f"🔗 A aplicação será servida pelo Gunicorn na porta {port}")
