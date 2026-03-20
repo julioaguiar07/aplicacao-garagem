@@ -145,7 +145,7 @@ def get_veiculos_estoque():
             veiculo['optionals'] = list(dict.fromkeys(veiculo['optionals']))[:10]
             
             # Histórico simulado
-            veiculo['history'] = f"Veículo {veiculo['marca']} {veiculo['modelo']} {veiculo['ano']} em excelente estado. Documentação em dia, único dono, revisões em concessionária autorizada." if veiculo['km'] < 50000 else f"Veículo {veiculo['marca']} {veiculo['modelo']} {veiculo['ano']} com {veiculo['km']} km rodados. Bem conservado, pronto para uso."
+            veiculo['history'] = f"Veículo {veiculo['marca']} {veiculo['modelo']} {veiculo['ano']} em excelente estado." if veiculo['km'] < 50000 else f"Veículo {veiculo['marca']} {veiculo['modelo']} {veiculo['ano']} com {veiculo['km']} km rodados. Bem conservado, pronto para uso."
             
             # Badge baseado em condições
             if veiculo['km'] < 10000:
