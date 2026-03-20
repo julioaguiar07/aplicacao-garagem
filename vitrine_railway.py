@@ -332,52 +332,14 @@ def stats():
     })
 
 # =============================================
-# ROTA PRINCIPAL
+# ROTA PRINCIPAL - CORRIGIDA
 # =============================================
 @app.route('/')
 def home():
     """Página principal da vitrine premium"""
-    try:
-        veiculos, marcas = get_veiculos_estoque()
-        logo_base64 = get_logo_base64()
-        autocore_logo_base64 = get_autocore_logo_base64()
-
-        # Estatísticas
-        total_veiculos = len(veiculos)
-        valor_total = sum(v['preco_venda'] for v in veiculos)
-        media_preco = valor_total / total_veiculos if total_veiculos > 0 else 0
-
-        # Converter veículos para JSON seguro
-        veiculos_json = json.dumps(veiculos, default=str, ensure_ascii=False)
-
-        # Lista de opções para filtros
-        combustiveis_lista = list(set(v.get('combustivel', 'Flex') for v in veiculos if v.get('combustivel'))) or ["Flex", "Gasolina", "Diesel"]
-        transmissoes_lista = list(set(v.get('cambio', 'Manual') for v in veiculos if v.get('cambio'))) or ["Automático", "Manual", "CVT"]
-        cores_lista = list(set(v.get('cor', 'Prata') for v in veiculos if v.get('cor'))) or ["Preto", "Branco", "Prata", "Cinza", "Vermelho", "Azul"]
-
-        # Telefone WhatsApp (usar variável de ambiente ou valor padrão)
-        whatsapp_number = os.environ.get('WHATSAPP_NUMBER', '558430622434')
-
-        # Renderizar template
-        return render_template_string(html_template,
-                                     veiculos_json=veiculos_json,
-                                     total_veiculos=total_veiculos,
-                                     logo_base64=logo_base64,
-                                     autocore_logo_base64=autocore_logo_base64,
-                                     marcas=marcas,
-                                     combustiveis=combustiveis_lista,
-                                     transmissoes=transmissoes_lista,
-                                     cores=cores_lista,
-                                     whatsapp_number=whatsapp_number,
-                                     ano_atual=datetime.now().year)
-    except Exception as e:
-        print(f"❌ Erro na rota principal: {e}")
-        import traceback
-        traceback.print_exc()
-        return f"Erro ao carregar a página: {str(e)}", 500
-
-    # HTML PREMIUM COMPLETO ADAPTADO
-    html_template = f'''<!DOCTYPE html>
+    
+    # HTML PREMIUM COMPLETO ADAPTADO - DEFINIDO ANTES DE USAR
+    html_template = '''<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
@@ -2685,7 +2647,44 @@ document.addEventListener('keydown', e => {{
 </html>
 '''
 
-    return render_template_string(html_template)
+    try:
+        veiculos, marcas = get_veiculos_estoque()
+        logo_base64 = get_logo_base64()
+        autocore_logo_base64 = get_autocore_logo_base64()
+
+        # Estatísticas
+        total_veiculos = len(veiculos)
+        valor_total = sum(v['preco_venda'] for v in veiculos)
+        media_preco = valor_total / total_veiculos if total_veiculos > 0 else 0
+
+        # Converter veículos para JSON seguro
+        veiculos_json = json.dumps(veiculos, default=str, ensure_ascii=False)
+
+        # Lista de opções para filtros
+        combustiveis_lista = list(set(v.get('combustivel', 'Flex') for v in veiculos if v.get('combustivel'))) or ["Flex", "Gasolina", "Diesel"]
+        transmissoes_lista = list(set(v.get('cambio', 'Manual') for v in veiculos if v.get('cambio'))) or ["Automático", "Manual", "CVT"]
+        cores_lista = list(set(v.get('cor', 'Prata') for v in veiculos if v.get('cor'))) or ["Preto", "Branco", "Prata", "Cinza", "Vermelho", "Azul"]
+
+        # Telefone WhatsApp (usar variável de ambiente ou valor padrão)
+        whatsapp_number = os.environ.get('WHATSAPP_NUMBER', '558430622434')
+
+        # Renderizar template
+        return render_template_string(html_template,
+                                     veiculos_json=veiculos_json,
+                                     total_veiculos=total_veiculos,
+                                     logo_base64=logo_base64,
+                                     autocore_logo_base64=autocore_logo_base64,
+                                     marcas=marcas,
+                                     combustiveis=combustiveis_lista,
+                                     transmissoes=transmissoes_lista,
+                                     cores=cores_lista,
+                                     whatsapp_number=whatsapp_number,
+                                     ano_atual=datetime.now().year)
+    except Exception as e:
+        print(f"❌ Erro na rota principal: {e}")
+        import traceback
+        traceback.print_exc()
+        return f"Erro ao carregar a página: {str(e)}", 500
 
 # =============================================
 # INICIALIZAÇÃO
