@@ -263,12 +263,24 @@ def stats():
 # =============================================
 # ROTA PRINCIPAL - COM HTML PREMIUM ADAPTADO
 # =============================================
+def get_favicon_base64():
+    """Carrega o ícone da aba (mesmo do app.py)"""
+    try:
+        # Tenta carregar o mesmo arquivo do app.py
+        if os.path.exists("logo-icon.png"):
+            with open("logo-icon.png", "rb") as f:
+                return base64.b64encode(f.read()).decode('utf-8')
+    except Exception as e:
+        print(f"⚠️ Erro ao carregar favicon: {e}")
+    return None
+
 @app.route('/')
 def home():
     """Página principal da vitrine premium"""
     veiculos, marcas = get_veiculos_estoque()
     logo_base64 = get_logo_base64()
     autocore_logo_base64 = get_autocore_logo_base64()
+    favicon_base64 = get_favicon_base64()
     # Estatísticas
     total_veiculos = len(veiculos)
     valor_total = sum(v['preco_venda'] for v in veiculos)
@@ -291,6 +303,8 @@ def home():
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Carmelo Multimarcas | Veículos Premium</title>
 <meta name="description" content="Carmelo Multimarcas - Os melhores veículos seminovos com qualidade e confiança garantidas em Mossoró/RN.">
+<link rel="icon" href="data:image/png;base64,{favicon_base64}" type="image/png">
+<link rel="shortcut icon" href="data:image/png;base64,{favicon_base64}" type="image/x-icon">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@300;400;500;600;700;900&family=Barlow+Condensed:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
