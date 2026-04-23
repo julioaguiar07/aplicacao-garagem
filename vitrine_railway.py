@@ -505,7 +505,7 @@ def home():
         <div class="hero-bg"></div>
         <div class="hero-content">
             <div style="font-weight: 700; text-transform: uppercase; letter-spacing: 4px; font-size: 14px; margin-bottom: 20px;">CARMELO MULTIMARCAS</div>
-            <h1>SUA PRÓXIMA CONSQUISTA<br>ESTÁ AQUI.</h1>
+            <h1>SUA PRÓXIMA CONQUISTA<br>ESTÁ AQUI.</h1>
             <a href="#estoque" class="hero-btn">Explorar Coleção</a>
         </div>
         <div class="scroll-indicator" onclick="document.getElementById('estoque').scrollIntoView()">
