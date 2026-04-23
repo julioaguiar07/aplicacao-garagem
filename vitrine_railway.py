@@ -515,8 +515,8 @@ def home():
 
     <section class="showcase-section" id="estoque">
         <div class="showcase-header">
-            <h2>Que modelo gostaria de configurar?</h2>
-            <p style="color: var(--porsche-gray);">Explore nossa curadoria de veículos com laudo cautelar e garantia premium.</p>
+            <h2>Por qual modelo está procurando?</h2>
+            <p style="color: var(--porsche-gray);">Explore todo nosso estoque de veículos de qualidade.</p>
         </div>
 
         <div class="showcase-layout">
@@ -524,7 +524,7 @@ def home():
                 <div class="filter-group">
                     <label class="filter-label">Procurar</label>
                     <div class="search-box">
-                        <input type="text" id="searchInput" placeholder="Ex: Cayenne, 911, SUV..." oninput="filterVehicles()">
+                        <input type="text" id="searchInput" placeholder="Ex: JEEP, FIAT, Civic..." oninput="filterVehicles()">
                     </div>
                 </div>
 
@@ -567,15 +567,15 @@ def home():
             </div>
             <div class="footer-col">
                 <h4>Onde Estamos</h4>
-                <p>Av. Principal, 1000<br>Mossoró - Rio Grande do Norte</p>
+                <p>Rua José Damião, 61 - 59619-140<br>Mossoró - Rio Grande do Norte</p>
             </div>
             <div class="footer-col">
                 <h4>Atendimento</h4>
-                <p>WhatsApp: (84) 99999-9999<br>E-mail: contato@carmelo.com.br</p>
+                <p>WhatsApp: (84) 3062-2434<br>E-mail: contato@carmelo.com.br</p>
             </div>
         </div>
         <div style="max-width: 1500px; margin: 60px auto 0; padding-top: 40px; border-top: 1px solid var(--porsche-light-gray); font-size: 12px; color: var(--porsche-gray);">
-            &copy; {datetime.now().year} Carmelo Multimarcas. Todos os direitos reservados.
+            &copy; {datetime.now().year} AUTOcore (@app.autocore on Instagram). Todos os direitos reservados.
         </div>
     </footer>
 
