@@ -273,7 +273,7 @@ def home():
             position: absolute;
             inset: 0;
             background: linear-gradient(to right, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.2) 50%, rgba(0,0,0,0) 100%),
-                        url('https://images.unsplash.com/photo-1592891024293-281986e0c963?q=80&w=1470&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D'); /* BMW M4 AZUL - UNSPLASH */
+                        url('https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&w=1920&q=80'); /* ALTERE O LINK DA IMAGEM DA HERO AQUI */
             background-size: cover;
             background-position: center;
             z-index: 1;
