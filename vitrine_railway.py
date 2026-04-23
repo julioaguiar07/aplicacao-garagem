@@ -142,7 +142,7 @@ def get_veiculos_estoque():
                 veiculo['images'] = [f"data:image/jpeg;base64,{veiculo['foto_base64']}"] * 2
             else:
                 veiculo['images'] = [
-                    "https://images.unsplash.com/photo-1503736334956-4c8f8e92946d?w=800&q=80",
+                    "https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=800&q=80",
                     "https://images.unsplash.com/photo-1549317661-bd32c8ce0729?w=800&q=80"
                 ]
             
@@ -168,17 +168,6 @@ def get_logo_base64():
         print(f"⚠️ Não foi possível carregar logo: {e}")
     return None
 
-def get_autocore_logo_base64():
-    try:
-        possible_paths = ["autocore.png", "./autocore.png", "/app/autocore.png"]
-        for path in possible_paths:
-            if os.path.exists(path):
-                with open(path, "rb") as f:
-                    return base64.b64encode(f.read()).decode('utf-8')
-    except Exception as e:
-        print(f"⚠️ Não foi possível carregar logo AutoCore: {e}")
-    return None
-
 def get_favicon_base64():
     try:
         if os.path.exists("logo-icon.png"):
@@ -196,279 +185,235 @@ def api_veiculos():
     veiculos, _ = get_veiculos_estoque()
     return jsonify(veiculos)
 
-@app.route('/api/health')
-def health():
-    veiculos, _ = get_veiculos_estoque()
-    return jsonify({
-        "status": "healthy",
-        "service": "vitrine-porsche-style",
-        "timestamp": datetime.now().isoformat(),
-        "veiculos_estoque": len(veiculos),
-        "database": "PostgreSQL" if os.environ.get('DATABASE_URL') else "SQLite"
-    })
-
-@app.route('/api/stats')
-def stats():
-    veiculos, _ = get_veiculos_estoque()
-    total_veiculos = len(veiculos)
-    valor_total = sum(v['preco_venda'] for v in veiculos)
-    media_preco = valor_total / total_veiculos if total_veiculos > 0 else 0
-    marcas = len(set(v['marca'] for v in veiculos))
-
-    return jsonify({
-        "total_veiculos": total_veiculos,
-        "valor_total": valor_total,
-        "media_preco": media_preco,
-        "marcas_diferentes": marcas,
-        "timestamp": datetime.now().isoformat()
-    })
-
 # =============================================
-# ROTA PRINCIPAL - DESIGN LUXUOSO PORSCHE STYLE
+# ROTA PRINCIPAL - PORSCHE CLEAN LUXURY STYLE
 # =============================================
 @app.route('/')
 def home():
     veiculos, marcas = get_veiculos_estoque()
-    autocore_logo_base64 = get_autocore_logo_base64()
+    logo_base64 = get_logo_base64()
     favicon_base64 = get_favicon_base64()
-    total_veiculos = len(veiculos)
-    valor_total = sum(v['preco_venda'] for v in veiculos)
     
     veiculos_json = json.dumps(veiculos, default=str, ensure_ascii=False)
 
     tipos = ["SUV", "Sedan", "Hatch", "Picape", "Coupé", "Elétrico"]
     transmissoes = ["Automático", "Manual", "CVT"]
-    combustiveis = list(set(v['combustivel'] for v in veiculos if v.get('combustivel'))) or ["Flex", "Gasolina", "Diesel"]
-    cores = list(set(v['cor'] for v in veiculos if v.get('cor'))) or ["Preto", "Branco", "Prata", "Cinza", "Vermelho", "Azul"]
 
     html_template = f'''<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Premium Auto | Experiência de Luxo</title>
+    <title>Vitrine Automotiva | Porsche Style</title>
     <link rel="icon" href="data:image/png;base64,{favicon_base64}" type="image/png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {{
-            --primary: #000000;
-            --secondary: #1a1a1a;
-            --accent: #d4af37; /* Dourado luxo */
-            --accent-hover: #b8962e;
-            --text: #ffffff;
-            --text-muted: #a0a0a0;
-            --bg: #050505;
-            --card-bg: #121212;
-            --border: rgba(255, 255, 255, 0.1);
-            --radius: 4px; /* Estilo mais sóbrio/porsche */
-            --transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            --porsche-white: #f2f2f2;
+            --porsche-black: #000000;
+            --porsche-orange: #ff4d00; /* Laranja Vibrante Porsche */
+            --porsche-gray: #666666;
+            --porsche-light-gray: #e6e6e6;
+            --text-dark: #191919;
+            --text-muted: #626669;
+            --bg-white: #ffffff;
+            --transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
         }}
 
         * {{ margin: 0; padding: 0; box-sizing: border-box; }}
         body {{
             font-family: 'Inter', sans-serif;
-            background-color: var(--bg);
-            color: var(--text);
-            line-height: 1.6;
-            overflow-x: hidden;
+            background-color: var(--bg-white);
+            color: var(--text-dark);
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
         }}
 
-        h1, h2, h3, .logo-text {{
-            font-family: 'Playfair Display', serif;
-            letter-spacing: -0.02em;
-        }}
-
-        /* SCROLLBAR */
-        ::-webkit-scrollbar {{ width: 4px; }}
-        ::-webkit-scrollbar-track {{ background: var(--bg); }}
-        ::-webkit-scrollbar-thumb {{ background: var(--accent); }}
-
-        /* HEADER */
+        /* HEADER PORSCHE STYLE */
         header {{
-            position: fixed;
-            top: 0; width: 100%;
-            height: 80px;
+            position: sticky;
+            top: 0;
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--porsche-light-gray);
+            height: 72px;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 0 5%;
-            background: rgba(5, 5, 5, 0.8);
-            backdrop-filter: blur(20px);
+            padding: 0 40px;
             z-index: 1000;
-            border-bottom: 1px solid var(--border);
         }}
 
-        .logo {{
+        .logo-container {{
+            height: 40px;
             display: flex;
             align-items: center;
-            gap: 15px;
-            text-decoration: none;
-            color: var(--text);
         }}
 
-        .logo-text {{
-            font-size: 24px;
-            text-transform: uppercase;
-            letter-spacing: 4px;
+        .logo-img {{
+            height: 100%;
+            width: auto;
+            object-fit: contain;
         }}
 
-        .logo-text span {{ color: var(--accent); }}
+        .header-nav {{
+            display: flex;
+            gap: 32px;
+        }}
 
-        nav {{ display: flex; gap: 30px; }}
-        nav a {{
+        .header-nav a {{
             text-decoration: none;
-            color: var(--text-muted);
-            font-size: 13px;
+            color: var(--text-dark);
+            font-size: 14px;
             font-weight: 500;
             text-transform: uppercase;
-            letter-spacing: 2px;
+            letter-spacing: 1px;
             transition: var(--transition);
         }}
-        nav a:hover, nav a.active {{ color: var(--accent); }}
 
-        .header-actions {{ display: flex; align-items: center; gap: 20px; }}
-        
-        .compare-badge-container {{
-            position: relative;
-            cursor: pointer;
+        .header-nav a:hover {{ color: var(--porsche-orange); }}
+
+        .header-actions {{
+            display: flex;
+            align-items: center;
+            gap: 24px;
         }}
-        .compare-badge {{
-            position: absolute;
-            top: -8px; right: -8px;
-            background: var(--accent);
-            color: black;
-            font-size: 10px;
+
+        /* COMPARE FLOATING BUTTON */
+        .compare-action-btn {{
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--porsche-black);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 4px;
+            font-size: 12px;
             font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: var(--transition);
+            border: none;
+        }}
+
+        .compare-action-btn:hover {{
+            background: var(--porsche-orange);
+            transform: translateY(-2px);
+        }}
+
+        .compare-count-badge {{
+            background: white;
+            color: var(--porsche-black);
             width: 18px; height: 18px;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            opacity: 0;
-            transition: var(--transition);
+            font-size: 10px;
         }}
-        .compare-badge.visible {{ opacity: 1; }}
 
-        /* HERO */
+        /* HERO SECTION */
         .hero {{
-            height: 80vh;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            padding: 0 10%;
-            background: linear-gradient(to right, rgba(0,0,0,0.8), transparent), 
-                        url('https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=1920&q=80');
-            background-size: cover;
-            background-position: center;
-            margin-bottom: 50px;
+            padding: 80px 40px 40px;
+            max-width: 1400px;
+            margin: 0 auto;
         }}
 
-        .hero-content h1 {{
-            font-size: clamp(40px, 8vw, 80px);
-            line-height: 1.1;
-            margin-bottom: 20px;
-            max-width: 800px;
+        .hero h1 {{
+            font-size: 48px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            letter-spacing: -1px;
         }}
 
-        .hero-content p {{
+        .hero p {{
             font-size: 18px;
             color: var(--text-muted);
-            max-width: 500px;
-            margin-bottom: 40px;
+            max-width: 600px;
         }}
 
-        .btn-primary {{
-            display: inline-block;
-            padding: 18px 40px;
-            background: var(--accent);
-            color: black;
-            text-decoration: none;
+        /* FILTERS SIDEBAR STYLE */
+        .main-content {{
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            gap: 40px;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 40px;
+        }}
+
+        .sidebar {{
+            position: sticky;
+            top: 112px;
+            height: fit-content;
+        }}
+
+        .filter-group {{
+            margin-bottom: 32px;
+            border-bottom: 1px solid var(--porsche-light-gray);
+            padding-bottom: 24px;
+        }}
+
+        .filter-title {{
+            font-size: 14px;
             font-weight: 700;
             text-transform: uppercase;
-            letter-spacing: 2px;
-            font-size: 12px;
-            transition: var(--transition);
-            border: none;
-            cursor: pointer;
-        }}
-        .btn-primary:hover {{
-            background: var(--accent-hover);
-            transform: translateY(-2px);
-        }}
-
-        /* FILTERS BAR */
-        .filters-container {{
-            padding: 0 5%;
-            margin-bottom: 40px;
-        }}
-
-        .search-wrapper {{
-            position: relative;
-            margin-bottom: 30px;
-        }}
-
-        .search-wrapper input {{
-            width: 100%;
-            background: transparent;
-            border: none;
-            border-bottom: 1px solid var(--border);
-            padding: 20px 0;
-            font-size: 24px;
-            color: var(--text);
-            font-family: 'Playfair Display', serif;
-            outline: none;
-        }}
-
-        .search-wrapper input::placeholder {{ color: var(--text-muted); opacity: 0.3; }}
-
-        .filter-tags {{
+            letter-spacing: 1px;
+            margin-bottom: 16px;
             display: flex;
-            gap: 15px;
-            flex-wrap: wrap;
-            margin-top: 20px;
+            align-items: center;
+            justify-content: space-between;
+        }}
+
+        .search-input {{
+            width: 100%;
+            padding: 12px 16px;
+            background: var(--porsche-white);
+            border: 1px solid transparent;
+            border-radius: 4px;
+            font-family: inherit;
+            font-size: 14px;
+            outline: none;
+            transition: var(--transition);
+        }}
+
+        .search-input:focus {{
+            background: white;
+            border-color: var(--porsche-black);
         }}
 
         .filter-select {{
-            background: var(--card-bg);
-            border: 1px solid var(--border);
-            color: var(--text);
-            padding: 10px 20px;
-            font-size: 12px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            outline: none;
+            width: 100%;
+            padding: 12px;
+            background: var(--porsche-white);
+            border: none;
+            border-radius: 4px;
+            font-size: 14px;
             cursor: pointer;
-            transition: var(--transition);
         }}
-        .filter-select:hover {{ border-color: var(--accent); }}
 
-        /* VEHICLE GRID */
+        /* VEHICLE CARDS PORSCHE STYLE */
         .vehicle-grid {{
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
-            gap: 30px;
-            padding: 0 5%;
-            margin-bottom: 80px;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 32px;
         }}
 
         .vehicle-card {{
-            background: var(--card-bg);
-            border: 1px solid var(--border);
+            background: white;
             transition: var(--transition);
-            position: relative;
-            overflow: hidden;
             cursor: pointer;
+            position: relative;
+            display: flex;
+            flex-direction: column;
         }}
 
-        .vehicle-card:hover {{
-            border-color: rgba(212, 175, 55, 0.3);
-            transform: translateY(-10px);
-        }}
-
-        .card-image-container {{
-            height: 280px;
+        .card-image-wrapper {{
+            aspect-ratio: 16/10;
             overflow: hidden;
+            background: var(--porsche-white);
             position: relative;
         }}
 
@@ -476,415 +421,338 @@ def home():
             width: 100%;
             height: 100%;
             object-fit: cover;
-            transition: transform 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+            transition: transform 0.6s ease;
         }}
 
         .vehicle-card:hover .card-image {{
-            transform: scale(1.1);
+            transform: scale(1.05);
+        }}
+
+        .card-content {{
+            padding: 24px 0;
         }}
 
         .card-badge {{
             position: absolute;
-            top: 20px; left: 20px;
-            background: var(--accent);
-            color: black;
-            padding: 5px 12px;
-            font-size: 10px;
-            font-weight: 800;
+            top: 12px; left: 12px;
+            background: white;
+            padding: 4px 10px;
+            font-size: 11px;
+            font-weight: 700;
             text-transform: uppercase;
-            letter-spacing: 1px;
-            z-index: 10;
+            border-radius: 2px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            z-index: 5;
         }}
 
-        .compare-toggle {{
-            position: absolute;
-            top: 20px; right: 20px;
-            width: 40px; height: 40px;
-            background: rgba(0,0,0,0.5);
-            backdrop-filter: blur(10px);
-            border: 1px solid var(--border);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            z-index: 10;
-            transition: var(--transition);
-        }}
-        .compare-toggle.active {{ background: var(--accent); border-color: var(--accent); color: black; }}
-        .compare-toggle:hover {{ border-color: var(--accent); }}
-
-        .card-info {{
-            padding: 30px;
-        }}
-
-        .card-header {{
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            margin-bottom: 20px;
-        }}
-
-        .card-title h3 {{
-            font-size: 22px;
-            margin-bottom: 5px;
-        }}
-
-        .card-subtitle {{
-            font-size: 12px;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }}
-
-        .card-price {{
-            font-family: 'Playfair Display', serif;
-            font-size: 24px;
-            color: var(--accent);
-        }}
-
-        .card-specs {{
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 15px;
-            padding-top: 20px;
-            border-top: 1px solid var(--border);
-        }}
-
-        .spec-item {{
-            display: flex;
-            flex-direction: column;
-        }}
-
-        .spec-label {{
-            font-size: 10px;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: 1px;
+        .card-title {{
+            font-size: 20px;
+            font-weight: 600;
             margin-bottom: 4px;
         }}
 
-        .spec-value {{
+        .card-price-label {{
             font-size: 13px;
+            color: var(--text-muted);
+            margin-top: 8px;
+        }}
+
+        .card-price {{
+            font-size: 18px;
             font-weight: 600;
+            color: var(--text-dark);
+        }}
+
+        .card-specs {{
+            margin-top: 16px;
+            font-size: 13px;
+            color: var(--text-muted);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }}
+
+        .spec-pill {{
+            background: var(--porsche-white);
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-weight: 500;
+        }}
+
+        /* IMPROVED COMPARE UI ON CARD */
+        .card-compare-btn {{
+            margin-top: 20px;
+            width: 100%;
+            padding: 12px;
+            background: white;
+            border: 1px solid var(--porsche-black);
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }}
+
+        .card-compare-btn:hover {{
+            background: var(--porsche-black);
+            color: white;
+        }}
+
+        .card-compare-btn.active {{
+            background: var(--porsche-orange);
+            border-color: var(--porsche-orange);
+            color: white;
         }}
 
         /* MODAL */
         .modal-overlay {{
             position: fixed;
             inset: 0;
-            background: rgba(0,0,0,0.95);
+            background: rgba(255, 255, 255, 0.95);
             z-index: 2000;
             display: none;
-            justify-content: center;
-            align-items: center;
-            backdrop-filter: blur(10px);
+            overflow-y: auto;
+            padding: 40px;
         }}
 
-        .modal-overlay.active {{ display: flex; }}
+        .modal-overlay.active {{ display: block; }}
 
         .modal-container {{
-            width: 90%;
             max-width: 1200px;
-            height: 90vh;
-            background: var(--bg);
-            border: 1px solid var(--border);
+            margin: 0 auto;
             position: relative;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
         }}
 
         .modal-close {{
-            position: absolute;
-            top: 30px; right: 30px;
-            background: transparent;
+            position: fixed;
+            top: 40px; right: 40px;
+            background: var(--porsche-black);
+            color: white;
+            width: 40px; height: 40px;
             border: none;
-            color: var(--text);
+            border-radius: 50%;
             cursor: pointer;
-            z-index: 100;
-        }}
-
-        .modal-body {{
-            display: grid;
-            grid-template-columns: 1.2fr 0.8fr;
-            height: 100%;
-        }}
-
-        .modal-gallery {{
-            background: #000;
-            position: relative;
             display: flex;
             align-items: center;
             justify-content: center;
+            z-index: 2100;
         }}
 
-        .modal-gallery img {{
-            max-width: 100%;
-            max-height: 100%;
-            object-fit: contain;
-        }}
-
-        .modal-details {{
-            padding: 60px;
-            overflow-y: auto;
-            border-left: 1px solid var(--border);
-        }}
-
-        .detail-price {{
-            font-size: 48px;
-            color: var(--accent);
-            margin: 20px 0;
-        }}
-
-        .detail-specs {{
+        .detail-grid {{
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 30px;
-            margin: 40px 0;
+            grid-template-columns: 1.5fr 1fr;
+            gap: 60px;
         }}
 
-        .optionals-list {{
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            margin-top: 20px;
+        .detail-gallery img {{
+            width: 100%;
+            border-radius: 4px;
         }}
 
-        .optional-item {{
-            font-size: 13px;
-            color: var(--text-muted);
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }}
-        .optional-item::before {{
-            content: '';
-            width: 5px; height: 5px;
-            background: var(--accent);
+        .detail-info h2 {{
+            font-size: 36px;
+            margin-bottom: 24px;
         }}
 
-        .modal-actions {{
-            margin-top: 50px;
-            display: flex;
-            gap: 20px;
+        .detail-price-box {{
+            padding: 24px 0;
+            border-top: 1px solid var(--porsche-light-gray);
+            border-bottom: 1px solid var(--porsche-light-gray);
+            margin-bottom: 32px;
         }}
 
-        /* COMPARE PAGE */
-        .compare-container {{
-            position: fixed;
-            inset: 0;
-            background: var(--bg);
-            z-index: 3000;
-            display: none;
-            padding: 100px 5%;
-            overflow-y: auto;
-        }}
-        .compare-container.active {{ display: block; }}
-
-        .compare-grid {{
-            display: grid;
-            grid-template-columns: 200px repeat(auto-fill, minmax(300px, 1fr));
-            gap: 2px;
-            background: var(--border);
-            border: 1px solid var(--border);
-        }}
-
-        .compare-cell {{
-            background: var(--bg);
-            padding: 20px;
-            display: flex;
-            align-items: center;
-        }}
-
-        .compare-header-cell {{
-            background: var(--card-bg);
+        .btn-whatsapp {{
+            display: block;
+            width: 100%;
+            padding: 18px;
+            background: var(--porsche-black);
+            color: white;
+            text-align: center;
+            text-decoration: none;
             font-weight: 700;
             text-transform: uppercase;
-            letter-spacing: 1px;
+            letter-spacing: 2px;
+            border-radius: 4px;
+            transition: var(--transition);
+        }}
+
+        .btn-whatsapp:hover {{
+            background: var(--porsche-orange);
+        }}
+
+        /* COMPARE VIEW */
+        .compare-view {{
+            position: fixed;
+            inset: 0;
+            background: white;
+            z-index: 3000;
+            display: none;
+            padding: 60px;
+            overflow-y: auto;
+        }}
+
+        .compare-view.active {{ display: block; }}
+
+        .compare-table {{
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 40px;
+        }}
+
+        .compare-table th, .compare-table td {{
+            padding: 24px;
+            border-bottom: 1px solid var(--porsche-light-gray);
+            text-align: left;
+        }}
+
+        .compare-table th {{
             font-size: 12px;
-            color: var(--accent);
+            text-transform: uppercase;
+            color: var(--text-muted);
+            width: 200px;
         }}
 
         /* FOOTER */
         footer {{
-            padding: 100px 5% 50px;
-            background: var(--secondary);
-            border-top: 1px solid var(--border);
+            background: var(--porsche-white);
+            padding: 80px 40px;
+            border-top: 1px solid var(--porsche-light-gray);
         }}
 
-        .footer-grid {{
+        .footer-content {{
+            max-width: 1400px;
+            margin: 0 auto;
             display: grid;
-            grid-template-columns: 2fr 1fr 1fr 1.5fr;
-            gap: 50px;
-            margin-bottom: 80px;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 40px;
         }}
 
         .footer-col h4 {{
+            font-size: 14px;
             text-transform: uppercase;
-            letter-spacing: 2px;
+            margin-bottom: 24px;
+        }}
+
+        .footer-col p {{
             font-size: 14px;
-            margin-bottom: 30px;
-            color: var(--accent);
-        }}
-
-        .footer-col p, .footer-col a {{
             color: var(--text-muted);
-            text-decoration: none;
-            font-size: 14px;
-            display: block;
-            margin-bottom: 15px;
-            transition: var(--transition);
+            margin-bottom: 12px;
         }}
 
-        .footer-col a:hover {{ color: var(--text); }}
-
-        .footer-bottom {{
-            padding-top: 40px;
-            border-top: 1px solid var(--border);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 12px;
-            color: var(--text-muted);
-        }}
-
-        /* RESPONSIVE */
         @media (max-width: 1024px) {{
-            .modal-body {{ grid-template-columns: 1fr; }}
-            .modal-details {{ padding: 30px; }}
-            .footer-grid {{ grid-template-columns: 1fr 1fr; }}
-        }}
-
-        @media (max-width: 768px) {{
-            .hero {{ height: 60vh; }}
-            .vehicle-grid {{ grid-template-columns: 1fr; }}
-            nav {{ display: none; }}
-        }}
-
-        /* ANIMATIONS */
-        @keyframes fadeInUp {{
-            from {{ opacity: 0; transform: translateY(30px); }}
-            to {{ opacity: 1; transform: translateY(0); }}
-        }}
-
-        .reveal {{
-            animation: fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            .main-content {{ grid-template-columns: 1fr; }}
+            .sidebar {{ position: static; }}
+            .detail-grid {{ grid-template-columns: 1fr; }}
+            .footer-content {{ grid-template-columns: 1fr; }}
         }}
     </style>
 </head>
 <body>
 
     <header>
-        <a href="#" class="logo">
-            <div class="logo-text">PREMIUM<span>AUTO</span></div>
-        </a>
-        <nav>
-            <a href="#estoque" class="active">Estoque</a>
+        <div class="logo-container">
+            {f'<img src="data:image/png;base64,{logo_base64}" class="logo-img" alt="Logo">' if logo_base64 else '<div style="font-weight:800;font-size:24px;letter-spacing:-1px;">CARMELO</div>'}
+        </div>
+        <nav class="header-nav">
+            <a href="#estoque">Modelos</a>
             <a href="#sobre">Sobre</a>
             <a href="#contato">Contato</a>
         </nav>
         <div class="header-actions">
-            <div class="compare-badge-container" onclick="openCompare()">
-                <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-                    <path d="M8 3 4 7l4 4M16 3l4 4-4 4M14 20V4M10 20V4"/>
-                </svg>
-                <div id="compareBadge" class="compare-badge">0</div>
-            </div>
-            <button class="btn-primary" style="padding: 12px 25px; font-size: 10px;" onclick="document.getElementById('estoque').scrollIntoView()">Ver Estoque</button>
+            <button class="compare-action-btn" onclick="openCompare()">
+                <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M8 3 4 7l4 4M16 3l4 4-4 4M14 20V4M10 20V4"/></svg>
+                Comparar
+                <div id="compareBadge" class="compare-count-badge">0</div>
+            </button>
         </div>
     </header>
 
     <section class="hero">
-        <div class="hero-content reveal">
-            <h1>A ARTE DA<br>PERFORMANCE</h1>
-            <p>Descubra nossa curadoria exclusiva de veículos que transcendem a engenharia comum.</p>
-            <button class="btn-primary" onclick="document.getElementById('estoque').scrollIntoView()">Explorar Coleção</button>
-        </div>
+        <h1>Que modelo gostaria<br>de configurar?</h1>
+        <p>Explore nossa seleção exclusiva de veículos premium com garantia de qualidade e performance.</p>
     </section>
 
-    <main id="estoque">
-        <div class="filters-container reveal">
-            <div class="search-wrapper">
-                <input type="text" id="searchInput" placeholder="BUSCAR POR MODELO OU MARCA..." oninput="filterVehicles()">
+    <div class="main-content">
+        <aside class="sidebar">
+            <div class="filter-group">
+                <div class="filter-title">Procurar</div>
+                <input type="text" class="search-input" id="searchInput" placeholder="Ex: Cayenne, 911, SUV..." oninput="filterVehicles()">
             </div>
-            <div class="filter-tags">
+            
+            <div class="filter-group">
+                <div class="filter-title">Marca</div>
                 <select id="filterMarca" class="filter-select" onchange="filterVehicles()">
                     <option value="">Todas as Marcas</option>
                     {"".join([f'<option value="{m}">{m}</option>' for m in marcas])}
                 </select>
-                <select id="filterTipo" class="filter-select" onchange="filterVehicles()">
-                    <option value="">Todos os Tipos</option>
-                    {"".join([f'<option value="{t}">{t}</option>' for t in tipos])}
-                </select>
+            </div>
+
+            <div class="filter-group">
+                <div class="filter-title">Câmbio</div>
                 <select id="filterCambio" class="filter-select" onchange="filterVehicles()">
-                    <option value="">Câmbio</option>
+                    <option value="">Todos os Câmbios</option>
                     {"".join([f'<option value="{c}">{c}</option>' for c in transmissoes])}
                 </select>
             </div>
-        </div>
 
-        <div class="vehicle-grid" id="vehicleGrid">
-            <!-- Veículos injetados via JS -->
-        </div>
-    </main>
+            <div style="background: #f8f8f8; padding: 24px; border-radius: 4px;">
+                <div style="font-weight: 700; font-size: 14px; margin-bottom: 8px;">Comparar veículos</div>
+                <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 16px;">Selecione até 4 modelos para ver as diferenças detalhadas.</p>
+                <button class="compare-action-btn" style="width: 100%; justify-content: center;" onclick="openCompare()">Ver Comparação</button>
+            </div>
+        </aside>
+
+        <main id="estoque">
+            <div class="vehicle-grid" id="vehicleGrid">
+                <!-- Injected via JS -->
+            </div>
+        </main>
+    </div>
 
     <footer id="sobre">
-        <div class="footer-grid">
+        <div class="footer-content">
             <div class="footer-col">
-                <div class="logo-text" style="margin-bottom: 20px;">PREMIUM<span>AUTO</span></div>
-                <p>Especialistas em veículos de alta performance e luxo. Oferecemos uma experiência personalizada para clientes que buscam o extraordinário.</p>
+                <h4>Carmelo Multimarcas</h4>
+                <p>Referência em veículos premium e atendimento personalizado.</p>
             </div>
             <div class="footer-col">
-                <h4>Menu</h4>
-                <a href="#">Estoque</a>
-                <a href="#">Financiamento</a>
-                <a href="#">Sobre Nós</a>
-                <a href="#">Contato</a>
+                <h4>Localização</h4>
+                <p>Av. Principal, Mossoró - RN</p>
+                <p>Segunda a Sábado: 08h às 18h</p>
             </div>
             <div class="footer-col">
                 <h4>Contato</h4>
-                <p>Av. Principal, 1000<br>Mossoró - RN</p>
-                <p>(84) 99999-9999</p>
-                <p>contato@premiumauto.com.br</p>
-            </div>
-            <div class="footer-col">
-                <h4>Newsletter</h4>
-                <p>Receba novidades sobre novos veículos em primeira mão.</p>
-                <div style="display: flex; gap: 10px; margin-top: 20px;">
-                    <input type="email" placeholder="SEU E-MAIL" style="background: transparent; border: 1px solid var(--border); padding: 10px; color: white; flex: 1;">
-                    <button class="btn-primary" style="padding: 10px 20px;">OK</button>
-                </div>
+                <p>WhatsApp: (84) 99999-9999</p>
+                <p>E-mail: contato@carmelo.com.br</p>
             </div>
         </div>
-        <div class="footer-bottom">
-            <p>&copy; {datetime.now().year} Premium Auto. Todos os direitos reservados.</p>
-            <div style="display: flex; gap: 20px;">
-                <a href="#" style="color: var(--text-muted); text-decoration: none;">Instagram</a>
-                <a href="#" style="color: var(--text-muted); text-decoration: none;">YouTube</a>
-            </div>
+        <div style="max-width: 1400px; margin: 40px auto 0; padding-top: 40px; border-top: 1px solid var(--porsche-light-gray); font-size: 12px; color: var(--text-muted);">
+            &copy; {datetime.now().year} Carmelo Multimarcas. Todos os direitos reservados.
         </div>
     </footer>
 
-    <!-- MODAL DE DETALHES -->
+    <!-- MODAL DETALHES -->
     <div class="modal-overlay" id="detailModal">
-        <div class="modal-container" id="modalContainer">
-            <button class="modal-close" onclick="closeModal()">
-                <svg width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M6 18 18 6M6 6l12 12"/></svg>
-            </button>
-            <div class="modal-body" id="modalBody">
-                <!-- Conteúdo injetado via JS -->
-            </div>
+        <button class="modal-close" onclick="closeModal()">
+            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M6 18 18 6M6 6l12 12"/></svg>
+        </button>
+        <div class="modal-container" id="modalContent">
+            <!-- Injected via JS -->
         </div>
     </div>
 
-    <!-- PÁGINA DE COMPARAÇÃO -->
-    <div class="compare-container" id="comparePage">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 50px;">
-            <h2 style="font-size: 40px;">COMPARAÇÃO DE <span style="color: var(--accent);">VEÍCULOS</span></h2>
-            <button class="btn-primary" onclick="closeCompare()">Voltar ao Estoque</button>
-        </div>
-        <div class="compare-grid" id="compareGrid">
-            <!-- Grid de comparação injetado via JS -->
+    <!-- COMPARAR VIEW -->
+    <div class="compare-view" id="compareView">
+        <div style="max-width: 1200px; margin: 0 auto;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 60px;">
+                <h2 style="font-size: 40px;">Comparação de Modelos</h2>
+                <button class="compare-action-btn" onclick="closeCompare()">Voltar</button>
+            </div>
+            <div id="compareTableContainer"></div>
         </div>
     </div>
 
@@ -898,40 +766,30 @@ def home():
 
         function renderVehicles(list) {{
             const grid = document.getElementById('vehicleGrid');
-            grid.innerHTML = list.map((v, i) => `
-                <div class="vehicle-card reveal" style="animation-delay: ${{i * 0.1}}s" onclick="openDetail(${{v.id}})">
+            grid.innerHTML = list.map(v => `
+                <div class="vehicle-card" onclick="openDetail(${{v.id}})">
                     ${{v.badge ? `<div class="card-badge">${{v.badgeText}}</div>` : ''}}
-                    <div class="compare-toggle ${{compareList.some(c => c.id === v.id) ? 'active' : ''}}" 
-                         onclick="event.stopPropagation(); toggleCompare(${{v.id}})">
-                        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                            <path d="M8 3 4 7l4 4M16 3l4 4-4 4M14 20V4M10 20V4"/>
-                        </svg>
+                    <div class="card-image-wrapper">
+                        <img src="${{v.images[0]}}" class="card-image" alt="${{v.nome_completo}}" loading="lazy">
                     </div>
-                    <div class="card-image-container">
-                        <img src="${{v.images[0]}}" class="card-image" alt="${{v.nome_completo}}">
-                    </div>
-                    <div class="card-info">
-                        <div class="card-header">
-                            <div class="card-title">
-                                <h3>${{v.marca}} ${{v.modelo}}</h3>
-                                <div class="card-subtitle">${{v.ano}} • ${{v.km.toLocaleString('pt-BR')}} KM</div>
-                            </div>
-                            <div class="card-price">${{formatPrice(v.preco_venda)}}</div>
-                        </div>
+                    <div class="card-content">
+                        <div class="card-title">${{v.marca}} ${{v.modelo}}</div>
+                        <div class="card-price-label">A partir de</div>
+                        <div class="card-price">${{formatPrice(v.preco_venda)}}</div>
+                        
                         <div class="card-specs">
-                            <div class="spec-item">
-                                <span class="spec-label">Câmbio</span>
-                                <span class="spec-value">${{v.cambio}}</span>
-                            </div>
-                            <div class="spec-item">
-                                <span class="spec-label">Combustível</span>
-                                <span class="spec-value">${{v.combustivel}}</span>
-                            </div>
-                            <div class="spec-item">
-                                <span class="spec-label">Cor</span>
-                                <span class="spec-value">${{v.cor}}</span>
-                            </div>
+                            <span class="spec-pill">${{v.ano}}</span>
+                            <span class="spec-pill">${{v.km.toLocaleString('pt-BR')}} KM</span>
+                            <span class="spec-pill">${{v.cambio}}</span>
                         </div>
+
+                        <button class="card-compare-btn ${{compareList.some(c => c.id === v.id) ? 'active' : ''}}" 
+                                onclick="event.stopPropagation(); toggleCompare(${{v.id}})">
+                            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path d="M8 3 4 7l4 4M16 3l4 4-4 4M14 20V4M10 20V4"/>
+                            </svg>
+                            ${{compareList.some(c => c.id === v.id) ? 'Remover da Comparação' : 'Comparar Modelo'}}
+                        </button>
                     </div>
                 </div>
             `).join('');
@@ -940,74 +798,15 @@ def home():
         function filterVehicles() {{
             const search = document.getElementById('searchInput').value.toLowerCase();
             const marca = document.getElementById('filterMarca').value;
-            const tipo = document.getElementById('filterTipo').value;
             const cambio = document.getElementById('filterCambio').value;
 
             const filtered = vehicles.filter(v => {{
                 const matchSearch = v.nome_completo.toLowerCase().includes(search) || v.marca.toLowerCase().includes(search);
                 const matchMarca = !marca || v.marca === marca;
                 const matchCambio = !cambio || v.cambio === cambio;
-                // Nota: O campo 'tipo' pode precisar de mapeamento no seu banco, aqui filtramos se existir
                 return matchSearch && matchMarca && matchCambio;
             }});
-
             renderVehicles(filtered);
-        }}
-
-        function openDetail(id) {{
-            const v = vehicles.find(x => x.id === id);
-            if (!v) return;
-
-            const modalBody = document.getElementById('modalBody');
-            modalBody.innerHTML = `
-                <div class="modal-gallery">
-                    <img src="${{v.images[0]}}" alt="${{v.nome_completo}}">
-                </div>
-                <div class="modal-details">
-                    <div class="card-subtitle">${{v.marca}}</div>
-                    <h2 style="font-size: 40px; margin-bottom: 10px;">${{v.modelo}}</h2>
-                    <div class="detail-price">${{formatPrice(v.preco_venda)}}</div>
-                    
-                    <p style="color: var(--text-muted); margin-bottom: 30px;">${{v.history}}</p>
-                    
-                    <div class="detail-specs">
-                        <div class="spec-item">
-                            <span class="spec-label">Ano</span>
-                            <span class="spec-value">${{v.ano}}</span>
-                        </div>
-                        <div class="spec-item">
-                            <span class="spec-label">Quilometragem</span>
-                            <span class="spec-value">${{v.km.toLocaleString('pt-BR')}} KM</span>
-                        </div>
-                        <div class="spec-item">
-                            <span class="spec-label">Câmbio</span>
-                            <span class="spec-value">${{v.cambio}}</span>
-                        </div>
-                        <div class="spec-item">
-                            <span class="spec-label">Combustível</span>
-                            <span class="spec-value">${{v.combustivel}}</span>
-                        </div>
-                    </div>
-
-                    <h4 style="text-transform: uppercase; letter-spacing: 2px; font-size: 14px; color: var(--accent);">Opcionais e Destaques</h4>
-                    <div class="optionals-list">
-                        ${{v.optionals.map(opt => `<div class="optional-item">${{opt}}</div>`).join('')}}
-                    </div>
-
-                    <div class="modal-actions">
-                        <a href="https://wa.me/5584999999999?text=Olá, tenho interesse no ${{v.nome_completo}}" target="_blank" class="btn-primary" style="flex: 1; text-align: center;">Tenho Interesse</a>
-                        <button class="btn-primary" style="background: transparent; border: 1px solid var(--accent); color: var(--accent);" onclick="toggleCompare(${{v.id}}); closeModal();">Comparar</button>
-                    </div>
-                </div>
-            `;
-
-            document.getElementById('detailModal').classList.add('active');
-            document.body.style.overflow = 'hidden';
-        }}
-
-        function closeModal() {{
-            document.getElementById('detailModal').classList.remove('active');
-            document.body.style.overflow = 'auto';
         }}
 
         function toggleCompare(id) {{
@@ -1019,78 +818,130 @@ def home():
             }} else if (compareList.length < 4) {{
                 compareList.push(v);
             }} else {{
-                alert('Você pode comparar no máximo 4 veículos.');
+                alert('Máximo de 4 modelos.');
             }}
 
             updateCompareBadge();
-            renderVehicles(vehicles); // Re-render to update toggle buttons
+            renderVehicles(vehicles);
         }}
 
         function updateCompareBadge() {{
             const badge = document.getElementById('compareBadge');
             badge.textContent = compareList.length;
-            badge.classList.toggle('visible', compareList.length > 0);
+            badge.style.display = compareList.length > 0 ? 'flex' : 'none';
+        }}
+
+        function openDetail(id) {{
+            const v = vehicles.find(x => x.id === id);
+            if (!v) return;
+
+            const modalContent = document.getElementById('modalContent');
+            modalContent.innerHTML = `
+                <div class="detail-grid">
+                    <div class="detail-gallery">
+                        <img src="${{v.images[0]}}" alt="${{v.nome_completo}}">
+                        <div style="margin-top:20px; font-size:14px; color:var(--text-muted);">
+                            ${{v.history}}
+                        </div>
+                    </div>
+                    <div class="detail-info">
+                        <div style="text-transform:uppercase; letter-spacing:2px; font-size:12px; margin-bottom:8px;">${{v.marca}}</div>
+                        <h2>${{v.modelo}}</h2>
+                        
+                        <div class="detail-price-box">
+                            <div style="font-size:14px; color:var(--text-muted); margin-bottom:4px;">Preço de Venda</div>
+                            <div style="font-size:32px; font-weight:600; color:var(--porsche-orange);">${{formatPrice(v.preco_venda)}}</div>
+                        </div>
+
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:24px; margin-bottom:40px;">
+                            <div>
+                                <div style="font-size:12px; text-transform:uppercase; color:var(--text-muted);">Ano</div>
+                                <div style="font-weight:600;">${{v.ano}}</div>
+                            </div>
+                            <div>
+                                <div style="font-size:12px; text-transform:uppercase; color:var(--text-muted);">Quilometragem</div>
+                                <div style="font-weight:600;">${{v.km.toLocaleString('pt-BR')}} KM</div>
+                            </div>
+                            <div>
+                                <div style="font-size:12px; text-transform:uppercase; color:var(--text-muted);">Câmbio</div>
+                                <div style="font-weight:600;">${{v.cambio}}</div>
+                            </div>
+                            <div>
+                                <div style="font-size:12px; text-transform:uppercase; color:var(--text-muted);">Combustível</div>
+                                <div style="font-weight:600;">${{v.combustivel}}</div>
+                            </div>
+                        </div>
+
+                        <div style="margin-bottom:40px;">
+                            <h4 style="font-size:14px; text-transform:uppercase; margin-bottom:16px;">Equipamentos de Série</h4>
+                            <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+                                ${{v.optionals.map(opt => `<div style="font-size:13px; display:flex; align-items:center; gap:8px;"><span style="width:4px; height:4px; background:black; border-radius:50%;"></span>${{opt}}</div>`).join('')}}
+                            </div>
+                        </div>
+
+                        <a href="https://wa.me/5584999999999?text=Tenho interesse no ${{v.nome_completo}}" target="_blank" class="btn-whatsapp">Tenho Interesse</a>
+                    </div>
+                </div>
+            `;
+            document.getElementById('detailModal').classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }}
+
+        function closeModal() {{
+            document.getElementById('detailModal').classList.remove('active');
+            document.body.style.overflow = 'auto';
         }}
 
         function openCompare() {{
             if (compareList.length < 2) {{
-                alert('Selecione pelo menos 2 veículos para comparar.');
+                alert('Selecione pelo menos 2 modelos para comparar.');
                 return;
             }}
 
-            const grid = document.getElementById('compareGrid');
-            const rows = [
-                {{ label: 'Modelo', key: 'modelo' }},
-                {{ label: 'Marca', key: 'marca' }},
-                {{ label: 'Preço', key: 'preco_venda', format: formatPrice }},
-                {{ label: 'Ano', key: 'ano' }},
-                {{ label: 'KM', key: 'km', format: v => v.toLocaleString('pt-BR') + ' KM' }},
-                {{ label: 'Câmbio', key: 'cambio' }},
-                {{ label: 'Combustível', key: 'combustivel' }},
-                {{ label: 'Cor', key: 'cor' }}
+            const container = document.getElementById('compareTableContainer');
+            let html = '<table class="compare-table">';
+            
+            // Header
+            html += '<tr><th>Modelo</th>';
+            compareList.forEach(v => {{
+                html += `<td>
+                    <img src="${{v.images[0]}}" style="width:100%; height:120px; object-fit:cover; border-radius:4px; margin-bottom:12px;">
+                    <div style="font-weight:700;">${{v.nome_completo}}</div>
+                </td>`;
+            }});
+            html += '</tr>';
+
+            // Rows
+            const fields = [
+                {{label: 'Preço', key: 'preco_venda', fmt: formatPrice}},
+                {{label: 'Ano', key: 'ano'}},
+                {{label: 'KM', key: 'km', fmt: v => v.toLocaleString('pt-BR') + ' KM'}},
+                {{label: 'Câmbio', key: 'cambio'}},
+                {{label: 'Combustível', key: 'combustivel'}},
+                {{label: 'Cor', key: 'cor'}}
             ];
 
-            let html = '';
-            
-            // Header Row (Images)
-            html += `<div class="compare-cell compare-header-cell">Veículo</div>`;
-            compareList.forEach(v => {{
-                html += `
-                    <div class="compare-cell" style="flex-direction: column; align-items: flex-start;">
-                        <img src="${{v.images[0]}}" style="width: 100%; height: 120px; object-fit: cover; margin-bottom: 10px;">
-                        <div style="font-weight: 700;">${{v.nome_completo}}</div>
-                    </div>
-                `;
-            }});
-
-            // Data Rows
-            rows.forEach(row => {{
-                html += `<div class="compare-cell compare-header-cell">${{row.label}}</div>`;
+            fields.forEach(f => {{
+                html += `<tr><th>${{f.label}}</th>`;
                 compareList.forEach(v => {{
-                    const val = row.format ? row.format(v[row.key]) : v[row.key];
-                    html += `<div class="compare-cell">${{val}}</div>`;
+                    html += `<td>${{f.fmt ? f.fmt(v[f.key]) : v[f.key]}}</td>`;
                 }});
+                html += '</tr>';
             }});
 
-            grid.style.gridTemplateColumns = `200px repeat(${{compareList.length}}, 1fr)`;
-            grid.innerHTML = html;
-            document.getElementById('comparePage').classList.add('active');
+            html += '</table>';
+            container.innerHTML = html;
+            document.getElementById('compareView').classList.add('active');
             document.body.style.overflow = 'hidden';
         }}
 
         function closeCompare() {{
-            document.getElementById('comparePage').classList.remove('active');
+            document.getElementById('compareView').classList.remove('active');
             document.body.style.overflow = 'auto';
         }}
 
-        // Initial Render
         renderVehicles(vehicles);
-
-        // Close modal on click outside
-        window.onclick = function(event) {{
-            const modal = document.getElementById('detailModal');
-            if (event.target == modal) closeModal();
-        }}
+        window.onclick = e => {{ if(e.target.classList.contains('modal-overlay')) closeModal(); }}
     </script>
 </body>
 </html>'''
