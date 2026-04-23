@@ -506,7 +506,7 @@ def home():
         <div class="hero-content">
             <div style="font-weight: 700; text-transform: uppercase; letter-spacing: 4px; font-size: 14px; margin-bottom: 20px;">CARMELO MULTIMARCAS</div>
             <h1>SUA PRÓXIMA CONQUISTA<br>ESTÁ AQUI.</h1>
-            <a href="#estoque" class="hero-btn">Explorar Coleção</a>
+            <a href="#estoque" class="hero-btn">Explorar Estoque</a>
         </div>
         <div class="scroll-indicator" onclick="document.getElementById('estoque').scrollIntoView()">
             <svg width="30" height="30" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="m19 9-7 7-7-7"/></svg>
@@ -575,7 +575,7 @@ def home():
             </div>
         </div>
         <div style="max-width: 1500px; margin: 60px auto 0; padding-top: 40px; border-top: 1px solid var(--porsche-light-gray); font-size: 12px; color: var(--porsche-gray);">
-            &copy; {datetime.now().year} AUTOcore (@app.autocore on Instagram). Todos os direitos reservados.
+            &copy; {datetime.now().year} AUTOcore (@autocore.app on Instagram). Todos os direitos reservados.
         </div>
     </footer>
 
