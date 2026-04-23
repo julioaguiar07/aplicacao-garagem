@@ -504,8 +504,8 @@ def home():
     <section class="hero-cinematic">
         <div class="hero-bg"></div>
         <div class="hero-content">
-            <div style="font-weight: 700; text-transform: uppercase; letter-spacing: 4px; font-size: 14px; margin-bottom: 20px;">Sinta a Emoção</div>
-            <h1>A PERFORMANCE<br>QUE VOCÊ MERECE.</h1>
+            <div style="font-weight: 700; text-transform: uppercase; letter-spacing: 4px; font-size: 14px; margin-bottom: 20px;">CARMELO MULTIMARCAS</div>
+            <h1>SUA PRÓXIMA CONSQUISTA<br>ESTÁ AQUI.</h1>
             <a href="#estoque" class="hero-btn">Explorar Coleção</a>
         </div>
         <div class="scroll-indicator" onclick="document.getElementById('estoque').scrollIntoView()">
