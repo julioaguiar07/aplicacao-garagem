@@ -1407,6 +1407,60 @@ class Database:
         conn.close()
         return True
     
+    def update_veiculo(self, veiculo_id, veiculo_data):
+        """Atualiza os dados de um veículo existente - suporta SQLite e PostgreSQL"""
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        
+        try:
+            usando_postgres = os.getenv('DATABASE_URL') is not None
+            
+            if usando_postgres:
+                cursor.execute('''
+                    UPDATE veiculos SET
+                        modelo = %s, ano = %s, marca = %s, cor = %s,
+                        preco_entrada = %s, preco_venda = %s, margem_negociacao = %s,
+                        fornecedor = %s, km = %s, placa = %s, chassi = %s,
+                        combustivel = %s, cambio = %s, portas = %s, observacoes = %s
+                    WHERE id = %s
+                ''', (
+                    veiculo_data['modelo'], veiculo_data['ano'], veiculo_data['marca'],
+                    veiculo_data['cor'], veiculo_data['preco_entrada'], veiculo_data['preco_venda'],
+                    veiculo_data.get('margem_negociacao', 15),
+                    veiculo_data['fornecedor'], veiculo_data['km'], veiculo_data['placa'],
+                    veiculo_data['chassi'], veiculo_data['combustivel'], veiculo_data['cambio'],
+                    veiculo_data['portas'], veiculo_data['observacoes'],
+                    veiculo_id
+                ))
+            else:
+                cursor.execute('''
+                    UPDATE veiculos SET
+                        modelo = ?, ano = ?, marca = ?, cor = ?,
+                        preco_entrada = ?, preco_venda = ?, margem_negociacao = ?,
+                        fornecedor = ?, km = ?, placa = ?, chassi = ?,
+                        combustivel = ?, cambio = ?, portas = ?, observacoes = ?
+                    WHERE id = ?
+                ''', (
+                    veiculo_data['modelo'], veiculo_data['ano'], veiculo_data['marca'],
+                    veiculo_data['cor'], veiculo_data['preco_entrada'], veiculo_data['preco_venda'],
+                    veiculo_data.get('margem_negociacao', 15),
+                    veiculo_data['fornecedor'], veiculo_data['km'], veiculo_data['placa'],
+                    veiculo_data['chassi'], veiculo_data['combustivel'], veiculo_data['cambio'],
+                    veiculo_data['portas'], veiculo_data['observacoes'],
+                    veiculo_id
+                ))
+            
+            conn.commit()
+            print(f"✅ Veículo {veiculo_id} atualizado com sucesso!")
+            return True
+            
+        except Exception as e:
+            print(f"❌ Erro ao atualizar veículo: {e}")
+            conn.rollback()
+            return False
+        finally:
+            conn.close()
+
     # Métodos para gastos
     def get_gastos(self, veiculo_id=None):
         """Busca gastos - VERSÃO CORRIGIDA"""
@@ -4192,48 +4246,171 @@ with tab2:
                             else:
                                 st.error("❌ O valor do gasto deve ser maior que zero!")
 
-                # Controles de status (código existente continua igual)
+                # =============================================
+                # CONTROLES: EDITAR, STATUS E EXCLUIR
+                # =============================================
                 st.markdown("---")
-                st.markdown("#### 🔄 Alterar Status")
-                col_status1, col_status2, col_status3 = st.columns(3)
-                
-                with col_status1:
+
+                # Chaves de session_state para controlar modais
+                edit_key = f"editando_{veiculo['id']}"
+                delete_key = f"confirmando_delete_{veiculo['id']}"
+
+                if edit_key not in st.session_state:
+                    st.session_state[edit_key] = False
+                if delete_key not in st.session_state:
+                    st.session_state[delete_key] = False
+
+                # Botões de ação principais
+                col_btn1, col_btn2, col_btn3, col_btn4 = st.columns(4)
+
+                with col_btn1:
                     status_options = ["Em estoque", "Vendido", "Reservado", "Financiado"]
                     novo_status = st.selectbox(
-                        "Status do Veículo", 
-                        status_options, 
+                        "Status",
+                        status_options,
                         index=status_options.index(veiculo['status']),
                         key=f"status_select_{veiculo['id']}"
                     )
-                
-                with col_status2:
-                    if st.button("Atualizar Status", key=f"status_btn_{veiculo['id']}", use_container_width=True):
+
+                with col_btn2:
+                    if st.button("🔄 Atualizar Status", key=f"status_btn_{veiculo['id']}", use_container_width=True):
                         if novo_status != veiculo['status']:
                             success = db.update_veiculo_status(veiculo['id'], novo_status)
                             if success:
                                 st.success("✅ Status atualizado!")
+                                forcar_atualizacao_gastos()
                                 st.rerun()
-                
-                with col_status3:
+
+                with col_btn3:
+                    if st.button("✏️ Editar Veículo", key=f"edit_btn_{veiculo['id']}", use_container_width=True):
+                        st.session_state[edit_key] = not st.session_state[edit_key]
+                        st.session_state[delete_key] = False
+
+                with col_btn4:
                     if veiculo['status'] != 'Vendido':
                         if st.button("🗑️ Excluir", key=f"delete_btn_{veiculo['id']}", use_container_width=True, type="secondary"):
-                            with st.container():
-                                st.warning("⚠️ Tem certeza que deseja excluir este veículo?")
-                                col_confirm1, col_confirm2 = st.columns(2)
-                                with col_confirm1:
-                                    if st.button("✅ Sim, excluir", key=f"confirm_yes_{veiculo['id']}", use_container_width=True):
-                                        sucesso, mensagem = db.delete_veiculo(veiculo['id'])
-                                        if sucesso:
-                                            st.success("✅ " + mensagem)
-                                            time.sleep(1)
-                                            st.rerun()
-                                        else:
-                                            st.error("❌ " + mensagem)
-                                with col_confirm2:
-                                    if st.button("❌ Cancelar", key=f"confirm_no_{veiculo['id']}", use_container_width=True):
-                                        st.rerun()
+                            st.session_state[delete_key] = not st.session_state[delete_key]
+                            st.session_state[edit_key] = False
                     else:
-                        st.info("📝 Vendido - não pode excluir")
+                        st.info("📝 Vendido")
+
+                # =============================================
+                # PAINEL DE CONFIRMAÇÃO DE EXCLUSÃO
+                # =============================================
+                if st.session_state[delete_key]:
+                    st.warning("⚠️ **Tem certeza que deseja excluir este veículo?** Esta ação não pode ser desfeita.")
+                    col_del1, col_del2 = st.columns(2)
+                    with col_del1:
+                        if st.button("✅ Sim, excluir definitivamente", key=f"confirm_yes_{veiculo['id']}", use_container_width=True, type="primary"):
+                            sucesso, mensagem = db.delete_veiculo(veiculo['id'])
+                            if sucesso:
+                                st.session_state[delete_key] = False
+                                forcar_atualizacao_gastos()
+                                st.success("✅ " + mensagem)
+                                time.sleep(1)
+                                st.rerun()
+                            else:
+                                st.error("❌ " + mensagem)
+                    with col_del2:
+                        if st.button("❌ Cancelar exclusão", key=f"confirm_no_{veiculo['id']}", use_container_width=True):
+                            st.session_state[delete_key] = False
+                            st.rerun()
+
+                # =============================================
+                # FORMULÁRIO DE EDIÇÃO DO VEÍCULO
+                # =============================================
+                if st.session_state[edit_key]:
+                    st.markdown("#### ✏️ Editar Dados do Veículo")
+                    with st.form(f"edit_veiculo_form_{veiculo['id']}", clear_on_submit=False):
+                        col_e1, col_e2 = st.columns(2)
+                        with col_e1:
+                            e_modelo = st.text_input("Modelo*", value=veiculo['modelo'], key=f"e_modelo_{veiculo['id']}")
+                            e_marca = st.text_input("Marca*", value=veiculo['marca'], key=f"e_marca_{veiculo['id']}")
+                            e_ano = st.number_input("Ano*", min_value=1970, max_value=2030, value=int(veiculo['ano']), key=f"e_ano_{veiculo['id']}")
+                            e_cor_options = ["Prata", "Preto", "Branco", "Vermelho", "Azul", "Cinza", "Verde", "Laranja"]
+                            e_cor_idx = e_cor_options.index(veiculo['cor']) if veiculo['cor'] in e_cor_options else 0
+                            e_cor = st.selectbox("Cor*", e_cor_options, index=e_cor_idx, key=f"e_cor_{veiculo['id']}")
+                            e_km = st.number_input("Quilometragem", min_value=0, value=int(veiculo['km'] or 0), key=f"e_km_{veiculo['id']}")
+                            e_placa = st.text_input("Placa", value=veiculo['placa'] or '', key=f"e_placa_{veiculo['id']}")
+                            e_chassi = st.text_input("Chassi", value=veiculo['chassi'] or '', key=f"e_chassi_{veiculo['id']}")
+
+                        with col_e2:
+                            e_fornecedor = st.text_input("Fornecedor*", value=veiculo['fornecedor'], key=f"e_fornecedor_{veiculo['id']}")
+                            e_preco_entrada = st.number_input(
+                                "Preço de Custo (R$)*",
+                                min_value=0.0, step=500.0,
+                                value=float(veiculo['preco_entrada']),
+                                format="%.2f",
+                                key=f"e_preco_entrada_{veiculo['id']}"
+                            )
+                            e_preco_venda = st.number_input(
+                                "Preço Anunciado (R$)*",
+                                min_value=0.0, step=500.0,
+                                value=float(veiculo['preco_venda']),
+                                format="%.2f",
+                                key=f"e_preco_venda_{veiculo['id']}"
+                            )
+                            e_margem = st.number_input(
+                                "Margem de Negociação (%)",
+                                min_value=0.0, max_value=100.0, step=0.5,
+                                value=float(veiculo.get('margem_negociacao', 15)),
+                                format="%.1f",
+                                key=f"e_margem_{veiculo['id']}"
+                            )
+                            comb_options = ["Gasolina", "Álcool", "Flex", "Diesel", "Elétrico"]
+                            comb_idx = comb_options.index(veiculo['combustivel']) if veiculo['combustivel'] in comb_options else 0
+                            e_combustivel = st.selectbox("Combustível", comb_options, index=comb_idx, key=f"e_comb_{veiculo['id']}")
+                            cambio_options = ["Automático", "Manual", "CVT"]
+                            cambio_idx = cambio_options.index(veiculo['cambio']) if veiculo['cambio'] in cambio_options else 0
+                            e_cambio = st.selectbox("Câmbio", cambio_options, index=cambio_idx, key=f"e_cambio_{veiculo['id']}")
+                            e_portas = st.selectbox("Portas", [2, 4, 5], index=[2, 4, 5].index(int(veiculo['portas'] or 4)), key=f"e_portas_{veiculo['id']}")
+
+                        e_observacoes = st.text_area("Observações", value=veiculo['observacoes'] or '', key=f"e_obs_{veiculo['id']}")
+
+                        col_save1, col_save2 = st.columns(2)
+                        with col_save1:
+                            submitted_edit = st.form_submit_button("💾 Salvar Alterações", use_container_width=True, type="primary")
+                        with col_save2:
+                            cancelar_edit = st.form_submit_button("❌ Cancelar", use_container_width=True)
+
+                        if submitted_edit:
+                            if not e_modelo or not e_marca or not e_fornecedor:
+                                st.error("❌ Preencha os campos obrigatórios: Modelo, Marca e Fornecedor.")
+                            elif e_preco_entrada <= 0 or e_preco_venda <= 0:
+                                st.error("❌ Os preços devem ser maiores que zero.")
+                            elif e_preco_venda <= e_preco_entrada:
+                                st.error("❌ O preço anunciado deve ser maior que o preço de custo.")
+                            else:
+                                dados_editados = {
+                                    'modelo': e_modelo,
+                                    'ano': e_ano,
+                                    'marca': e_marca,
+                                    'cor': e_cor,
+                                    'preco_entrada': e_preco_entrada,
+                                    'preco_venda': e_preco_venda,
+                                    'margem_negociacao': e_margem,
+                                    'fornecedor': e_fornecedor,
+                                    'km': e_km,
+                                    'placa': e_placa,
+                                    'chassi': e_chassi,
+                                    'combustivel': e_combustivel,
+                                    'cambio': e_cambio,
+                                    'portas': e_portas,
+                                    'observacoes': e_observacoes,
+                                }
+                                sucesso_edit = db.update_veiculo(veiculo['id'], dados_editados)
+                                if sucesso_edit:
+                                    st.session_state[edit_key] = False
+                                    forcar_atualizacao_gastos()
+                                    st.success("✅ Veículo atualizado com sucesso!")
+                                    time.sleep(1)
+                                    st.rerun()
+                                else:
+                                    st.error("❌ Erro ao salvar alterações. Tente novamente.")
+
+                        if cancelar_edit:
+                            st.session_state[edit_key] = False
+                            st.rerun()
 
 with tab3:
     # ABA UNIFICADA VENDAS + FINANCIAMENTOS
