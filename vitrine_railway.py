@@ -727,7 +727,7 @@ def home():
                             </div>
                         </div>
 
-                        <a href="https://wa.me/5584999999999?text=Tenho interesse no ${{v.nome_completo}}" target="_blank" class="hero-btn" style="background:black; color:white; width:100%; text-align:center; border:none;">Solicitar Proposta</a>
+                        <a href="https://wa.me/558430622434?text=Olá! Tenho interesse no ${{v.nome_completo}}" target="_blank" class="hero-btn" style="background:black; color:white; width:100%; text-align:center; border:none;">Solicitar Proposta</a>
                     </div>
                 </div>
             `;
