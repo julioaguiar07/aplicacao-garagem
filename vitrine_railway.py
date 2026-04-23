@@ -273,7 +273,7 @@ def home():
             position: absolute;
             inset: 0;
             background: linear-gradient(to right, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.2) 50%, rgba(0,0,0,0) 100%),
-                        url('https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&w=1920&q=80'); /* ALTERE O LINK DA IMAGEM DA HERO AQUI */
+                        url('https://images.unsplash.com/photo-1555215695-3004980ad54e?auto=format&fit=crop&w=1920&q=80'); /* BMW M3 BRANCA - UNSPLASH */
             background-size: cover;
             background-position: center;
             z-index: 1;
