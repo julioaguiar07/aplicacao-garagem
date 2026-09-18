@@ -1,0 +1,83 @@
+@import "tailwindcss";
+
+/*
+ * Design system Carmelo Multimarcas v2
+ * Paleta derivada do showroom da loja: asfalto/grafite + laranja dos anéis de luz.
+ */
+@theme {
+  --color-asfalto: #14161a;
+  --color-grafite: #1c1f24;
+  --color-chumbo: #262a30;
+  --color-chumbo-2: #2e3238;
+  --color-linha: #31363d;
+  --color-nevoa: #8c939c;
+  --color-nevoa-2: #5f666f;
+  --color-giz: #f1f2f4;
+
+  --color-laranja: #ff7a1a;
+  --color-ambar: #ffb45c;
+  --color-brasa: #c84b0c;
+
+  --color-sucesso: #3ecf8e;
+  --color-alerta: #f5b83d;
+  --color-perigo: #f2555a;
+
+  --font-display: var(--font-archivo), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-geist), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+
+  --radius-card: 1.25rem;
+}
+
+:root {
+  color-scheme: dark;
+}
+
+html {
+  background: var(--color-asfalto);
+}
+
+body {
+  background: var(--color-asfalto);
+  color: var(--color-giz);
+  font-family: var(--font-sans);
+  font-feature-settings: "ss01", "cv11";
+}
+
+/* Números sempre tabulares: valores em R$, km, datas */
+.num {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Títulos em Archivo semi-expandida */
+.display {
+  font-family: var(--font-display);
+  font-stretch: 112%;
+  letter-spacing: -0.02em;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-laranja);
+  outline-offset: 2px;
+}
+
+/* Cartão com brilho laranja subindo do rodapé (card de destaque do dashboard) */
+.brilho-laranja {
+  background:
+    radial-gradient(120% 90% at 50% 120%, color-mix(in oklab, var(--color-laranja) 55%, transparent), transparent 60%),
+    var(--color-grafite);
+}
+
+.scrollbar-fina {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-linha) transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
