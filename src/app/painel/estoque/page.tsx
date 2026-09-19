@@ -1,12 +1,13 @@
 import { BarraSuperior } from "@/components/painel/barra-superior";
 import { GradeEstoque, type CartaoEstoque } from "@/components/painel/grade-estoque";
-import { VEICULOS, pendencias } from "@/lib/demo/veiculos";
-import { diasDesde } from "@/lib/formato";
+import { listarVeiculos } from "@/lib/consultas/veiculos";
 
 export const metadata = { title: "Estoque" };
 
-export default function Estoque() {
-  const cartoes: CartaoEstoque[] = VEICULOS.map((v) => ({
+export default async function Estoque({ searchParams }: PageProps<"/painel/estoque">) {
+  const sp = await searchParams;
+  const lista = await listarVeiculos({ incluirVendidos: true });
+  const cartoes: CartaoEstoque[] = lista.map((v) => ({
     id: v.id,
     marca: v.marca,
     modelo: v.modelo,
@@ -18,15 +19,16 @@ export default function Estoque() {
     categoria: v.categoria,
     preco: v.preco,
     status: v.status,
-    dias: diasDesde(v.cadastradoEm),
-    pendencias: pendencias(v).total,
-    foto: v.fotos.find((f) => f.capa) ?? v.fotos[0],
+    publicado: v.publicado,
+    dias: v.dias,
+    pendencias: v.status === "vendido" ? 0 : v.pendencias,
+    foto: v.capa?.urlCard ?? null,
   }));
 
   return (
     <>
       <BarraSuperior titulo="Estoque" trilha={[{ rotulo: "Painel", href: "/painel" }, { rotulo: "Estoque" }]} />
-      <GradeEstoque veiculos={cartoes} />
+      <GradeEstoque veiculos={cartoes} soPendencias={sp.pendencias === "1"} />
     </>
   );
 }

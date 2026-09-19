@@ -1,9 +1,11 @@
 import Image from "next/image";
 import Link from "next/link";
 import { MapPin, MessageCircle } from "lucide-react";
-import { LOJA, linkWhatsapp } from "@/lib/vitrine";
+import type { DadosLoja } from "@/lib/consultas/configuracoes";
 
-export function Cabecalho() {
+const wa = (numero: string, texto: string) => `https://wa.me/${numero}?text=${encodeURIComponent(texto)}`;
+
+export function Cabecalho({ loja }: { loja: DadosLoja }) {
   return (
     <header className="border-b border-linha/70 bg-[#101114]">
       <div className="mx-auto flex h-16 max-w-[1440px] items-center gap-6 px-4 md:px-6">
@@ -17,20 +19,20 @@ export function Cabecalho() {
           <Link href="/#financiamento" className="hover:text-giz">
             Financiamento
           </Link>
-          <a href={linkWhatsapp("Olá! Quero avaliar meu carro na troca.")} target="_blank" rel="noopener" className="hover:text-giz">
+          <a href={wa(loja.whatsapp, "Olá! Quero avaliar meu carro na troca.")} target="_blank" rel="noopener" className="hover:text-giz">
             Avaliar meu carro
           </a>
           <Link href="/#contato" className="flex items-center gap-1.5 hover:text-giz">
-            <MapPin size={15} /> Mossoró/RN
+            <MapPin size={15} /> {loja.cidade}
           </Link>
         </nav>
         <a
-          href={linkWhatsapp("Olá! Vim pelo site da Carmelo.")}
+          href={wa(loja.whatsapp, "Olá! Vim pelo site da Carmelo.")}
           target="_blank"
           rel="noopener"
           className="ml-auto flex h-9 items-center gap-2 rounded-full bg-laranja px-4 text-sm font-semibold text-asfalto transition hover:bg-ambar md:ml-0"
         >
-          <MessageCircle size={16} /> <span className="hidden sm:inline">WhatsApp</span> <span className="num sm:hidden">{LOJA.telefone}</span>
+          <MessageCircle size={16} /> <span className="hidden sm:inline">WhatsApp</span> <span className="num sm:hidden">{loja.telefone}</span>
         </a>
       </div>
     </header>
@@ -38,13 +40,13 @@ export function Cabecalho() {
 }
 
 /** Faixa de informações abaixo do cabeçalho (no lugar das etapas de reserva da referência) */
-export function FaixaInfo({ disponiveis }: { disponiveis: number }) {
+export function FaixaInfo({ disponiveis, loja }: { disponiveis: number; loja: DadosLoja }) {
   const celulas = [
-    { rotulo: "Estoque", valor: `${disponiveis} carros disponíveis`, href: "/#estoque" },
-    { rotulo: "Onde estamos", valor: `${LOJA.endereco}, ${LOJA.cidade}`, href: "/#contato" },
+    { rotulo: "Estoque", valor: `${disponiveis} ${disponiveis === 1 ? "carro disponível" : "carros disponíveis"}`, href: "/#estoque" },
+    { rotulo: "Onde estamos", valor: `${loja.endereco}, ${loja.cidade}`, href: "/#contato" },
     { rotulo: "Financiamento", valor: "Simule a parcela", href: "/#financiamento" },
-    { rotulo: "Seu usado", valor: "Aceitamos na troca", href: linkWhatsapp("Olá! Quero avaliar meu carro na troca."), externo: true },
-    { rotulo: "Fale com a gente", valor: LOJA.telefone, href: linkWhatsapp("Olá! Vim pelo site da Carmelo."), externo: true },
+    { rotulo: "Seu usado", valor: "Aceitamos na troca", href: wa(loja.whatsapp, "Olá! Quero avaliar meu carro na troca."), externo: true },
+    { rotulo: "Fale com a gente", valor: loja.telefone, href: wa(loja.whatsapp, "Olá! Vim pelo site da Carmelo."), externo: true },
   ];
   return (
     <div className="border-b border-linha/70 bg-[#101114]">
@@ -67,7 +69,7 @@ export function FaixaInfo({ disponiveis }: { disponiveis: number }) {
   );
 }
 
-export function Rodape() {
+export function Rodape({ loja }: { loja: DadosLoja }) {
   return (
     <footer id="contato" className="border-t border-linha/70 bg-[#101114]">
       <div className="mx-auto grid max-w-[1440px] gap-8 px-4 py-12 md:grid-cols-[1.2fr_1fr_1fr] md:px-6">
@@ -80,20 +82,22 @@ export function Rodape() {
         <div>
           <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-nevoa">Endereço</p>
           <p className="mt-2 text-sm leading-relaxed">
-            {LOJA.endereco}
+            {loja.endereco}
             <br />
-            {LOJA.cep} · {LOJA.cidade}
+            {loja.cep && `${loja.cep} · `}
+            {loja.cidade}
           </p>
         </div>
         <div>
           <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-nevoa">Contato</p>
-          <a href={linkWhatsapp("Olá! Vim pelo site da Carmelo.")} target="_blank" rel="noopener" className="num mt-2 block text-sm hover:text-laranja">
-            WhatsApp {LOJA.telefone}
+          <a href={wa(loja.whatsapp, "Olá! Vim pelo site da Carmelo.")} target="_blank" rel="noopener" className="num mt-2 block text-sm hover:text-laranja">
+            WhatsApp {loja.telefone}
           </a>
         </div>
       </div>
       <p className="border-t border-linha/50 py-4 text-center text-xs text-nevoa-2">
-        © {new Date().getFullYear()} {LOJA.nome}. Preços e condições sujeitos a alteração sem aviso.
+        © {new Date().getFullYear()} {loja.razaoSocial}
+        {loja.cnpj ? ` · CNPJ ${loja.cnpj}` : ""}. Preços e condições sujeitos a alteração sem aviso.
       </p>
     </footer>
   );

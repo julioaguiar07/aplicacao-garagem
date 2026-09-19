@@ -17,10 +17,10 @@ const FAIXAS = [
 ];
 
 const ORDENS = {
-  recentes: { rotulo: "Mais recentes", fn: (a: VeiculoPublico, b: VeiculoPublico) => b.cadastradoEm.localeCompare(a.cadastradoEm) },
+  recentes: { rotulo: "Mais recentes", fn: (a: VeiculoPublico, b: VeiculoPublico) => b.entrada.localeCompare(a.entrada) },
   menorPreco: { rotulo: "Menor preço", fn: (a: VeiculoPublico, b: VeiculoPublico) => a.preco - b.preco },
   maiorPreco: { rotulo: "Maior preço", fn: (a: VeiculoPublico, b: VeiculoPublico) => b.preco - a.preco },
-  menorKm: { rotulo: "Menor km", fn: (a: VeiculoPublico, b: VeiculoPublico) => a.km - b.km },
+  menorKm: { rotulo: "Menor km", fn: (a: VeiculoPublico, b: VeiculoPublico) => (a.km ?? Infinity) - (b.km ?? Infinity) },
 };
 type Ordem = keyof typeof ORDENS;
 
@@ -81,7 +81,7 @@ function Caixa({ ativo }: { ativo: boolean }) {
   );
 }
 
-export function Catalogo({ veiculos }: { veiculos: VeiculoPublico[] }) {
+export function Catalogo({ veiculos, simulacao }: { veiculos: VeiculoPublico[]; simulacao: { entradaPct: number; taxaMensalPct: number; meses: number } }) {
   const [faixas, setFaixas] = useState<string[]>([]);
   const [categoria, setCategoria] = useState<string | null>(null);
   const [marcas, setMarcas] = useState<string[]>([]);
@@ -224,7 +224,7 @@ export function Catalogo({ veiculos }: { veiculos: VeiculoPublico[] }) {
         ) : (
           <ul className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
             {lista.map((v, i) => {
-              const { inteiros, centavos } = precoPartido(v.preco);
+              const { inteiros, centavos } = precoPartido(v.preco / 100);
               return (
                 <li key={v.slug}>
                   <Link
@@ -239,6 +239,9 @@ export function Catalogo({ veiculos }: { veiculos: VeiculoPublico[] }) {
                         <span className="rounded-full border border-linha px-2.5 py-0.5 text-[11px] font-medium uppercase tracking-[0.06em] text-giz/75">
                           {v.versao ?? v.categoria}
                         </span>
+                        {v.reservado && (
+                          <span className="rounded-full bg-laranja px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-[0.06em] text-asfalto">Reservado</span>
+                        )}
                         {v.destaques.slice(0, 1).map((d) => (
                           <span key={d} className="rounded-full border border-laranja/50 px-2.5 py-0.5 text-[11px] font-medium uppercase tracking-[0.06em] text-laranja">
                             {d}
@@ -248,7 +251,7 @@ export function Catalogo({ veiculos }: { veiculos: VeiculoPublico[] }) {
                     </div>
 
                     <FotoCarro
-                      foto={v.foto}
+                      src={v.capa}
                       alt={`${v.marca} ${v.modelo} ${v.ano}`}
                       prioridade={i < 3}
                       className="mt-4 aspect-[4/3]"
@@ -263,13 +266,13 @@ export function Catalogo({ veiculos }: { veiculos: VeiculoPublico[] }) {
                         <span className="ml-2 text-[11px] font-medium uppercase tracking-[0.08em] text-nevoa">à vista</span>
                       </p>
                       <p className="num mt-1.5 flex justify-between text-[11px] font-medium uppercase tracking-[0.06em] text-nevoa">
-                        <span>ou 48x de {reais(v.parcela)}*</span>
+                        <span>ou {simulacao.meses}x de {reais(v.parcela / 100)}*</span>
                         <span>{v.cor}</span>
                       </p>
                       <div className="mt-3.5 flex flex-wrap gap-1.5">
                         {[
                           { i: Calendar, t: v.ano },
-                          { i: Gauge, t: km(v.km) },
+                          { i: Gauge, t: v.km === null ? "km a consultar" : km(v.km) },
                           { i: Settings2, t: v.cambio },
                         ].map(({ i: Icone, t }) => (
                           <span key={String(t)} className="num flex items-center gap-1.5 rounded-full bg-[#2a2d32] px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.04em] text-giz/85">
@@ -286,7 +289,7 @@ export function Catalogo({ veiculos }: { veiculos: VeiculoPublico[] }) {
         )}
 
         <p id="financiamento" className="mt-8 max-w-3xl text-xs leading-relaxed text-nevoa">
-          *Simulação com 30% de entrada, 48 parcelas e taxa de 1,99% ao mês pela Tabela Price. Valores ilustrativos, sujeitos à aprovação de crédito e
+          *Simulação com {simulacao.entradaPct}% de entrada, {simulacao.meses} parcelas e taxa de {simulacao.taxaMensalPct.toLocaleString("pt-BR")}% ao mês pela Tabela Price. Valores ilustrativos, sujeitos à aprovação de crédito e
           às condições do banco. Aceitamos financiamento bancário, consórcio, cartão e seu usado na troca.
         </p>
       </section>

@@ -5,23 +5,34 @@ O sistema anterior (Streamlit + Flask) está em [`legacy/`](legacy/) e continua 
 
 ## Stack
 
-- Next.js 16 (App Router) + React 19 + TypeScript
+- Next.js 16 (App Router, Server Actions) + React 19 + TypeScript
 - Tailwind CSS 4, Recharts, lucide-react
-- Próximas fases: Postgres com Prisma, autenticação de um único administrador, armazenamento de fotos e documentos no Railway
+- Postgres com Drizzle ORM: em produção o Postgres do Railway (`DATABASE_URL`); localmente um Postgres embutido (PGlite) em `.dados/`
+- Arquivos (fotos, documentos, comprovantes) fora do banco: `.dados/arquivos/` local; bucket do Railway na virada
+- Login de um único administrador (bcrypt + cookie assinado), PDFs com pdf-lib, fotos com sharp
 
 ## Rodando localmente
 
 ```bash
 npm install
+npm run semear   # cria o banco local com dados de demonstração (apaga o que houver)
 npm run dev      # http://localhost:3000
 ```
 
-- Vitrine: `/`
-- Painel: `/painel`
+- Vitrine: `/` · Painel: `/painel` (senha local: `carmelo`)
+- `npm run semear` precisa do servidor parado (o PGlite aceita um processo por vez).
 
-## Estado atual: Fase 0 (protótipo)
+## Variáveis de ambiente (produção)
 
-As telas usam dados de demonstração em `src/lib/demo/`. Marca, modelo, ano, km, preço e fotos são os que a vitrine atual já publica;
-custos, gastos, documentos e vendas são fictícios. Nada aqui lê ou grava no banco de produção.
+| Variável | Para quê |
+|---|---|
+| `DATABASE_URL` | Postgres do Railway (as migrações rodam sozinhas ao iniciar) |
+| `SESSAO_SEGREDO` | Assinatura do cookie de login (texto longo e aleatório) |
+| `ADMIN_SENHA_INICIAL` | Senha do primeiro acesso; depois troque em Configurações |
 
-As fotos em `public/demo/veiculos/` foram geradas com `scripts/prototipo-fotos.mjs` (sem EXIF/GPS, recorte 4:3 para os cards).
+## Estrutura
+
+- `src/db/` schema e conexão · `drizzle/` migrações (`npm run db:gerar` após mudar o schema)
+- `src/lib/consultas/` leituras · `src/lib/acoes/` gravações (server actions) · `src/lib/negocio/` regras compartilhadas (venda)
+- `src/app/painel/` painel · `src/app/page.tsx` e `src/app/carros/` vitrine
+- `scripts/semear.ts` carga de demonstração (fotos reais da vitrine atual em `public/demo/`, demais dados fictícios)

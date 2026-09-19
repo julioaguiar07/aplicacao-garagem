@@ -1,6 +1,9 @@
-import type { FotoVeiculo, Veiculo } from "@/lib/tipos";
-import { VEICULOS } from "@/lib/demo/veiculos";
-import { parcelaPrice } from "@/lib/formato";
+import "server-only";
+import { and, asc, eq, inArray } from "drizzle-orm";
+import { banco, schema } from "@/db";
+import { urlArquivo } from "@/lib/armazenamento";
+import { dadosLoja, type DadosLoja } from "@/lib/consultas/configuracoes";
+import { parcelaPrice } from "@/lib/dominio";
 
 /**
  * Dados que podem ir para o navegador na vitrine pública.
@@ -10,65 +13,68 @@ export interface VeiculoPublico {
   slug: string;
   marca: string;
   modelo: string;
-  versao?: string;
+  versao: string | null;
   ano: number;
-  km: number;
-  cor: string;
+  km: number | null;
+  cor: string | null;
   categoria: string;
   cambio: string;
   combustivel: string;
-  portas: number;
-  preco: number;
-  parcela: number;
+  portas: number | null;
+  preco: number; // centavos
+  parcela: number; // centavos
+  reservado: boolean;
   destaques: string[];
   opcionais: string[];
-  descricao?: string;
-  foto?: FotoVeiculo;
-  fotos: FotoVeiculo[];
-  cadastradoEm: string;
+  descricao: string | null;
+  capa: string | null;
+  fotos: { card: string; original: string }[];
+  entrada: string;
 }
 
-export const LOJA = {
-  nome: "Carmelo Multimarcas",
-  whatsapp: "558430622434",
-  telefone: "(84) 3062-2434",
-  endereco: "Rua José Damião, 61",
-  cidade: "Mossoró/RN",
-  cep: "59619-140",
-};
-
-/** Premissas da simulação exibida na vitrine (ajustáveis nas Configurações) */
-export const SIMULACAO = { entradaPct: 30, taxaMensalPct: 1.99, meses: 48 };
-
-export function paraPublico(v: Veiculo): VeiculoPublico {
-  const financiado = v.preco * (1 - SIMULACAO.entradaPct / 100);
-  return {
-    slug: v.slug,
-    marca: v.marca,
-    modelo: v.modelo,
-    versao: v.versao,
-    ano: v.anoModelo,
-    km: v.km,
-    cor: v.cor,
-    categoria: v.categoria,
-    cambio: v.cambio,
-    combustivel: v.combustivel,
-    portas: v.portas,
-    preco: v.preco,
-    parcela: parcelaPrice(financiado, SIMULACAO.taxaMensalPct, SIMULACAO.meses),
-    destaques: v.destaques,
-    opcionais: v.opcionais,
-    descricao: v.descricao,
-    foto: v.fotos.find((f) => f.capa) ?? v.fotos[0],
-    fotos: v.fotos,
-    cadastradoEm: v.cadastradoEm,
-  };
+export async function vitrine(): Promise<{ veiculos: VeiculoPublico[]; loja: DadosLoja }> {
+  const db = await banco();
+  const [loja, lista] = await Promise.all([
+    dadosLoja(),
+    db
+      .select()
+      .from(schema.veiculos)
+      .where(and(eq(schema.veiculos.publicado, true), inArray(schema.veiculos.status, ["disponivel", "consignado", "reservado"]))),
+  ]);
+  const ids = lista.map((v) => v.id);
+  const fotos = ids.length ? await db.select().from(schema.fotos).where(inArray(schema.fotos.veiculoId, ids)).orderBy(asc(schema.fotos.ordem), asc(schema.fotos.id)) : [];
+  const { entradaPct, taxaMensalPct, meses } = loja.simulacao;
+  const veiculos = lista
+    .map((v) => {
+      const doCarro = fotos.filter((f) => f.veiculoId === v.id).map((f) => ({ card: urlArquivo(f.chaveCard), original: urlArquivo(f.chaveOriginal) }));
+      return {
+        slug: v.slug,
+        marca: v.marca,
+        modelo: v.modelo,
+        versao: v.versao,
+        ano: v.anoModelo,
+        km: v.km,
+        cor: v.cor,
+        categoria: v.categoria,
+        cambio: v.cambio,
+        combustivel: v.combustivel,
+        portas: v.portas,
+        preco: v.preco,
+        parcela: parcelaPrice(Math.round(v.preco * (1 - entradaPct / 100)), taxaMensalPct, meses),
+        reservado: v.status === "reservado",
+        destaques: v.destaques,
+        opcionais: v.opcionais,
+        descricao: v.descricao,
+        capa: doCarro[0]?.card ?? null,
+        fotos: doCarro,
+        entrada: v.dataEntrada,
+      };
+    })
+    .filter((v) => v.capa)
+    .sort((a, b) => Number(a.reservado) - Number(b.reservado) || b.entrada.localeCompare(a.entrada));
+  return { veiculos, loja };
 }
 
-export function veiculosPublicados(): VeiculoPublico[] {
-  return VEICULOS.filter((v) => v.publicado && (v.status === "disponivel" || v.status === "reservado")).map(paraPublico);
-}
-
-export function linkWhatsapp(texto: string) {
-  return `https://wa.me/${LOJA.whatsapp}?text=${encodeURIComponent(texto)}`;
+export function linkWhatsapp(numero: string, texto: string) {
+  return `https://wa.me/${numero}?text=${encodeURIComponent(texto)}`;
 }

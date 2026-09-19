@@ -1,9 +1,9 @@
 import Image from "next/image";
-import type { FotoVeiculo } from "@/lib/tipos";
+import { CarFront } from "lucide-react";
 import { cn } from "@/lib/cn";
 
 interface Props {
-  foto?: FotoVeiculo;
+  src?: string | null;
   alt: string;
   prioridade?: boolean;
   sizes?: string;
@@ -11,12 +11,12 @@ interface Props {
 }
 
 /** Foto completa do carro preenchendo o formato do card */
-export function FotoCarro({ foto, alt, prioridade, sizes, className }: Props) {
+export function FotoCarro({ src, alt, prioridade, sizes, className }: Props) {
   return (
     <div className={cn("relative overflow-hidden bg-chumbo", className)}>
-      {foto ? (
+      {src ? (
         <Image
-          src={foto.card}
+          src={src}
           alt={alt}
           fill
           priority={prioridade}
@@ -24,7 +24,9 @@ export function FotoCarro({ foto, alt, prioridade, sizes, className }: Props) {
           className="object-cover transition duration-500 group-hover:scale-[1.03]"
         />
       ) : (
-        <div className="absolute inset-0 grid place-items-center text-sm text-nevoa">Sem foto</div>
+        <div className="absolute inset-0 grid place-items-center text-nevoa-2">
+          <CarFront size={28} strokeWidth={1.4} />
+        </div>
       )}
     </div>
   );

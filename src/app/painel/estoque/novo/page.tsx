@@ -1,17 +1,20 @@
-import { EmBreve } from "@/components/painel/em-breve";
+import { BarraSuperior } from "@/components/painel/barra-superior";
+import { FormVeiculo } from "@/components/painel/form-veiculo";
+import { cadastrarVeiculo } from "@/lib/acoes/veiculos";
+import { listarContas } from "@/lib/consultas/caixa";
 
 export const metadata = { title: "Cadastrar veículo" };
 
-export default function NovoVeiculo() {
+export default async function NovoVeiculo() {
+  const contas = await listarContas();
   return (
-    <EmBreve
-      titulo="Cadastrar veículo"
-      fase="Fase 3"
-      itens={[
-        "Passo a passo com rascunho salvo: identificação pela FIPE, características, entrada, preço, fotos, documentos e revisão",
-        "Obrigatórios só marca, modelo, ano, custo, preço e uma foto",
-        "Recorte automático da foto de capa, com opção de usar a foto inteira",
-      ]}
-    />
+    <>
+      <BarraSuperior
+        titulo="Cadastrar veículo"
+        trilha={[{ rotulo: "Painel", href: "/painel" }, { rotulo: "Estoque", href: "/painel/estoque" }, { rotulo: "Novo" }]}
+        acoes={<span />}
+      />
+      <FormVeiculo acao={cadastrarVeiculo} contas={contas.map((c) => ({ id: c.id, nome: c.nome }))} />
+    </>
   );
 }

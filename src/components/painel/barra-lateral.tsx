@@ -14,7 +14,9 @@ import {
   Settings,
   PanelLeftClose,
   PanelLeftOpen,
+  LogOut,
 } from "lucide-react";
+import { sair } from "@/app/entrar/acoes";
 import { useState } from "react";
 import { cn } from "@/lib/cn";
 
@@ -108,14 +110,19 @@ export function BarraLateral() {
         ))}
       </nav>
 
-      <div className={cn("mt-4 flex items-center gap-3 rounded-2xl border border-linha/70 bg-chumbo/50 p-2.5", recolhida && "justify-center")}>
+      <div className={cn("mt-4 flex items-center gap-3 rounded-2xl border border-linha/70 bg-chumbo/50 p-2.5", recolhida && "flex-col")}>
         <Image src="/marca/logo-icone.png" alt="" width={36} height={36} className="rounded-full" />
         {!recolhida && (
-          <div className="min-w-0 leading-tight">
+          <div className="min-w-0 flex-1 leading-tight">
             <p className="truncate text-sm font-medium">Administrador</p>
             <p className="truncate text-xs text-nevoa">Carmelo Multimarcas</p>
           </div>
         )}
+        <form action={sair}>
+          <button className="rounded-lg p-1.5 text-nevoa transition hover:bg-chumbo hover:text-giz" aria-label="Sair do painel" title="Sair">
+            <LogOut size={17} />
+          </button>
+        </form>
       </div>
     </aside>
   );
