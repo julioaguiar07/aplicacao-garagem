@@ -19,6 +19,7 @@ import {
 import { sair } from "@/app/entrar/acoes";
 import { useState } from "react";
 import { cn } from "@/lib/cn";
+import { URL_VITRINE } from "@/lib/site";
 
 const SECOES = [
   {
@@ -40,7 +41,7 @@ const SECOES = [
   {
     titulo: "Sistema",
     itens: [
-      { href: "/", rotulo: "Ver vitrine", icone: Store, externo: true },
+      { href: URL_VITRINE, rotulo: "Ver vitrine", icone: Store, externo: true },
       { href: "/painel/configuracoes", rotulo: "Configurações", icone: Settings },
     ],
   },

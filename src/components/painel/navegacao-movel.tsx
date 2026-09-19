@@ -6,6 +6,7 @@ import { useState } from "react";
 import { CarFront, FileBarChart, Handshake, LayoutGrid, LogOut, Menu, Search, Settings, Store, Users, Wallet, X } from "lucide-react";
 import { sair } from "@/app/entrar/acoes";
 import { cn } from "@/lib/cn";
+import { URL_VITRINE } from "@/lib/site";
 
 const ITENS = [
   { href: "/painel", rotulo: "Início", icone: LayoutGrid },
@@ -18,7 +19,7 @@ const MAIS = [
   { href: "/painel/clientes", rotulo: "Clientes", icone: Users },
   { href: "/painel/relatorios", rotulo: "Relatórios", icone: FileBarChart },
   { href: "/painel/configuracoes", rotulo: "Configurações", icone: Settings },
-  { href: "/", rotulo: "Ver vitrine", icone: Store },
+  { href: URL_VITRINE, rotulo: "Ver vitrine", icone: Store },
 ];
 
 /** Barra inferior no celular (vendedor no pátio) */
