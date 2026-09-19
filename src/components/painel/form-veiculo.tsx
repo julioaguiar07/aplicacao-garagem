@@ -49,10 +49,12 @@ const CHAVE_RASCUNHO = "carmelo:rascunho-veiculo";
 
 type OpcaoFipe = { codigo: string; nome: string };
 
-/** "VW - VolksWagen" → "Volkswagen"; "GM - Chevrolet" → "Chevrolet" */
+/** "VW - VolksWagen" → "Volkswagen"; "GM - Chevrolet" → "Chevrolet"; "BMW" → "BMW" */
 function limparMarca(nome: string) {
-  const base = nome.includes(" - ") ? nome.split(" - ").pop()! : nome;
-  return base.toLowerCase().replace(/(^|\s)\S/g, (l) => l.toUpperCase()).replace("Volkswagen", "Volkswagen");
+  const base = (nome.includes(" - ") ? nome.split(" - ").pop()! : nome).trim();
+  // Siglas (BMW, JAC, RAM, GWM) ficam como estão
+  if (/^[A-Z0-9]{2,4}$/.test(base)) return base;
+  return base.toLowerCase().replace(/(^|[\s-])\S/g, (l) => l.toUpperCase());
 }
 
 function Chips({ opcoes, marcados, alternar, simples }: { opcoes: readonly string[]; marcados: string[]; alternar: (o: string) => void; simples?: boolean }) {
@@ -80,7 +82,7 @@ function Chips({ opcoes, marcados, alternar, simples }: { opcoes: readonly strin
   );
 }
 
-function BuscaFipe({ aoEscolher }: { aoEscolher: (d: { marca: string; modelo: string; versao: string; ano: string; combustivel: string; precoFipe: number; codigoFipe: string }) => void }) {
+function BuscaFipe({ aoEscolher }: { aoEscolher: (d: { marca: string; modelo: string; versao: string; ano: string; combustivel: string; cambio: string | null; precoFipe: number; codigoFipe: string }) => void }) {
   const [marcas, setMarcas] = useState<OpcaoFipe[]>([]);
   const [modelos, setModelos] = useState<OpcaoFipe[]>([]);
   const [anos, setAnos] = useState<OpcaoFipe[]>([]);
@@ -171,7 +173,8 @@ function BuscaFipe({ aoEscolher }: { aoEscolher: (d: { marca: string; modelo: st
             const [modelo, ...resto] = String(v.Modelo).split(" ");
             const precoFipe = Math.round(Number(String(v.Valor).replace(/[^\d,]/g, "").replace(",", ".")) * 100);
             const combustivel = /diesel/i.test(v.Combustivel) ? "Diesel" : /(álcool|alcool|etanol)/i.test(v.Combustivel) ? "Etanol" : "Flex";
-            aoEscolher({ marca: limparMarca(String(v.Marca)), modelo, versao: resto.join(" "), ano: String(v.AnoModelo === 32000 ? new Date().getFullYear() : v.AnoModelo), combustivel, precoFipe, codigoFipe: String(v.CodigoFipe) });
+            const cambio = /CVT/i.test(v.Modelo) ? "CVT" : /Aut/i.test(v.Modelo) ? "Automático" : /Mec/i.test(v.Modelo) ? "Manual" : null;
+            aoEscolher({ cambio, marca: limparMarca(String(v.Marca)), modelo, versao: resto.join(" "), ano: String(v.AnoModelo === 32000 ? new Date().getFullYear() : v.AnoModelo), combustivel, precoFipe, codigoFipe: String(v.CodigoFipe) });
             setResultado(`${v.Marca} ${v.Modelo} ${v.AnoModelo === 32000 ? "0 km" : v.AnoModelo}: FIPE ${v.Valor}`);
           }}
         >
@@ -260,6 +263,8 @@ export function FormVeiculo({
       if (!v.marca.trim() || !v.modelo.trim()) return "Informe marca e modelo.";
       const ano = Number(v.anoModelo);
       if (!ano || ano < 1950 || ano > new Date().getFullYear() + 2) return "Informe um ano de modelo válido.";
+      const fab = Number(v.anoFabricacao);
+      if (fab && (fab > ano || fab < ano - 1)) return "O ano de fabricação deve ser o mesmo do modelo ou um ano antes (ex.: 2022/2023).";
     }
     if (p === 2) {
       if (!v.preco) return "Informe o preço anunciado.";
@@ -378,7 +383,11 @@ export function FormVeiculo({
           <div className="space-y-5">
             <BuscaFipe
               aoEscolher={(d) =>
-                setV((a) => ({ ...a, marca: d.marca, modelo: d.modelo, versao: d.versao, anoModelo: d.ano, anoFabricacao: a.anoFabricacao || d.ano, combustivel: d.combustivel, precoFipe: d.precoFipe, codigoFipe: d.codigoFipe }))
+                setV((a) => {
+                  const fab = Number(a.anoFabricacao);
+                  const anoFabricacao = fab && fab <= Number(d.ano) && fab >= Number(d.ano) - 1 ? a.anoFabricacao : d.ano;
+                  return { ...a, marca: d.marca, modelo: d.modelo, versao: d.versao, anoModelo: d.ano, anoFabricacao, combustivel: d.combustivel, cambio: d.cambio ?? a.cambio, precoFipe: d.precoFipe, codigoFipe: d.codigoFipe };
+                })
               }
             />
             <div className="grid gap-4 md:grid-cols-3">
@@ -444,10 +453,10 @@ export function FormVeiculo({
                 </select>
               </Campo>
             </div>
-            <Campo rotulo="Opcionais">
+            <Campo rotulo="Equipamentos" dica="Marque o que o carro tem; aparece na página do carro na vitrine">
               <Chips opcoes={[...new Set([...OPCIONAIS, ...v.opcionais])]} marcados={v.opcionais} alternar={(o) => alternar("opcionais", o)} />
               <div className="mt-3 flex max-w-sm gap-2">
-                <input className={classeCampo} placeholder="Outro opcional" value={novoOpcional} onChange={(e) => setNovoOpcional(e.target.value)} onKeyDown={(e) => {
+                <input className={classeCampo} placeholder="Outro equipamento" value={novoOpcional} onChange={(e) => setNovoOpcional(e.target.value)} onKeyDown={(e) => {
                   if (e.key === "Enter") {
                     e.preventDefault();
                     if (novoOpcional.trim()) alternar("opcionais", novoOpcional.trim());

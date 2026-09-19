@@ -27,7 +27,7 @@ export function ControlesVeiculo({ id, status, publicado, temVenda }: { id: numb
   const manual = ["disponivel", "em_preparacao", "consignado", "rascunho"];
   return (
     <div className="flex flex-wrap items-center gap-2">
-      {manual.includes(status) ? (
+      {manual.includes(status) || !temVenda ? (
         <select
           aria-label="Status do veículo"
           value={status}
@@ -41,8 +41,8 @@ export function ControlesVeiculo({ id, status, publicado, temVenda }: { id: numb
           }
           className={cn(classeCampo, "h-10 w-auto rounded-full")}
         >
-          {manual.map((s) => (
-            <option key={s} value={s}>
+          {(manual.includes(status) ? manual : [status, ...manual]).map((s) => (
+            <option key={s} value={s} disabled={!manual.includes(s)}>
               {STATUS_VEICULO[s as keyof typeof STATUS_VEICULO]}
             </option>
           ))}

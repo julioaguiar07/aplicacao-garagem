@@ -75,7 +75,7 @@ function AbaGeral({ d }: { d: Dados }) {
             <Campo rotulo="RENAVAM" valor={v.renavam} faltando={!v.renavam} />
           </dl>
         </Cartao>
-        <Cartao titulo="Opcionais">
+        <Cartao titulo="Equipamentos">
           {v.opcionais.length ? (
             <ul className="flex flex-wrap gap-2">
               {v.opcionais.map((o) => (
@@ -85,7 +85,7 @@ function AbaGeral({ d }: { d: Dados }) {
               ))}
             </ul>
           ) : (
-            <p className="text-sm text-nevoa">Nenhum opcional marcado. Use “Editar dados” para incluir.</p>
+            <p className="text-sm text-nevoa">Nenhum equipamento marcado. Use “Editar dados” para dizer o que o carro tem.</p>
           )}
         </Cartao>
         {v.descricao && (

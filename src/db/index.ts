@@ -23,8 +23,9 @@ async function conectar(): Promise<Banco> {
     await migratePg(banco, { migrationsFolder: PASTA_MIGRACOES });
     return banco as unknown as Banco;
   }
+  if (process.env.NODE_ENV === "production" && process.env.RAILWAY_ENVIRONMENT) throw new Error("DATABASE_URL não definida no Railway");
   const { PGlite } = await import("@electric-sql/pglite");
-  const pasta = path.join(process.cwd(), ".dados", "pglite");
+  const pasta = path.resolve(process.env.BANCO_LOCAL_DIR ?? path.join(process.cwd(), ".dados", "pglite"));
   fs.mkdirSync(path.dirname(pasta), { recursive: true });
   const cliente = new PGlite(pasta);
   const banco = drizzlePglite(cliente, { schema });

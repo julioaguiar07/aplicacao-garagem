@@ -2,7 +2,7 @@
 
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { conferirSenha } from "@/lib/auth";
+import { conferirSenha, segredoSessao } from "@/lib/auth";
 import { COOKIE_SESSAO, OPCOES_COOKIE, criarToken } from "@/lib/sessao";
 
 export async function entrar(_: string | null, form: FormData): Promise<string | null> {
@@ -10,7 +10,7 @@ export async function entrar(_: string | null, form: FormData): Promise<string |
   const voltar = String(form.get("voltar") ?? "/painel");
   if (!senha) return "Digite a senha.";
   if (!(await conferirSenha(senha))) return "Senha incorreta. Confira e tente de novo.";
-  (await cookies()).set(COOKIE_SESSAO, await criarToken(), OPCOES_COOKIE);
+  (await cookies()).set(COOKIE_SESSAO, await criarToken(await segredoSessao()), OPCOES_COOKIE);
   redirect(voltar.startsWith("/painel") ? voltar : "/painel");
 }
 

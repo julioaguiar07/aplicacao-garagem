@@ -67,7 +67,7 @@ export default async function PaginaVeiculo({ params }: PageProps<"/carros/[slug
 
             {v.opcionais.length > 0 && (
               <section className="mt-10">
-                <h2 className="display text-xl font-bold">Opcionais</h2>
+                <h2 className="display text-xl font-bold">Equipamentos</h2>
                 <ul className="mt-4 grid gap-x-6 gap-y-2.5 sm:grid-cols-2">
                   {v.opcionais.map((o) => (
                     <li key={o} className="flex items-center gap-2.5 text-sm text-giz/85">

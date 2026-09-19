@@ -1,6 +1,6 @@
 "use server";
 
-import { and, asc, eq, isNull } from "drizzle-orm";
+import { and, asc, eq, isNull, ne } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { banco, schema } from "@/db";
 import { exigirLogin } from "@/lib/auth";
@@ -24,6 +24,8 @@ function lerDadosVeiculo(form: FormData) {
   if (!marca) erros.push("marca");
   if (!modelo) erros.push("modelo");
   if (!anoModelo || anoModelo < 1950 || anoModelo > new Date().getFullYear() + 2) erros.push("ano");
+  const fab = inteiro(form, "anoFabricacao");
+  if (fab && anoModelo && (fab > anoModelo || fab < anoModelo - 1)) erros.push("ano de fabricação (igual ao do modelo ou um antes)");
   if (custo === null) erros.push("custo");
   if (!preco) erros.push("preço anunciado");
   const origem = (texto(form, "origem") ?? "compra") as keyof typeof ORIGEM_VEICULO;
@@ -151,7 +153,10 @@ export async function alterarStatus(id: number, status: string): Promise<Resulta
   const db = await banco();
   const [v] = await db.select().from(veiculos).where(eq(veiculos.id, id));
   if (!v) return { ok: false, erro: "Veículo não encontrado." };
-  if (v.status === "vendido" || v.status === "reservado") return { ok: false, erro: "Este carro está numa venda. Mude pela venda." };
+  if (v.status === "vendido" || v.status === "reservado") {
+    const [ativa] = await db.select({ id: vendas.id }).from(vendas).where(and(eq(vendas.veiculoId, id), ne(vendas.etapa, "cancelada")));
+    if (ativa) return { ok: false, erro: "Este carro está numa venda. Mude pela venda." };
+  }
   await db.update(veiculos).set({ status, publicado: status === "rascunho" ? false : v.publicado }).where(eq(veiculos.id, id));
   await registrarEvento({ veiculoId: id, titulo: `Status: ${STATUS_VEICULO[status as keyof typeof STATUS_VEICULO]}` });
   atualizarTelas();

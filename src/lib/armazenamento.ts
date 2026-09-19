@@ -4,10 +4,11 @@ import fs from "node:fs/promises";
 import path from "node:path";
 
 // Arquivos (fotos, documentos, notas, comprovantes) ficam fora do banco.
-// Local: pasta .dados/arquivos. Em produção a mesma interface grava num bucket S3 do Railway (Fase 7).
+// Local: pasta .dados/arquivos. Em produção: volume do Railway (ARQUIVOS_DIR).
 // Chaves começando com "publico/" podem ser servidas sem login (fotos da vitrine).
 
-const RAIZ = path.join(process.cwd(), ".dados", "arquivos");
+// Em produção, ARQUIVOS_DIR aponta para o volume persistente do Railway
+const RAIZ = path.resolve(process.env.ARQUIVOS_DIR ?? path.join(process.cwd(), ".dados", "arquivos"));
 
 function caminho(chave: string) {
   const alvo = path.normalize(path.join(RAIZ, chave));

@@ -5,10 +5,11 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start",
+    "start": "node --conditions=react-server --import tsx scripts/iniciar.ts && next start",
     "lint": "eslint",
     "semear": "node --conditions=react-server --import tsx scripts/semear.ts",
-    "db:gerar": "drizzle-kit generate"
+    "db:gerar": "drizzle-kit generate",
+    "iniciar": "node --conditions=react-server --import tsx scripts/iniciar.ts"
   },
   "dependencies": {
     "@electric-sql/pglite": "^0.5.8",
@@ -28,7 +29,8 @@
     "server-only": "^0.0.1",
     "sharp": "^0.34.5",
     "tailwind-merge": "^3.7.0",
-    "zod": "^4.6.5"
+    "zod": "^4.6.5",
+    "tsx": "^4.23.13"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
@@ -40,7 +42,9 @@
     "eslint": "^9",
     "eslint-config-next": "16.3.5",
     "tailwindcss": "^4",
-    "tsx": "^4.23.13",
     "typescript": "^5"
+  },
+  "engines": {
+    "node": ">=20.9"
   }
 }
