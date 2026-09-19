@@ -88,6 +88,7 @@ function BuscaFipe({ aoEscolher }: { aoEscolher: (d: { marca: string; modelo: st
   const [anos, setAnos] = useState<OpcaoFipe[]>([]);
   const [sel, setSel] = useState({ marca: "", modelo: "", ano: "" });
   const [filtroModelo, setFiltroModelo] = useState("");
+  const [textoMarca, setTextoMarca] = useState("");
   const [carregando, setCarregando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [resultado, setResultado] = useState<string | null>(null);
@@ -115,51 +116,58 @@ function BuscaFipe({ aoEscolher }: { aoEscolher: (d: { marca: string; modelo: st
       .catch(() => setErro("A tabela FIPE não respondeu agora. Preencha manualmente."));
   }, []);
 
-  const modelosFiltrados = modelos.filter((m) => m.nome.toLowerCase().includes(filtroModelo.toLowerCase())).slice(0, 200);
+  const modelosFiltrados = modelos.filter((m) => filtroModelo.toLowerCase().split(" ").every((p) => m.nome.toLowerCase().includes(p))).slice(0, 300);
 
   return (
     <div className="rounded-2xl border border-laranja/30 bg-laranja/5 p-4">
       <p className="flex items-center gap-2 text-sm font-medium">
-        <Search size={15} className="text-laranja" /> Preencher pela Tabela FIPE
+        <Search size={15} className="text-laranja" /> Buscar na Tabela FIPE <span className="font-normal text-nevoa">(opcional)</span>
         {carregando && <Loader2 size={14} className="animate-spin text-nevoa" />}
       </p>
+      <p className="mt-1 text-xs text-nevoa">Digite para pesquisar. Se o carro não estiver na lista, é só preencher os campos abaixo à mão.</p>
       <div className="mt-3 grid gap-3 md:grid-cols-3">
-        <select
-          className={classeCampo}
-          value={sel.marca}
-          onChange={async (e) => {
-            setSel({ marca: e.target.value, modelo: "", ano: "" });
-            setModelos([]);
-            setAnos([]);
-            if (e.target.value) setModelos((await buscar(`etapa=modelos&marca=${e.target.value}`)) ?? []);
-          }}
-        >
-          <option value="">Marca</option>
-          {marcas.map((m) => (
-            <option key={m.codigo} value={m.codigo}>
-              {limparMarca(m.nome)}
-            </option>
-          ))}
-        </select>
-        <div className="space-y-2">
-          <input className={classeCampo} placeholder="Filtrar modelo (ex.: HB20)" value={filtroModelo} onChange={(e) => setFiltroModelo(e.target.value)} disabled={!modelos.length} />
-          <select
+        <div>
+          <input
             className={classeCampo}
-            value={sel.modelo}
+            list="fipe-marcas"
+            placeholder="Marca (digite para buscar)"
+            value={textoMarca}
+            onChange={async (e) => {
+              setTextoMarca(e.target.value);
+              const achada = marcas.find((m) => limparMarca(m.nome).toLowerCase() === e.target.value.trim().toLowerCase());
+              setSel({ marca: achada?.codigo ?? "", modelo: "", ano: "" });
+              setModelos([]);
+              setAnos([]);
+              setFiltroModelo("");
+              if (achada) setModelos((await buscar(`etapa=modelos&marca=${achada.codigo}`)) ?? []);
+            }}
+          />
+          <datalist id="fipe-marcas">
+            {marcas.map((m) => (
+              <option key={m.codigo} value={limparMarca(m.nome)} />
+            ))}
+          </datalist>
+        </div>
+        <div>
+          <input
+            className={classeCampo}
+            list="fipe-modelos"
+            placeholder={modelos.length ? "Modelo e versão (ex.: HB20 Comfort)" : "Escolha a marca primeiro"}
+            value={filtroModelo}
             disabled={!modelos.length}
             onChange={async (e) => {
-              setSel((s) => ({ ...s, modelo: e.target.value, ano: "" }));
+              setFiltroModelo(e.target.value);
+              const achado = modelos.find((m) => m.nome === e.target.value);
+              setSel((s) => ({ ...s, modelo: achado ? String(achado.codigo) : "", ano: "" }));
               setAnos([]);
-              if (e.target.value) setAnos((await buscar(`etapa=anos&marca=${sel.marca}&modelo=${e.target.value}`)) ?? []);
+              if (achado) setAnos((await buscar(`etapa=anos&marca=${sel.marca}&modelo=${achado.codigo}`)) ?? []);
             }}
-          >
-            <option value="">Modelo e versão</option>
+          />
+          <datalist id="fipe-modelos">
             {modelosFiltrados.map((m) => (
-              <option key={m.codigo} value={m.codigo}>
-                {m.nome}
-              </option>
+              <option key={m.codigo} value={m.nome} />
             ))}
-          </select>
+          </datalist>
         </div>
         <select
           className={classeCampo}
