@@ -75,6 +75,7 @@ export async function listarVendas(opcoes: { incluirCanceladas?: boolean } = {})
 export type ItemVenda = Awaited<ReturnType<typeof listarVendas>>[number];
 
 export async function vendaCompleta(id: number) {
+  if (!Number.isInteger(id) || id <= 0) return null;
   const db = await banco();
   const [linha] = await db
     .select({ venda: vendas, veiculo: veiculos, cliente: clientes })

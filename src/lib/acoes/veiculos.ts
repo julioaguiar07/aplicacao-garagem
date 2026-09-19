@@ -95,7 +95,8 @@ export async function cadastrarVeiculo(_: Resultado<number> | null, form: FormDa
       salvas.push(p);
       await db.insert(fotos).values({ veiculoId: novo.id, ...p, ordem });
     }
-  } catch {
+  } catch (erro) {
+    console.error("[cadastro] falha ao processar foto:", erro);
     await db.delete(veiculos).where(eq(veiculos.id, novo.id));
     for (const s of salvas) await Promise.all([apagarArquivo(s.chaveOriginal), apagarArquivo(s.chaveCard)]);
     return { ok: false, erro: "Não consegui ler uma das fotos. Envie em JPG, PNG ou WebP e tente de novo." };

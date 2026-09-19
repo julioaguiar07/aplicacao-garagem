@@ -33,6 +33,7 @@ export async function listarClientes() {
 export type ItemCliente = Awaited<ReturnType<typeof listarClientes>>[number];
 
 export async function clienteCompleto(id: number) {
+  if (!Number.isInteger(id) || id <= 0) return null;
   const db = await banco();
   const [c] = await db.select().from(clientes).where(eq(clientes.id, id));
   if (!c) return null;

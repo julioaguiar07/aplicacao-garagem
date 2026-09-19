@@ -69,6 +69,7 @@ export async function listarVeiculos(opcoes: { incluirVendidos?: boolean } = {})
 export type ItemEstoque = Awaited<ReturnType<typeof listarVeiculos>>[number];
 
 export async function veiculoCompleto(id: number) {
+  if (!Number.isInteger(id) || id <= 0) return null;
   const db = await banco();
   const [v] = await db.select().from(veiculos).where(eq(veiculos.id, id));
   if (!v) return null;
