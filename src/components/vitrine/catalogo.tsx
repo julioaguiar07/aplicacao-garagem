@@ -289,8 +289,8 @@ export function Catalogo({ veiculos, simulacao }: { veiculos: VeiculoPublico[]; 
         )}
 
         <p id="financiamento" className="mt-8 max-w-3xl text-xs leading-relaxed text-nevoa">
-          *Simulação com {simulacao.entradaPct}% de entrada, {simulacao.meses} parcelas e taxa de {simulacao.taxaMensalPct.toLocaleString("pt-BR")}% ao mês pela Tabela Price. Valores ilustrativos, sujeitos à aprovação de crédito e
-          às condições do banco. Aceitamos financiamento bancário, consórcio, cartão e seu usado na troca.
+          *Simulação com {simulacao.entradaPct}% de entrada, {simulacao.meses} parcelas e taxa de {simulacao.taxaMensalPct.toLocaleString("pt-BR")}% ao mês pela Tabela Price. Parcelas ilustrativas, apenas para você ter uma ideia: o valor
+          final, a taxa e a aprovação dependem da análise de crédito de cada CPF e das condições do banco. Aceitamos financiamento bancário, consórcio, cartão e seu usado na troca.
         </p>
       </section>
     </div>

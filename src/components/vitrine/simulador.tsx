@@ -41,7 +41,8 @@ export function Simulador({ preco, simulacao }: { preco: number; simulacao: { en
         {meses}x {reais(parcela)}
       </p>
       <p className="mt-2 text-[11px] leading-relaxed text-nevoa-2">
-        Taxa de referência de {simulacao.taxaMensalPct.toLocaleString("pt-BR")}% ao mês. Valor ilustrativo, sujeito à aprovação de crédito.
+        Parcela ilustrativa, apenas para você ter uma ideia. O valor final, a taxa e a aprovação dependem da análise de crédito
+        de cada CPF e das condições do banco. Simulação feita com taxa de referência de {simulacao.taxaMensalPct.toLocaleString("pt-BR")}% ao mês.
       </p>
     </div>
   );
