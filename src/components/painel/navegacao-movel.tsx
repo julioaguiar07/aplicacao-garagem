@@ -6,7 +6,7 @@ import { useState } from "react";
 import { CarFront, FileBarChart, Handshake, LayoutGrid, LogOut, Menu, Search, Settings, Store, Users, Wallet, X } from "lucide-react";
 import { sair } from "@/app/entrar/acoes";
 import { cn } from "@/lib/cn";
-import { URL_VITRINE } from "@/lib/site";
+import { URL_VITRINE } from "@/lib/marca";
 
 const ITENS = [
   { href: "/painel", rotulo: "Início", icone: LayoutGrid },

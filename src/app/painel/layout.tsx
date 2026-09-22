@@ -2,15 +2,16 @@ import type { Metadata } from "next";
 import { BarraLateral } from "@/components/painel/barra-lateral";
 import { NavegacaoMovel } from "@/components/painel/navegacao-movel";
 import { exigirLogin } from "@/lib/auth";
+import { DEMO, MARCA } from "@/lib/marca";
 
 export const metadata: Metadata = {
-  title: { default: "Painel", template: "%s · Painel Carmelo" },
+  title: { default: "Painel", template: `%s · Painel ${MARCA.curto}` },
   robots: { index: false, follow: false },
 };
 
 export default async function PainelLayout({ children }: LayoutProps<"/painel">) {
   await exigirLogin();
-  const local = !process.env.DATABASE_URL;
+  const local = !process.env.DATABASE_URL && !DEMO;
   return (
     <div className="flex min-h-dvh bg-asfalto">
       <BarraLateral />

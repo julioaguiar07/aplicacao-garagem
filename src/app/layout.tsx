@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Archivo, Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { SeloDemo } from "@/components/selo-demo";
+import { DEMO, MARCA, logo } from "@/lib/marca";
 
 const archivo = Archivo({
   variable: "--font-archivo",
@@ -18,25 +20,30 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-const DESCRICAO =
-  "Seminovos revisados e com procedência na Carmelo Multimarcas, em Mossoró/RN. Veja o estoque, simule o financiamento e fale com a gente pelo WhatsApp.";
+const TITULO = `${MARCA.nome} | ${MARCA.slogan}`;
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://www.carmelomultimarcas.com.br"),
-  title: {
-    default: "Carmelo Multimarcas | Seminovos com procedência em Mossoró/RN",
-    template: "%s | Carmelo Multimarcas",
+  ...(MARCA.site ? { metadataBase: new URL(MARCA.site) } : {}),
+  title: { default: TITULO, template: `%s | ${MARCA.nome}` },
+  description: MARCA.descricao,
+  applicationName: MARCA.nome,
+  icons: {
+    icon: [
+      { url: logo("favicon.ico"), sizes: "48x48" },
+      { url: logo("icon.png"), sizes: "512x512", type: "image/png" },
+    ],
+    apple: { url: logo("apple-icon.png"), sizes: "180x180" },
   },
-  description: DESCRICAO,
-  applicationName: "Carmelo Multimarcas",
   openGraph: {
     type: "website",
     locale: "pt_BR",
-    siteName: "Carmelo Multimarcas",
-    title: "Carmelo Multimarcas | Seminovos com procedência em Mossoró/RN",
-    description: DESCRICAO,
-    images: [{ url: "/marca/compartilhar.png", width: 1200, height: 630, alt: "Carmelo Multimarcas" }],
+    siteName: MARCA.nome,
+    title: TITULO,
+    description: MARCA.descricao,
+    images: [{ url: logo("compartilhar.png"), width: 1200, height: 630, alt: MARCA.nome }],
   },
+  // A demonstração não aparece no Google
+  ...(DEMO ? { robots: { index: false, follow: false } } : {}),
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
@@ -45,7 +52,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="pt-BR"
       className={`${archivo.variable} ${geist.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full">{children}</body>
+      <body className="min-h-full">
+        <SeloDemo />
+        {children}
+      </body>
     </html>
   );
 }

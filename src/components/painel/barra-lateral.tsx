@@ -19,7 +19,7 @@ import {
 import { sair } from "@/app/entrar/acoes";
 import { useState } from "react";
 import { cn } from "@/lib/cn";
-import { URL_VITRINE } from "@/lib/site";
+import { MARCA, URL_VITRINE, logo } from "@/lib/marca";
 
 const SECOES = [
   {
@@ -62,8 +62,8 @@ export function BarraLateral() {
     >
       <div className={cn("flex items-center", recolhida ? "justify-center" : "justify-between px-2")}>
         {!recolhida && (
-          <Link href="/painel" aria-label="Carmelo Multimarcas, visão geral">
-            <Image src="/marca/logo-branca.png" alt="Carmelo Multimarcas" width={132} height={44} priority />
+          <Link href="/painel" aria-label={`${MARCA.nome}, visão geral`}>
+            <Image src={logo("logo-branca.png")} alt={MARCA.nome} width={132} height={44} priority />
           </Link>
         )}
         <button
@@ -112,11 +112,11 @@ export function BarraLateral() {
       </nav>
 
       <div className={cn("mt-4 flex items-center gap-3 rounded-2xl border border-linha/70 bg-chumbo/50 p-2.5", recolhida && "flex-col")}>
-        <Image src="/marca/logo-icone.png" alt="" width={36} height={36} className="rounded-full" />
+        <Image src={logo("logo-icone.png")} alt="" width={36} height={36} className="rounded-full" />
         {!recolhida && (
           <div className="min-w-0 flex-1 leading-tight">
             <p className="truncate text-sm font-medium">Administrador</p>
-            <p className="truncate text-xs text-nevoa">Carmelo Multimarcas</p>
+            <p className="truncate text-xs text-nevoa">{MARCA.nome}</p>
           </div>
         )}
         <form action={sair}>

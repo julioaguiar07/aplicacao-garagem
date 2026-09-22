@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { MapPin, MessageCircle } from "lucide-react";
 import type { DadosLoja } from "@/lib/consultas/configuracoes";
+import { MARCA, logo } from "@/lib/marca";
 
 const wa = (numero: string, texto: string) => `https://wa.me/${numero}?text=${encodeURIComponent(texto)}`;
 
@@ -9,8 +10,8 @@ export function Cabecalho({ loja }: { loja: DadosLoja }) {
   return (
     <header className="border-b border-linha/70 bg-[#101114]">
       <div className="mx-auto flex h-16 max-w-[1440px] items-center gap-6 px-4 md:px-6">
-        <Link href="/" aria-label="Carmelo Multimarcas, início" className="shrink-0">
-          <Image src="/marca/logo-branca.png" alt="Carmelo Multimarcas" width={124} height={43} priority />
+        <Link href="/" aria-label={`${MARCA.nome}, início`} className="shrink-0">
+          <Image src={logo("logo-branca.png")} alt={MARCA.nome} width={124} height={43} priority />
         </Link>
         <nav className="ml-auto hidden items-center gap-7 text-sm text-giz/80 md:flex">
           <Link href="/#estoque" className="hover:text-giz">
@@ -27,7 +28,7 @@ export function Cabecalho({ loja }: { loja: DadosLoja }) {
           </Link>
         </nav>
         <a
-          href={wa(loja.whatsapp, "Olá! Vim pelo site da Carmelo.")}
+          href={wa(loja.whatsapp, `Olá! Vim pelo site da ${MARCA.curto}.`)}
           target="_blank"
           rel="noopener"
           className="ml-auto flex h-9 items-center gap-2 rounded-full bg-laranja px-4 text-sm font-semibold text-asfalto transition hover:bg-ambar md:ml-0"
@@ -46,7 +47,7 @@ export function FaixaInfo({ disponiveis, loja }: { disponiveis: number; loja: Da
     { rotulo: "Onde estamos", valor: `${loja.endereco}, ${loja.cidade}`, href: "/#contato" },
     { rotulo: "Financiamento", valor: "Simule a parcela", href: "/#financiamento" },
     { rotulo: "Seu usado", valor: "Aceitamos na troca", href: wa(loja.whatsapp, "Olá! Quero avaliar meu carro na troca."), externo: true },
-    { rotulo: "Fale com a gente", valor: loja.telefone, href: wa(loja.whatsapp, "Olá! Vim pelo site da Carmelo."), externo: true },
+    { rotulo: "Fale com a gente", valor: loja.telefone, href: wa(loja.whatsapp, `Olá! Vim pelo site da ${MARCA.curto}.`), externo: true },
   ];
   return (
     <div className="border-b border-linha/70 bg-[#101114]">
@@ -74,7 +75,7 @@ export function Rodape({ loja }: { loja: DadosLoja }) {
     <footer id="contato" className="border-t border-linha/70 bg-[#101114]">
       <div className="mx-auto grid max-w-[1440px] gap-8 px-4 py-12 md:grid-cols-[1.2fr_1fr_1fr] md:px-6">
         <div>
-          <Image src="/marca/logo-branca.png" alt="Carmelo Multimarcas" width={150} height={52} />
+          <Image src={logo("logo-branca.png")} alt={MARCA.nome} width={150} height={52} />
           <p className="mt-4 max-w-sm text-sm leading-relaxed text-nevoa">
             Seminovos com procedência, laudo e documentação em dia. Financiamento com os principais bancos e avaliação do seu usado na troca.
           </p>
@@ -90,7 +91,7 @@ export function Rodape({ loja }: { loja: DadosLoja }) {
         </div>
         <div>
           <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-nevoa">Contato</p>
-          <a href={wa(loja.whatsapp, "Olá! Vim pelo site da Carmelo.")} target="_blank" rel="noopener" className="num mt-2 block text-sm hover:text-laranja">
+          <a href={wa(loja.whatsapp, `Olá! Vim pelo site da ${MARCA.curto}.`)} target="_blank" rel="noopener" className="num mt-2 block text-sm hover:text-laranja">
             WhatsApp {loja.telefone}
           </a>
         </div>

@@ -1,6 +1,7 @@
 import "server-only";
 import { eq } from "drizzle-orm";
 import { banco, schema } from "@/db";
+import { MARCA } from "@/lib/marca";
 
 export interface DadosLoja {
   whatsapp: string;
@@ -20,7 +21,7 @@ export const LOJA_PADRAO: DadosLoja = {
   cidade: "Mossoró/RN",
   cep: "59619-140",
   cnpj: "",
-  razaoSocial: "Carmelo Multimarcas",
+  razaoSocial: MARCA.nome,
   simulacao: { entradaPct: 30, taxaMensalPct: 1.99, meses: 48 },
 };
 

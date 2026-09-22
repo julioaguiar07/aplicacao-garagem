@@ -7,6 +7,7 @@ import { Galeria } from "@/components/vitrine/galeria";
 import { Simulador } from "@/components/vitrine/simulador";
 import { linkWhatsapp, vitrine } from "@/lib/vitrine";
 import { precoPartido } from "@/lib/formato";
+import { MARCA } from "@/lib/marca";
 
 async function buscar(slug: string) {
   const { veiculos, loja } = await vitrine();
@@ -19,7 +20,7 @@ export async function generateMetadata({ params }: PageProps<"/carros/[slug]">) 
   const titulo = `${v.marca} ${v.modelo} ${v.versao ?? ""} ${v.ano}`.replace(/\s+/g, " ");
   return {
     title: titulo,
-    description: `${titulo}${v.km !== null ? `, ${v.km.toLocaleString("pt-BR")} km` : ""}, ${v.cambio}. Veja fotos, ficha e simule a parcela na Carmelo Multimarcas.`,
+    description: `${titulo}${v.km !== null ? `, ${v.km.toLocaleString("pt-BR")} km` : ""}, ${v.cambio}. Veja fotos, ficha e simule a parcela na ${MARCA.nome}.`,
     openGraph: { title: titulo, images: v.capa ? [v.capa] : [] },
   };
 }

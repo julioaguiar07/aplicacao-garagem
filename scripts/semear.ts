@@ -1,5 +1,5 @@
-// Carga de DEMONSTRAÇÃO no banco local (PGlite). Apaga tudo e recria.
-// Uso: npm run semear
+// Carga de DEMONSTRAÇÃO. Apaga tudo e recria.
+// Uso local: npm run semear. Na instalação de demonstração roda sozinho no primeiro start (scripts/iniciar.ts).
 //
 // Carros em estoque: os 8 da vitrine atual (marca, modelo, ano, km, preço, fotos reais).
 // Custos, gastos, documentos, vendas, clientes e despesas são fictícios.
@@ -33,13 +33,13 @@ async function pdfDemo(titulo: string) {
   return Buffer.from(await doc.save());
 }
 
-async function main() {
+export async function semear() {
   const db = await banco();
   console.log("Limpando banco e arquivos locais…");
   await db.execute(
     sql`TRUNCATE eventos, documentos, gastos, lancamentos, custos_venda, pagamentos, vendas, fotos, veiculos, clientes, contas RESTART IDENTITY CASCADE`,
   );
-  await fs.rm(path.join(process.cwd(), ".dados", "arquivos"), { recursive: true, force: true });
+  if (!process.env.ARQUIVOS_DIR) await fs.rm(path.join(process.cwd(), ".dados", "arquivos"), { recursive: true, force: true });
 
   const [caixa] = await db.insert(contas).values({ nome: "Caixa da loja", tipo: "caixa", saldoInicial: R(15000) }).returning();
   const [bb] = await db.insert(contas).values({ nome: "Banco do Brasil", tipo: "banco", saldoInicial: R(120000) }).returning();
@@ -203,11 +203,21 @@ async function main() {
   }
 
   const [{ total }] = await db.select({ total: sql<number>`count(*)::int` }).from(vendas);
+  // Dados fictícios da loja (endereço, contato, CNPJ) para a demonstração
+  if (process.env.NEXT_PUBLIC_DEMO === "1")
+    await db
+      .insert(schema.configuracoes)
+      .values({ chave: "loja", valor: { whatsapp: "5584900000000", telefone: "(84) 90000-0000", endereco: "Av. Principal, 1000", cidade: "Mossoró/RN", cep: "59600-000", cnpj: "00.000.000/0001-00" } })
+      .onConflictDoNothing();
+
   console.log(`Pronto: ${estoque.length} carros em estoque, ${total} vendas, contas e despesas de demonstração.`);
-  process.exit(0);
 }
 
-main().catch((e) => {
-  console.error(e);
-  process.exit(1);
-});
+// Rodando direto (npm run semear)
+if (process.argv[1]?.split("\\").join("/").endsWith("scripts/semear.ts"))
+  semear()
+    .then(() => process.exit(0))
+    .catch((e) => {
+      console.error(e);
+      process.exit(1);
+    });

@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { MARCA, logo } from "@/lib/marca";
 import { FormEntrar } from "./form-entrar";
 
 export const metadata = { title: "Entrar", robots: { index: false } };
@@ -8,10 +9,15 @@ export default async function Entrar({ searchParams }: PageProps<"/entrar">) {
   return (
     <main className="grid min-h-dvh place-items-center bg-asfalto px-4">
       <div className="brilho-laranja w-full max-w-sm rounded-[var(--radius-card)] border border-linha/60 p-8">
-        <Image src="/marca/logo-branca.png" alt="Carmelo Multimarcas" width={150} height={52} priority />
+        <Image src={logo("logo-branca.png")} alt={MARCA.nome} width={150} height={52} priority />
         <h1 className="display mt-8 text-2xl font-bold">Painel da loja</h1>
         <p className="mt-1 text-sm text-nevoa">Entre com a senha do administrador.</p>
         <FormEntrar voltar={typeof voltar === "string" ? voltar : "/painel"} />
+        {MARCA.senhaDemo && (
+          <p className="mt-4 rounded-xl border border-laranja/40 bg-laranja/10 px-3 py-2 text-sm">
+            Demonstração: a senha é <strong className="num text-laranja">{MARCA.senhaDemo}</strong>
+          </p>
+        )}
       </div>
     </main>
   );

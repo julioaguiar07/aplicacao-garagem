@@ -5,8 +5,9 @@ import { PDFDocument, type PDFFont, type PDFPage, StandardFonts, rgb } from "pdf
 import type { VendaCompleta } from "@/lib/consultas/vendas";
 import type { DadosLoja } from "@/lib/consultas/configuracoes";
 import { FORMAS_PAGAMENTO, type FormaPagamento, dataBR, hojeISO, reais } from "@/lib/dominio";
+import { MARCA } from "@/lib/marca";
 
-// Documentos da venda em PDF (A4), com cabeçalho da Carmelo e rodapé com os dados da loja.
+// Documentos da venda em PDF (A4), com o logo da loja e rodapé com os dados da loja.
 
 const A4 = { w: 595.28, h: 841.89 };
 const MARGEM = 56;
@@ -20,7 +21,7 @@ async function iniciar(loja: DadosLoja): Promise<Ctx> {
   const [normal, negrito, logo] = await Promise.all([
     doc.embedFont(StandardFonts.Helvetica),
     doc.embedFont(StandardFonts.HelveticaBold),
-    doc.embedPng(await fs.readFile(path.join(process.cwd(), "public", "marca", "logo-preta.png"))),
+    doc.embedPng(await fs.readFile(path.join(process.cwd(), "public", MARCA.pasta, "logo-preta.png"))),
   ]);
   const ctx = { doc, pagina: null as unknown as PDFPage, y: 0, normal, negrito, loja, logo };
   novaPagina(ctx);

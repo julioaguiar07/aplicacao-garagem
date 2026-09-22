@@ -1,12 +1,13 @@
 import type { MetadataRoute } from "next";
 import { connection } from "next/server";
+import { MARCA } from "@/lib/marca";
 import { vitrine } from "@/lib/vitrine";
-
-const SITE = "https://www.carmelomultimarcas.com.br";
 
 // Vitrine e página de cada carro à venda, para o Google indexar
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   await connection();
+  const SITE = MARCA.site;
+  if (!SITE) return [];
   const { veiculos } = await vitrine();
   return [
     { url: `${SITE}/`, changeFrequency: "daily", priority: 1 },
