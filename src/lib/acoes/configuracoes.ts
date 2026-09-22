@@ -33,7 +33,7 @@ export async function salvarLoja(_: Resultado | null, form: FormData): Promise<R
     razaoSocial: texto(form, "razaoSocial") ?? "",
     simulacao: { entradaPct: num("entradaPct", 30), taxaMensalPct: num("taxaMensalPct", 1.99), meses: Math.round(num("meses", 48)) },
   };
-  if (!loja.whatsapp || loja.whatsapp.length < 12) return { ok: false, erro: "Informe o WhatsApp com DDI e DDD, ex.: 55 84 3062-2434." };
+  if (!loja.whatsapp || loja.whatsapp.length < 12) return { ok: false, erro: "Informe o WhatsApp com DDI e DDD, ex.: 55 84 98691-3666." };
   const db = await banco();
   await db
     .insert(schema.configuracoes)

@@ -18,13 +18,25 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const DESCRICAO =
+  "Seminovos revisados e com procedência na Carmelo Multimarcas, em Mossoró/RN. Veja o estoque, simule o financiamento e fale com a gente pelo WhatsApp.";
+
 export const metadata: Metadata = {
+  metadataBase: new URL("https://www.carmelomultimarcas.com.br"),
   title: {
-    default: "Carmelo Multimarcas | Seminovos em Mossoró",
+    default: "Carmelo Multimarcas | Seminovos com procedência em Mossoró/RN",
     template: "%s | Carmelo Multimarcas",
   },
-  description:
-    "Seminovos revisados e com procedência na Carmelo Multimarcas, em Mossoró/RN. Veja o estoque, simule o financiamento e fale com a gente pelo WhatsApp.",
+  description: DESCRICAO,
+  applicationName: "Carmelo Multimarcas",
+  openGraph: {
+    type: "website",
+    locale: "pt_BR",
+    siteName: "Carmelo Multimarcas",
+    title: "Carmelo Multimarcas | Seminovos com procedência em Mossoró/RN",
+    description: DESCRICAO,
+    images: [{ url: "/marca/compartilhar.png", width: 1200, height: 630, alt: "Carmelo Multimarcas" }],
+  },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

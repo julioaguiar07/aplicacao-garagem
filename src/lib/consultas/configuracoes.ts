@@ -14,8 +14,8 @@ export interface DadosLoja {
 }
 
 export const LOJA_PADRAO: DadosLoja = {
-  whatsapp: "558430622434",
-  telefone: "(84) 3062-2434",
+  whatsapp: "5584986913666",
+  telefone: "(84) 98691-3666",
   endereco: "Rua José Damião, 61",
   cidade: "Mossoró/RN",
   cep: "59619-140",
