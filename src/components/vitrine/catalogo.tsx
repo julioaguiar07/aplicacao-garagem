@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { Check, ChevronDown, Gauge, Settings2, Calendar, SlidersHorizontal, X } from "lucide-react";
 import type { VeiculoPublico } from "@/lib/vitrine";
-import { FotoCarro } from "@/components/foto-carro";
+import { FotoCard } from "@/components/vitrine/foto-card";
 import { km, precoPartido, reais } from "@/lib/formato";
 import { cn } from "@/lib/cn";
 
@@ -250,8 +250,8 @@ export function Catalogo({ veiculos, simulacao }: { veiculos: VeiculoPublico[]; 
                       </div>
                     </div>
 
-                    <FotoCarro
-                      src={v.capa}
+                    <FotoCard
+                      fotos={v.fotos.length ? v.fotos : v.capa ? [{ card: v.capa }] : []}
                       alt={`${v.marca} ${v.modelo} ${v.ano}`}
                       prioridade={i < 3}
                       className="mt-4 aspect-[4/3]"
